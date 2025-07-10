@@ -1,4 +1,4 @@
-# 🔧 CAMS - Connection & Application Management System
+# 🔧 CAMS - Centralized Application Management System
 
 <div align="center">
 

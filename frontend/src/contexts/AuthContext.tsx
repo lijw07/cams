@@ -78,7 +78,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       const response = await authService.login({ username, password });
       
-      if (response.success) {
+      if (response.token) {
         // Get user profile after successful login
         const userProfile = await authService.getUserProfile();
         setUser(userProfile);

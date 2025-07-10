@@ -33,6 +33,9 @@ build/
 dist/
 .cache/
 
+# Frontend folder (has its own Dockerfile)
+frontend/
+
 # IDE
 .idea/
 *.swp

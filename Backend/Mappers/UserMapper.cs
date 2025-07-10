@@ -74,7 +74,11 @@ namespace cams.Backend.Mappers
                 LastLoginAt = user.LastLoginAt,
                 IsActive = user.IsActive,
                 ApplicationCount = applicationCount,
-                DatabaseConnectionCount = connectionCount
+                DatabaseConnectionCount = connectionCount,
+                Roles = user.UserRoles
+                    .Where(ur => ur.IsActive && ur.Role.IsActive)
+                    .Select(ur => ur.Role.Name)
+                    .ToList()
             };
         }
 

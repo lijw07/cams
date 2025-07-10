@@ -36,7 +36,7 @@ const Register: React.FC = () => {
   const email = watch('email');
 
   // Check email availability
-  const checkEmailAvailability = async (email: string) => {
+  const checkEmailAvailability = React.useCallback(async (email: string) => {
     if (!email || !email.includes('@')) {
       setEmailAvailable(null);
       return;
@@ -56,7 +56,7 @@ const Register: React.FC = () => {
     } finally {
       setCheckingEmail(false);
     }
-  };
+  }, [setError, clearErrors]);
 
   // Debounced email check
   React.useEffect(() => {
@@ -67,7 +67,7 @@ const Register: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeoutId);
-  }, [email]);
+  }, [email, checkEmailAvailability]);
 
   const onSubmit = async (data: RegisterFormData) => {
     if (data.password !== data.confirmPassword) {
@@ -92,16 +92,16 @@ const Register: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-primary">
             <Database className="h-6 w-6 text-white" />
           </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
             Create your account
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
+          <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
             Join the Connection & Application Management System
           </p>
         </div>
@@ -329,7 +329,7 @@ const Register: React.FC = () => {
           </div>
 
           <div className="text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-300">
               Already have an account?{' '}
               <Link
                 to="/login"

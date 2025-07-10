@@ -1,14 +1,19 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   Home, 
   Package, 
   Database, 
-  User, 
-  Settings, 
   X,
+  Users,
+  Shield,
+  Mail,
+  FileText,
   Activity,
-  Monitor
+  AlertTriangle,
+  BarChart3,
+  Upload
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -18,6 +23,13 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const location = useLocation();
+  const { user } = useAuth();
+  
+  // Check if user has admin privileges (for management sections)
+  const isAdmin = user?.roles?.some(role => role === 'Admin' || role === 'PlatformAdmin') ?? false;
+  
+  // Check if user has platform admin privileges (for logs)
+  const isPlatformAdmin = user?.roles?.some(role => role === 'PlatformAdmin') ?? false;
 
   const navigationItems = [
     {
@@ -31,41 +43,63 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       href: '/applications',
       icon: Package,
       current: location.pathname.startsWith('/applications')
-    },
-    {
-      name: 'Database Connections',
-      href: '/connections',
-      icon: Database,
-      current: location.pathname.startsWith('/connections')
-    },
-    {
-      name: 'Monitoring',
-      href: '/monitoring',
-      icon: Activity,
-      current: location.pathname.startsWith('/monitoring')
-    },
-    {
-      name: 'System Health',
-      href: '/health',
-      icon: Monitor,
-      current: location.pathname.startsWith('/health')
     }
   ];
 
-  const accountItems = [
+  const logItems = [
     {
-      name: 'Profile',
-      href: '/profile',
-      icon: User,
-      current: location.pathname === '/profile'
+      name: 'Audit Logs',
+      href: '/logs/audit',
+      icon: FileText,
+      current: location.pathname.startsWith('/logs/audit')
     },
     {
-      name: 'Settings',
-      href: '/settings',
-      icon: Settings,
-      current: location.pathname === '/settings'
+      name: 'System Logs',
+      href: '/logs/system',
+      icon: Activity,
+      current: location.pathname.startsWith('/logs/system')
+    },
+    {
+      name: 'Security Logs',
+      href: '/logs/security',
+      icon: AlertTriangle,
+      current: location.pathname.startsWith('/logs/security')
+    },
+    {
+      name: 'Performance Logs',
+      href: '/logs/performance',
+      icon: BarChart3,
+      current: location.pathname.startsWith('/logs/performance')
     }
   ];
+
+  const managementItems = [
+    {
+      name: 'User Management',
+      href: '/management/users',
+      icon: Users,
+      current: location.pathname.startsWith('/management/users')
+    },
+    {
+      name: 'Role Management',
+      href: '/management/roles',
+      icon: Shield,
+      current: location.pathname.startsWith('/management/roles')
+    },
+    {
+      name: 'Email Management',
+      href: '/management/emails',
+      icon: Mail,
+      current: location.pathname.startsWith('/management/emails')
+    },
+    {
+      name: 'Bulk Migration',
+      href: '/migration',
+      icon: Upload,
+      current: location.pathname.startsWith('/migration')
+    }
+  ];
+
 
   return (
     <>
@@ -79,22 +113,22 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
 
       {/* Sidebar */}
       <div className={`
-        fixed inset-y-0 left-0 z-30 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out
+        fixed inset-y-0 left-0 z-30 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out
         md:translate-x-0 md:static md:inset-0
         ${open ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
               <Database className="w-5 h-5 text-white" />
             </div>
-            <span className="text-lg font-semibold text-gray-900">CAMS</span>
+            <span className="text-lg font-semibold text-gray-900 dark:text-white">CAMS</span>
           </div>
           
           {/* Close button for mobile */}
           <button
             onClick={() => setOpen(false)}
-            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 md:hidden"
+            className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         <nav className="flex-1 px-4 py-6 space-y-8">
           {/* Main navigation */}
           <div>
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+            <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
               Main
             </h3>
             <div className="mt-2 space-y-1">
@@ -114,8 +148,8 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                   className={({ isActive }) => `
                     group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                     ${isActive 
-                      ? 'bg-primary text-white' 
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'bg-primary-600 text-white' 
+                      : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                     }
                   `}
                   onClick={() => setOpen(false)}
@@ -127,31 +161,72 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
             </div>
           </div>
 
-          {/* Account navigation */}
-          <div>
-            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Account
-            </h3>
-            <div className="mt-2 space-y-1">
-              {accountItems.map((item) => (
-                <NavLink
-                  key={item.name}
-                  to={item.href}
-                  className={({ isActive }) => `
-                    group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                    ${isActive 
-                      ? 'bg-primary text-white' 
-                      : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
+          {/* Management navigation - Only show to Admin/PlatformAdmin users */}
+          {isAdmin && (
+            <div>
+              <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Management
+              </h3>
+              <div className="mt-2 space-y-1">
+                {managementItems
+                  .filter(item => {
+                    // Only show User Management and Role Management to admins
+                    if (item.name === 'User Management' || item.name === 'Role Management') {
+                      return isAdmin;
                     }
-                  `}
-                  onClick={() => setOpen(false)}
-                >
-                  <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
-                  {item.name}
-                </NavLink>
-              ))}
+                    // Email Management can be shown to all users in management section
+                    return true;
+                  })
+                  .map((item) => (
+                    <NavLink
+                      key={item.name}
+                      to={item.href}
+                      className={({ isActive }) => `
+                        group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                        ${isActive 
+                          ? 'bg-primary-600 text-white' 
+                          : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }
+                      `}
+                      onClick={() => setOpen(false)}
+                    >
+                      <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
+                      {item.name}
+                    </NavLink>
+                  ))
+                }
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Log navigation - Only show to PlatformAdmin users */}
+          {isPlatformAdmin && (
+            <div>
+              <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                Logs
+              </h3>
+              <div className="mt-2 space-y-1">
+                {logItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    className={({ isActive }) => `
+                      group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                      ${isActive 
+                        ? 'bg-primary-600 text-white' 
+                        : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }
+                    `}
+                    onClick={() => setOpen(false)}
+                  >
+                    <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
+                    {item.name}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          )}
+
         </nav>
       </div>
     </>

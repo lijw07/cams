@@ -3,11 +3,11 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore
-COPY ["cams.csproj", "./"]
+COPY ["../cams.csproj", "./"]
 RUN dotnet restore
 
 # Copy source code
-COPY . .
+COPY ../ .
 
 # Build and publish
 RUN dotnet build "cams.csproj" -c Release -o /app/build
@@ -18,11 +18,11 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dev
 WORKDIR /src
 
 # Copy csproj and restore as distinct layers for better caching
-COPY ["cams.csproj", "./"]
+COPY ["../cams.csproj", "./"]
 RUN dotnet restore
 
 # Copy everything else
-COPY . .
+COPY ../ .
 
 # Install minimal tools needed for debugging
 RUN apt-get update && \

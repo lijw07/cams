@@ -361,6 +361,10 @@ namespace cams.Backend.Controller
             {
                 if (!ModelState.IsValid)
                 {
+                    logger.LogWarning("Invalid model state for CreateApplicationWithConnection. Errors: {Errors}", 
+                        string.Join(", ", ModelState.Where(x => x.Value?.Errors.Count > 0)
+                            .SelectMany(x => x.Value.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
+                    
                     return HttpResponseHelper.CreateValidationErrorResponse(
                     ModelState.Where(x => x.Value?.Errors.Count > 0)
                         .ToDictionary(

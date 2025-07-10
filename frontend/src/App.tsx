@@ -8,10 +8,21 @@ import Register from './pages/auth/Register';
 import Dashboard from './pages/Dashboard';
 import Applications from './pages/Applications';
 import ApplicationDetail from './pages/ApplicationDetail';
-import DatabaseConnections from './pages/DatabaseConnections';
-import DatabaseConnectionDetail from './pages/DatabaseConnectionDetail';
 import Profile from './pages/Profile';
+import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
+
+// Management pages
+import UserManagement from './pages/management/UserManagement';
+import RoleManagement from './pages/management/RoleManagement';
+import EmailManagement from './pages/management/EmailManagement';
+import BulkMigration from './pages/migration/BulkMigration';
+
+// Log pages
+import AuditLogs from './pages/logs/AuditLogs';
+import SystemLogs from './pages/logs/SystemLogs';
+import SecurityLogs from './pages/logs/SecurityLogs';
+import PerformanceLogs from './pages/logs/PerformanceLogs';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,7 +48,7 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 const App: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       <Routes>
         {/* Public routes */}
         <Route
@@ -73,12 +84,23 @@ const App: React.FC = () => {
           <Route path="applications" element={<Applications />} />
           <Route path="applications/:id" element={<ApplicationDetail />} />
           
-          {/* Database connection routes */}
-          <Route path="connections" element={<DatabaseConnections />} />
-          <Route path="connections/:id" element={<DatabaseConnectionDetail />} />
-          
           {/* Profile routes */}
           <Route path="profile" element={<Profile />} />
+          <Route path="settings" element={<Settings />} />
+          
+          {/* Management routes */}
+          <Route path="management/users" element={<UserManagement />} />
+          <Route path="management/roles" element={<RoleManagement />} />
+          <Route path="management/emails" element={<EmailManagement />} />
+          
+          {/* Migration routes */}
+          <Route path="migration" element={<BulkMigration />} />
+          
+          {/* Log routes */}
+          <Route path="logs/audit" element={<AuditLogs />} />
+          <Route path="logs/system" element={<SystemLogs />} />
+          <Route path="logs/security" element={<SecurityLogs />} />
+          <Route path="logs/performance" element={<PerformanceLogs />} />
         </Route>
         
         {/* 404 route */}

@@ -4,7 +4,11 @@ import toast from 'react-hot-toast';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 class ApiService {
-  private client: AxiosInstance;
+  private _client: AxiosInstance;
+  
+  get client(): AxiosInstance {
+    return this._client;
+  }
   private tokenStorage = {
     get: () => localStorage.getItem('auth_token'),
     set: (token: string) => localStorage.setItem('auth_token', token),
@@ -12,7 +16,7 @@ class ApiService {
   };
 
   constructor() {
-    this.client = axios.create({
+    this._client = axios.create({
       baseURL: API_BASE_URL,
       headers: {
         'Content-Type': 'application/json',
@@ -24,7 +28,7 @@ class ApiService {
 
   private setupInterceptors() {
     // Request interceptor to add auth token
-    this.client.interceptors.request.use(
+    this._client.interceptors.request.use(
       (config) => {
         const token = this.tokenStorage.get();
         if (token) {
@@ -38,7 +42,7 @@ class ApiService {
     );
 
     // Response interceptor to handle errors
-    this.client.interceptors.response.use(
+    this._client.interceptors.response.use(
       (response: AxiosResponse) => {
         return response;
       },
@@ -62,7 +66,7 @@ class ApiService {
       return;
     }
 
-    if (error.response?.status >= 500) {
+    if (error.response?.status && error.response.status >= 500) {
       toast.error('Server error occurred. Please try again later.');
       return;
     }
@@ -72,27 +76,27 @@ class ApiService {
 
   // Generic methods
   async get<T>(url: string, params?: any): Promise<T> {
-    const response = await this.client.get<T>(url, { params });
+    const response = await this._client.get<T>(url, { params });
     return response.data;
   }
 
   async post<T>(url: string, data?: any): Promise<T> {
-    const response = await this.client.post<T>(url, data);
+    const response = await this._client.post<T>(url, data);
     return response.data;
   }
 
   async put<T>(url: string, data?: any): Promise<T> {
-    const response = await this.client.put<T>(url, data);
+    const response = await this._client.put<T>(url, data);
     return response.data;
   }
 
   async patch<T>(url: string, data?: any): Promise<T> {
-    const response = await this.client.patch<T>(url, data);
+    const response = await this._client.patch<T>(url, data);
     return response.data;
   }
 
   async delete<T>(url: string): Promise<T> {
-    const response = await this.client.delete<T>(url);
+    const response = await this._client.delete<T>(url);
     return response.data;
   }
 

@@ -1,6 +1,7 @@
 using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Mappers;
+using cams.Backend.Data;
 
 namespace cams.Backend.Services
 {
@@ -9,34 +10,7 @@ namespace cams.Backend.Services
         private readonly ILogger<UserService> _logger;
         private readonly IUserMapper _userMapper;
         
-        // In a real application, this would be replaced with a database context
-        private static readonly List<User> _users = new()
-        {
-            new User
-            {
-                Id = 1,
-                Username = "admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
-                Email = "admin@example.com",
-                FirstName = "Admin",
-                LastName = "User",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsActive = true
-            },
-            new User
-            {
-                Id = 2,
-                Username = "user",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("user123"),
-                Email = "user@example.com",
-                FirstName = "Regular",
-                LastName = "User",
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-                IsActive = true
-            }
-        };
+        // Using shared repository for user data consistency across services
 
         // External data for counting (would be in database in real app)
         private static readonly List<Application> _applications = new();
@@ -52,7 +26,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            var user = SharedUserRepository.GetUserById(userId);
             if (user == null)
                 return null;
 
@@ -66,7 +40,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            var user = SharedUserRepository.GetUserById(userId);
             return user != null ? _userMapper.MapToProfileSummaryResponse(user) : null;
         }
 
@@ -74,14 +48,14 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            return _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            return SharedUserRepository.GetUserById(userId);
         }
 
         public async Task<UserProfileResponse?> UpdateUserProfileAsync(int userId, UserProfileRequest request)
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            var user = SharedUserRepository.GetUserById(userId);
             if (user == null)
                 return null;
 
@@ -103,7 +77,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            var user = SharedUserRepository.GetUserById(userId);
             if (user == null)
             {
                 return new PasswordChangeResponse
@@ -142,7 +116,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            var user = SharedUserRepository.GetUserById(userId);
             if (user == null)
             {
                 return new EmailChangeResponse
@@ -193,7 +167,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId);
+            var user = SharedUserRepository.GetUsers().FirstOrDefault(u => u.Id == userId);
             if (user == null)
                 return false;
 
@@ -209,7 +183,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+            var user = SharedUserRepository.GetUserById(userId);
             return user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
 
@@ -217,18 +191,14 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            return _users.Any(u => u.Email.Equals(email, StringComparison.OrdinalIgnoreCase) && 
-                                  u.Id != excludeUserId && 
-                                  u.IsActive);
+            return SharedUserRepository.IsEmailTaken(email, excludeUserId);
         }
 
         public async Task<bool> IsUsernameTakenAsync(string username, int excludeUserId = 0)
         {
             await Task.CompletedTask;
             
-            return _users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase) && 
-                                  u.Id != excludeUserId && 
-                                  u.IsActive);
+            return SharedUserRepository.IsUsernameTaken(username, excludeUserId);
         }
     }
 }

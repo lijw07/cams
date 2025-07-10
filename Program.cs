@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -7,16 +8,25 @@ using cams.Backend.Configuration;
 using cams.Backend.Data;
 using cams.Backend.Services;
 using cams.Backend.Mappers;
+using cams.Backend.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+    });
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    var connectionString = GetConnectionString(builder.Configuration);
+    options.UseSqlServer(connectionString);
+});
 
 // Configure Swagger with JWT support
 builder.Services.AddSwaggerGen(c =>
@@ -51,6 +61,9 @@ builder.Services.AddSwaggerGen(c =>
 // Add health checks
 builder.Services.AddHealthChecks();
 
+// Add SignalR
+builder.Services.AddSignalR();
+
 // Configure JWT settings
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);
@@ -81,6 +94,21 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero
     };
+    
+    // Configure SignalR authentication
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
 
 // Register services
@@ -92,6 +120,7 @@ builder.Services.AddScoped<ILoggingService, LoggingService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
+builder.Services.AddScoped<IMigrationService, MigrationService>();
 
 // Register mappers
 builder.Services.AddScoped<IUserMapper, UserMapper>();
@@ -102,7 +131,24 @@ builder.Services.AddScoped<IApplicationWithConnectionMapper, ApplicationWithConn
 // Add CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("CamsPolicy", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",           // Local development frontend
+                "http://localhost:8080",           // Local development API
+                "http://frontend:3000",            // Docker frontend service
+                "http://127.0.0.1:3000",          // Alternative local
+                "http://0.0.0.0:3000",            // Alternative Docker
+                "http://host.docker.internal:3000" // Docker Desktop host access
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials()
+            .SetIsOriginAllowed(_ => true); // Allow SignalR connections
+    });
+
+    // Fallback policy for development
+    options.AddPolicy("Development", policy =>
     {
         policy.AllowAnyOrigin()
               .AllowAnyMethod()
@@ -112,11 +158,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Seed data
+// Seed data with retry logic
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await DataSeeder.SeedAsync(context);
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    
+    await SeedDataWithRetryAsync(context, logger);
 }
 
 // Configure the HTTP request pipeline.
@@ -128,14 +176,86 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.UseCors("AllowAll");
+// Use environment-specific CORS policy
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors("Development");
+}
+else
+{
+    app.UseCors("CamsPolicy");
+}
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// Map SignalR hubs
+app.MapHub<MigrationHub>("/hubs/migration");
+
 // Map health check endpoint
 app.MapHealthChecks("/health");
 
 app.Run();
+
+// Helper method for building connection string
+static string GetConnectionString(IConfiguration configuration)
+{
+    // Check if running in Docker (environment variables are present)
+    var dbHost = configuration["DB_HOST"];
+    var dbPort = configuration["DB_PORT"];
+    var dbName = configuration["DB_NAME"];
+    var dbUser = configuration["DB_USER"];
+    var dbPassword = configuration["DB_PASSWORD"];
+    
+    if (!string.IsNullOrEmpty(dbHost) && !string.IsNullOrEmpty(dbName))
+    {
+        // Build connection string from environment variables
+        var connectionString = $"Server={dbHost},{dbPort ?? "1433"};Database={dbName};User Id={dbUser ?? "sa"};Password={dbPassword};TrustServerCertificate=true;";
+        Console.WriteLine($"Using environment-based connection string: Server={dbHost},{dbPort ?? "1433"};Database={dbName};...");
+        return connectionString;
+    }
+    
+    // Fall back to appsettings.json connection string
+    var fallbackConnectionString = configuration.GetConnectionString("DefaultConnection");
+    Console.WriteLine($"Using appsettings.json connection string: {fallbackConnectionString}");
+    return fallbackConnectionString ?? throw new InvalidOperationException("No connection string configured");
+}
+
+// Helper method for seeding data with retry logic
+static async Task SeedDataWithRetryAsync(ApplicationDbContext context, ILogger logger)
+{
+    const int maxRetries = 10; // Increased retries for database creation
+    const int delayMs = 10000; // 10 seconds delay
+    
+    for (int attempt = 1; attempt <= maxRetries; attempt++)
+    {
+        try
+        {
+            logger.LogInformation("Attempting to seed data (attempt {Attempt}/{MaxRetries})", attempt, maxRetries);
+            
+            // Check if we can connect to the database
+            logger.LogInformation("Testing database connection...");
+            await context.Database.CanConnectAsync();
+            logger.LogInformation("Database connection successful");
+            
+            await DataSeeder.SeedAsync(context);
+            logger.LogInformation("Data seeding completed successfully");
+            return;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Data seeding attempt {Attempt} failed: {Error}", attempt, ex.Message);
+            
+            if (attempt == maxRetries)
+            {
+                logger.LogError(ex, "Data seeding failed after {MaxRetries} attempts. Application will continue but may not function properly", maxRetries);
+                return; // Don't crash the application
+            }
+            
+            logger.LogInformation("Waiting {DelayMs}ms before retry...", delayMs);
+            await Task.Delay(delayMs);
+        }
+    }
+}

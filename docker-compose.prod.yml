@@ -1,0 +1,103 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+    container_name: "${COMPOSE_PROJECT_NAME:-cams}-frontend-prod"
+    ports:
+      - "80:80"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - cams-network
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./
+      dockerfile: Backend/Dockerfile
+      target: prod
+    container_name: "${COMPOSE_PROJECT_NAME:-cams}-backend-prod"
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      # Database Configuration
+      - DB_HOST=db
+      - DB_PORT=1433
+      - DB_NAME=CamsDb
+      - DB_USER=sa
+      - DB_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
+      # JWT Configuration
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-that-is-at-least-32-characters-long!}
+      - JWT_ISSUER=CamsApp
+      - JWT_AUDIENCE=CamsUsers
+      - JWT_EXPIRES_IN_MINUTES=60
+      - JWT_REFRESH_EXPIRES_IN_DAYS=7
+      # Security Configuration
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      # Email Configuration (Mailtrap.io)
+      - EmailSettings__SmtpHost=live.smtp.mailtrap.io
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SmtpUsername=${MAILTRAP_USERNAME:-}
+      - EmailSettings__SmtpPassword=${MAILTRAP_PASSWORD:-}
+      - EmailSettings__FromEmail=${MAILTRAP_FROM_EMAIL:-mailtrap@example.com}
+      - EmailSettings__FromName=CAMS System
+      - EmailSettings__EnableSsl=true
+      - EmailSettings__UseAuthentication=true
+      - EmailSettings__TimeoutSeconds=30
+      # Logging
+      - Logging__LogLevel__Default=Warning
+      - Logging__LogLevel__Microsoft.AspNetCore=Error
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - cams-network
+    restart: unless-stopped
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: "${COMPOSE_PROJECT_NAME:-cams}-database-prod"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data_prod:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/1433' && sleep 5 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+    networks:
+      - cams-network
+    restart: unless-stopped
+
+networks:
+  cams-network:
+    driver: bridge
+    name: "${COMPOSE_PROJECT_NAME:-cams}-network-prod"
+
+volumes:
+  sql_data_prod:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-sql-data-prod"

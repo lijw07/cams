@@ -2,7 +2,7 @@ namespace cams.Backend.Constants
 {
     public static class RoleConstants
     {
-        public const string PLATFORM_ADMIN = "Platform_Admin";
+        public const string PLATFORM_ADMIN = "PlatformAdmin";
         public const string ADMIN = "Admin";
         public const string USER = "User";
         

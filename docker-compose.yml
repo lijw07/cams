@@ -1,8 +1,35 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: "${COMPOSE_PROJECT_NAME:-cams}-frontend"
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=/api
+      - VITE_PROXY_TARGET=http://backend:8080
+    volumes:
+      - ./frontend:/app:consistent
+      - /app/node_modules
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - cams-network
+    restart: unless-stopped
+
   backend:
     build:
       context: ./
-      dockerfile: Dockerfile
+      dockerfile: Backend/Dockerfile
       target: dev
     container_name: "${COMPOSE_PROJECT_NAME:-cams}-backend"
     ports:
@@ -69,11 +96,11 @@ services:
     volumes:
       - sql_data:/var/opt/mssql
     healthcheck:
-      test: [ "CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/1433' || exit 1" ]
-      interval: 30s
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$SA_PASSWORD\" -Q \"SELECT 1\" -C -l 30"]
+      interval: 15s
       timeout: 10s
-      retries: 5
-      start_period: 60s
+      retries: 10
+      start_period: 45s
     networks:
       - cams-network
     restart: unless-stopped
@@ -93,3 +120,5 @@ volumes:
     name: "${COMPOSE_PROJECT_NAME:-cams}-backend-bin"
   dotnet_nuget:
     name: "${COMPOSE_PROJECT_NAME:-cams}-dotnet-nuget"
+  frontend_node_modules:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-frontend-node-modules"

@@ -7,6 +7,7 @@ namespace cams.Backend.Services
     {
         Task<LoginResponse?> AuthenticateAsync(LoginRequest request);
         Task<User?> ValidateUserAsync(string username, string password);
+        Task<RegisterResponse?> RegisterAsync(RegisterRequest request);
         string GenerateJwtToken(User user);
         string GenerateRefreshToken();
         Task<bool> ValidateRefreshTokenAsync(string username, string refreshToken);

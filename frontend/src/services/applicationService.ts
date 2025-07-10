@@ -43,6 +43,7 @@ export const applicationService = {
 
   // Combined application + connection operations
   async createApplicationWithConnection(data: ApplicationWithConnectionRequest): Promise<ApplicationWithConnectionResponse> {
+    console.log('Sending application with connection data:', data);
     return apiService.post('/application/with-connection', data);
   },
 

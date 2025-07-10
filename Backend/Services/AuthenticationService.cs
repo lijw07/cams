@@ -4,60 +4,25 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 using cams.Backend.Configuration;
 using cams.Backend.Model;
 using cams.Backend.View;
+using cams.Backend.Data;
+using cams.Backend.Mappers;
 
 namespace cams.Backend.Services
 {
-    public class AuthenticationService : IAuthenticationService
+    public class AuthenticationService(
+        IOptions<JwtSettings> jwtSettings, 
+        ILogger<AuthenticationService> logger,
+        ApplicationDbContext context,
+        IUserMapper userMapper)
+        : IAuthenticationService
     {
-        private readonly JwtSettings _jwtSettings;
-        private readonly ILogger<AuthenticationService> _logger;
-        
-        // In a real application, this would be replaced with a database context
-        private static readonly List<User> _users = new()
-        {
-            new User
-            {
-                Id = 1,
-                Username = "platformadmin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
-                Email = "platformadmin@example.com",
-                FirstName = "Platform",
-                LastName = "Admin",
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            },
-            new User
-            {
-                Id = 2,
-                Username = "admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
-                Email = "admin@example.com",
-                FirstName = "Admin",
-                LastName = "User",
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            },
-            new User
-            {
-                Id = 3,
-                Username = "user",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("user123"),
-                Email = "user@example.com",
-                FirstName = "Regular",
-                LastName = "User",
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            }
-        };
-
-        public AuthenticationService(IOptions<JwtSettings> jwtSettings, ILogger<AuthenticationService> logger)
-        {
-            _jwtSettings = jwtSettings.Value;
-            _logger = logger;
-        }
+        private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+        private readonly ApplicationDbContext _context = context;
+        private readonly IUserMapper _userMapper = userMapper;
 
         public async Task<LoginResponse?> AuthenticateAsync(LoginRequest request)
         {
@@ -65,7 +30,7 @@ namespace cams.Backend.Services
             
             if (user == null)
             {
-                _logger.LogWarning("Authentication failed for user: {Username}", request.Username);
+                logger.LogWarning("Authentication failed for user: {Username}", request.Username);
                 return null;
             }
 
@@ -76,8 +41,12 @@ namespace cams.Backend.Services
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
             user.LastLoginAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
 
-            _logger.LogInformation("User {Username} authenticated successfully", user.Username);
+            logger.LogInformation("User {Username} authenticated successfully", user.Username);
 
             return new LoginResponse
             {
@@ -85,24 +54,120 @@ namespace cams.Backend.Services
                 RefreshToken = refreshToken,
                 Expiration = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpirationMinutes),
                 Username = user.Username,
-                Email = user.Email
+                Email = user.Email,
+                UserId = user.Id
             };
         }
 
         public async Task<User?> ValidateUserAsync(string username, string password)
         {
-            await Task.CompletedTask; // Simulate async database operation
-            
-            var user = _users.FirstOrDefault(u => 
-                u.Username.Equals(username, StringComparison.OrdinalIgnoreCase) && 
-                u.IsActive);
-            
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+                
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 return null;
             }
 
             return user;
+        }
+        
+        public async Task<RegisterResponse?> RegisterAsync(RegisterRequest request)
+        {
+            // Validate request
+            if (string.IsNullOrWhiteSpace(request.Username) || 
+                string.IsNullOrWhiteSpace(request.Email) || 
+                string.IsNullOrWhiteSpace(request.Password))
+            {
+                return new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Username, email, and password are required"
+                };
+            }
+            
+            if (request.Password != request.ConfirmPassword)
+            {
+                return new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Passwords do not match"
+                };
+            }
+            
+            // Check if username or email already exists
+            if (await _context.Users.AnyAsync(u => u.Username == request.Username && u.IsActive))
+            {
+                return new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Username is already taken"
+                };
+            }
+            
+            if (await _context.Users.AnyAsync(u => u.Email == request.Email && u.IsActive))
+            {
+                return new RegisterResponse
+                {
+                    Success = false,
+                    Message = "Email is already registered"
+                };
+            }
+            
+            // Create new user
+            var newUser = new User
+            {
+                Username = request.Username,
+                Email = request.Email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
+                FirstName = request.FirstName,
+                LastName = request.LastName,
+                PhoneNumber = request.PhoneNumber,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+            
+            // Add user to database
+            _context.Users.Add(newUser);
+            await _context.SaveChangesAsync();
+            
+            // Get the default User role
+            var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User" && r.IsActive);
+            if (userRole != null)
+            {
+                // Assign default User role
+                var newUserRole = new UserRole
+                {
+                    UserId = newUser.Id,
+                    RoleId = userRole.Id,
+                    IsActive = true,
+                    AssignedAt = DateTime.UtcNow
+                };
+                
+                _context.UserRoles.Add(newUserRole);
+                await _context.SaveChangesAsync();
+                
+                // Load the user with roles for return
+                newUser.UserRoles = new List<UserRole> { newUserRole };
+                newUserRole.Role = userRole;
+            }
+            
+            logger.LogInformation("User {Username} registered successfully with ID {UserId}", 
+                newUser.Username, newUser.Id);
+            
+            // Map to profile response for return
+            var userProfile = _userMapper.MapToProfileResponse(newUser, 0, 0);
+            
+            return new RegisterResponse
+            {
+                Success = true,
+                Message = "User registered successfully",
+                User = userProfile,
+                CreatedAt = newUser.CreatedAt
+            };
         }
 
         public string GenerateJwtToken(User user)
@@ -117,6 +182,12 @@ namespace cams.Backend.Services
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
+            
+            // Add role claims
+            foreach (var userRole in user.UserRoles.Where(ur => ur.IsActive && ur.Role.IsActive))
+            {
+                claims.Add(new Claim(ClaimTypes.Role, userRole.Role.Name));
+            }
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
@@ -143,10 +214,8 @@ namespace cams.Backend.Services
 
         public async Task<bool> ValidateRefreshTokenAsync(string username, string refreshToken)
         {
-            await Task.CompletedTask; // Simulate async database operation
-            
-            var user = _users.FirstOrDefault(u => 
-                u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
             
             return user != null && 
                    user.RefreshToken == refreshToken && 
@@ -155,14 +224,14 @@ namespace cams.Backend.Services
 
         public async Task<LoginResponse?> RefreshTokenAsync(string username, string refreshToken)
         {
-            await Task.CompletedTask; // Simulate async database operation
-            
-            var user = _users.FirstOrDefault(u => 
-                u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
             
             if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
-                _logger.LogWarning("Invalid refresh token for user: {Username}", username);
+                logger.LogWarning("Invalid refresh token for user: {Username}", username);
                 return null;
             }
 
@@ -174,8 +243,12 @@ namespace cams.Backend.Services
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
             user.LastLoginAt = DateTime.UtcNow;
+            user.UpdatedAt = DateTime.UtcNow;
+            
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Token refreshed successfully for user: {Username}", username);
+            logger.LogInformation("Token refreshed successfully for user: {Username}", username);
 
             return new LoginResponse
             {

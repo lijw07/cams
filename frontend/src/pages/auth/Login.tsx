@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Database, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -48,7 +48,7 @@ const Login: React.FC = () => {
             Sign in to CAMS
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
-            Connection & Application Management System
+            Centralized Application Management System
           </p>
         </div>
         
@@ -135,17 +135,6 @@ const Login: React.FC = () => {
             </button>
           </div>
 
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link
-                to="/register"
-                className="font-medium text-primary hover:text-primary-dark"
-              >
-                Sign up
-              </Link>
-            </p>
-          </div>
         </form>
       </div>
     </div>
