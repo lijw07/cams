@@ -10,7 +10,7 @@
 
 *A robust, enterprise-grade API for managing database connections and applications with comprehensive security, logging, and monitoring.*
 
-[🚀 Quick Start](#-quick-start) • [📖 API Documentation](#-api-documentation) • [🏗️ Architecture](#️-architecture) • [🔐 Security](#-security-features) • [🐳 Docker](#-docker=configurations)
+[🚀 Quick Start](#-quick-start) • [📖 API Documentation](#-api-documentation) • [🏗️ Architecture](#️-architecture) • [🔐 Security](#-security-features) • [🐳 Docker](#-docker-configuration)
 
 </div>
 
