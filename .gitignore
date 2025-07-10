@@ -132,4 +132,5 @@ temp/
 *.tmp
 *.temp
 
-# NOTE: CLAUDE.md and Migrations should be included in the repository
+CLAUDE.md
+/Migrations
