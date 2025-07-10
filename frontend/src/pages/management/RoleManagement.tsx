@@ -12,7 +12,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { roleService, Role } from '../../services/roleService';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const RoleManagementPage: React.FC = () => {
   const navigate = useNavigate();
