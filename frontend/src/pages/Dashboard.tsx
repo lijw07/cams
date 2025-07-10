@@ -5,26 +5,72 @@ import { useAuth } from '../contexts/AuthContext';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
 import { applicationService } from '../services/applicationService';
 import { ApplicationWithConnectionRequest } from '../types';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../contexts/NotificationContext';
+import { useEventTracking } from '../hooks/useEventTracking';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addNotification } = useNotifications();
+  const { trackApplication, trackConnection, trackError } = useEventTracking();
 
   const handleCreateApplicationWithConnection = async (data: ApplicationWithConnectionRequest) => {
     try {
       const response = await applicationService.createApplicationWithConnection(data);
-      toast.success('Application and connection created successfully');
+      
+      // Track application creation
+      trackApplication(
+        'create',
+        response.application.id,
+        response.application.name,
+        data.databaseConnection.databaseType
+      );
+      
+      // Track connection creation and test
+      trackConnection('create', true, data.databaseConnection.databaseType);
+      trackConnection('test', response.connectionTestResult, data.databaseConnection.databaseType);
+      
+      addNotification({
+        title: 'Application Created',
+        message: 'Application and connection created successfully',
+        type: 'success',
+        source: 'Dashboard'
+      });
+      
       if (response.connectionTestResult) {
-        toast.success('Database connection test passed');
+        addNotification({
+          title: 'Connection Test',
+          message: 'Database connection test passed',
+          type: 'success',
+          source: 'Dashboard'
+        });
       } else if (response.connectionTestMessage) {
-        toast.error(`Connection test failed: ${response.connectionTestMessage}`);
+        addNotification({
+          title: 'Connection Test Failed',
+          message: `Connection test failed: ${response.connectionTestMessage}`,
+          type: 'error',
+          source: 'Dashboard'
+        });
       }
+      
       navigate(`/applications/${response.application.id}`);
     } catch (error) {
       console.error('Error creating application with connection:', error);
-      toast.error('Failed to create application with connection');
+      
+      // Track application creation failure
+      trackError(
+        error instanceof Error ? error.message : 'Failed to create application',
+        'APPLICATION_CREATE_ERROR',
+        'Dashboard.tsx'
+      );
+      
+      addNotification({
+        title: 'Creation Failed',
+        message: 'Failed to create application with connection',
+        type: 'error',
+        source: 'Dashboard'
+      });
       throw error;
     }
   };

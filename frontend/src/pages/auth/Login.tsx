@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Database, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEventTracking } from '../../hooks/useEventTracking';
 
 interface LoginFormData {
   username: string;
@@ -14,6 +15,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { trackAuthentication, trackError } = useEventTracking();
   
   const {
     register,
@@ -24,11 +26,28 @@ const Login: React.FC = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
+    
+    // Track login attempt
+    trackAuthentication('login_attempt', undefined, 'form');
+    
     try {
       await login(data.username, data.password);
+      
+      // Track successful login
+      trackAuthentication('login', true, 'form');
+      
       navigate('/dashboard');
     } catch (error) {
       console.error('Login failed:', error);
+      
+      // Track failed login
+      trackAuthentication('login', false, 'form');
+      trackError(
+        error instanceof Error ? error.message : 'Login failed',
+        'AUTH_ERROR',
+        'Login.tsx'
+      );
+      
       setError('root', {
         message: error instanceof Error ? error.message : 'Login failed. Please try again.'
       });

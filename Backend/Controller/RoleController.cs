@@ -43,6 +43,9 @@ namespace cams.Backend.Controller
                     description: $"Retrieved all roles - {roles.Count()} roles found"
                 );
 
+                _logger.LogInformation("User {UserId} retrieved {RoleCount} roles",
+                    currentUserId, roles.Count());
+
                 return Ok(roles);
             }
             catch (Exception ex)
@@ -74,6 +77,9 @@ namespace cams.Backend.Controller
                     entityName: role.Name,
                     description: $"Retrieved role {role.Name}"
                 );
+
+                _logger.LogInformation("User {UserId} retrieved role {RoleId} ({RoleName})",
+                    currentUserId, id, role.Name);
 
                 return Ok(role);
             }
@@ -107,6 +113,9 @@ namespace cams.Backend.Controller
                     description: $"Created new role: {role.Name}",
                     newValues: $"Name: {role.Name}, Description: {role.Description}"
                 );
+
+                _logger.LogInformation("User {UserId} created role {RoleId} ({RoleName})",
+                    currentUserId, role.Id, role.Name);
 
                 return CreatedAtAction(
                     nameof(GetRoleById),
@@ -153,6 +162,9 @@ namespace cams.Backend.Controller
                     newValues: $"Name: {role.Name}, Description: {role.Description}"
                 );
 
+                _logger.LogInformation("User {UserId} updated role {RoleId} ({RoleName})",
+                    currentUserId, id, role.Name);
+
                 return Ok(role);
             }
             catch (InvalidOperationException ex)
@@ -188,6 +200,9 @@ namespace cams.Backend.Controller
                     description: $"Deleted role with ID {id}"
                 );
 
+                _logger.LogInformation("User {UserId} deleted role {RoleId}",
+                    currentUserId, id);
+
                 return NoContent();
             }
             catch (Exception ex)
@@ -217,6 +232,9 @@ namespace cams.Backend.Controller
                     "UserRole",
                     description: $"Assigned role {roleId} to user {userId}"
                 );
+
+                _logger.LogInformation("User {UserId} assigned role {RoleId} to user {TargetUserId}",
+                    currentUserId, roleId, userId);
 
                 return Ok(new { message = "Role assigned successfully" });
             }
@@ -251,6 +269,9 @@ namespace cams.Backend.Controller
                     "UserRole",
                     description: $"Removed role {roleId} from user {userId}"
                 );
+
+                _logger.LogInformation("User {UserId} removed role {RoleId} from user {TargetUserId}",
+                    currentUserId, roleId, userId);
 
                 return Ok(new { message = "Role removed successfully" });
             }

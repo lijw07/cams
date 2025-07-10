@@ -111,6 +111,9 @@ namespace cams.Backend.Controller
                     description: $"Retrieved users list - Page: {request.PageNumber}, Size: {request.PageSize}, Total: {totalCount}, Role: {(isPlatformAdmin ? "Platform_Admin" : "Admin")}"
                 );
 
+                logger.LogInformation("User {UserId} ({Role}) retrieved {UserCount} users (Page: {PageNumber}, Size: {PageSize})",
+                    currentUserId, isPlatformAdmin ? "Platform_Admin" : "Admin", users.Count, request.PageNumber, request.PageSize);
+
                 return Ok(result);
             }
             catch (Exception ex)
@@ -190,6 +193,9 @@ namespace cams.Backend.Controller
                     entityName: user.Username,
                     description: $"Retrieved user details: {user.Username}"
                 );
+
+                logger.LogInformation("User {UserId} retrieved details for user {TargetUserId} ({TargetUsername})",
+                    currentUserId, id, user.Username);
 
                 return Ok(user);
             }
