@@ -55,6 +55,9 @@ builder.Services.AddHealthChecks();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);
 
+// Configure Email settings
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+
 // Add authentication
 var key = Encoding.ASCII.GetBytes(jwtSettings.Get<JwtSettings>()?.Secret ?? throw new InvalidOperationException("JWT Secret is not configured"));
 
@@ -87,9 +90,14 @@ builder.Services.AddScoped<IDatabaseConnectionService, DatabaseConnectionService
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
 
 // Register mappers
 builder.Services.AddScoped<IUserMapper, UserMapper>();
+builder.Services.AddScoped<IApplicationMapper, ApplicationMapper>();
+builder.Services.AddScoped<IDatabaseConnectionMapper, DatabaseConnectionMapper>();
+builder.Services.AddScoped<IApplicationWithConnectionMapper, ApplicationWithConnectionMapper>();
 
 // Add CORS
 builder.Services.AddCors(options =>

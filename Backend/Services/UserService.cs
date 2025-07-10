@@ -70,6 +70,13 @@ namespace cams.Backend.Services
             return user != null ? _userMapper.MapToProfileSummaryResponse(user) : null;
         }
 
+        public async Task<User?> GetUserAsync(int userId)
+        {
+            await Task.CompletedTask;
+            
+            return _users.FirstOrDefault(u => u.Id == userId && u.IsActive);
+        }
+
         public async Task<UserProfileResponse?> UpdateUserProfileAsync(int userId, UserProfileRequest request)
         {
             await Task.CompletedTask;

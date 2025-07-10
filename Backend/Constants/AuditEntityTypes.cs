@@ -7,5 +7,6 @@ namespace cams.Backend.Constants
         public const string DATABASE_CONNECTION = "DatabaseConnection";
         public const string AUTH_SESSION = "AuthSession";
         public const string SYSTEM_CONFIG = "SystemConfig";
+        public const string EMAIL = "Email";
     }
 }

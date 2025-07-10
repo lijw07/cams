@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
@@ -6,7 +5,6 @@ using cams.Backend.View;
 using cams.Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
-using cams.Backend.Model;
 
 namespace cams.Backend.Controller
 {
@@ -16,7 +14,8 @@ namespace cams.Backend.Controller
     public class UserController(
         IUserService userService,
         ILogger<UserController> logger,
-        ILoggingService loggingService)
+        ILoggingService loggingService,
+        IEmailService emailService)
         : ControllerBase
     {
         [HttpGet("profile")]
@@ -109,11 +108,44 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
+                var user = await userService.GetUserAsync(userId);
+                
+                if (user == null)
+                {
+                    return HttpResponseHelper.CreateNotFoundResponse("User profile");
+                }
+                
+                // Track changes for email notification
+                var changedFields = new List<string>();
+                if (user.FirstName != request.FirstName)
+                    changedFields.Add($"First Name: {user.FirstName} → {request.FirstName}");
+                if (user.LastName != request.LastName)
+                    changedFields.Add($"Last Name: {user.LastName} → {request.LastName}");
+                if (user.PhoneNumber != request.PhoneNumber)
+                    changedFields.Add($"Phone Number: {user.PhoneNumber ?? "(not set)"} → {request.PhoneNumber ?? "(not set)"}");
+
                 var updatedProfile = await userService.UpdateUserProfileAsync(userId, request);
                 
                 if (updatedProfile == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User profile");
+                }
+                
+                // Send email notification if there were changes
+                if (changedFields.Count > 0)
+                {
+                    try
+                    {
+                        var updatedUser = await userService.GetUserAsync(userId);
+                        if (updatedUser != null)
+                        {
+                            await emailService.SendProfileUpdateEmailAsync(updatedUser, string.Join("\n", changedFields));
+                        }
+                    }
+                    catch (Exception emailEx)
+                    {
+                        logger.LogWarning(emailEx, "Failed to send profile update email to user {UserId}", userId);
+                    }
                 }
                 
                 // Log audit event for profile update
@@ -187,6 +219,20 @@ namespace cams.Backend.Controller
                     severity: SecuritySeverity.Information.ToString()
                 );
                 
+                // Send password change email notification
+                try
+                {
+                    var user = await userService.GetUserAsync(userId);
+                    if (user != null)
+                    {
+                        await emailService.SendPasswordChangeEmailAsync(user);
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    logger.LogWarning(emailEx, "Failed to send password change email to user {UserId}", userId);
+                }
+                
                 // Log audit event for password change
                 await loggingService.LogAuditAsync(
                     userId,
@@ -227,6 +273,9 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
+                var user = await userService.GetUserAsync(userId);
+                var oldEmail = user?.Email;
+                
                 var result = await userService.ChangeEmailAsync(userId, request);
                 
                 if (!result.Success)
@@ -256,6 +305,23 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
+                
+                // Send email change notification
+                if (result.Success && !string.IsNullOrEmpty(oldEmail))
+                {
+                    try
+                    {
+                        var updatedUser = await userService.GetUserAsync(userId);
+                        if (updatedUser != null)
+                        {
+                            await emailService.SendEmailChangeNotificationAsync(updatedUser, oldEmail, request.NewEmail);
+                        }
+                    }
+                    catch (Exception emailEx)
+                    {
+                        logger.LogWarning(emailEx, "Failed to send email change notification to user {UserId}", userId);
+                    }
+                }
                 
                 // Log audit event for email change
                 await loggingService.LogAuditAsync(
@@ -377,6 +443,20 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
+                
+                // Send account deactivation email notification
+                try
+                {
+                    var user = await userService.GetUserAsync(userId);
+                    if (user != null)
+                    {
+                        await emailService.SendAccountDeactivationEmailAsync(user);
+                    }
+                }
+                catch (Exception emailEx)
+                {
+                    logger.LogWarning(emailEx, "Failed to send account deactivation email to user {UserId}", userId);
+                }
                 
                 // Log audit event for account deactivation
                 await loggingService.LogAuditAsync(

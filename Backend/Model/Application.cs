@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using cams.Backend.Enums;
 
 namespace cams.Backend.Model
 {

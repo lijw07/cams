@@ -5,7 +5,6 @@ using cams.Backend.View;
 using cams.Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
-using cams.Backend.Model;
 
 namespace cams.Backend.Controller
 {

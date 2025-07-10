@@ -1,4 +1,3 @@
-using cams.Backend.Model;
 using cams.Backend.View;
 
 namespace cams.Backend.Services

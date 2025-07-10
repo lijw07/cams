@@ -7,6 +7,7 @@ namespace cams.Backend.Services
     {
         Task<UserProfileResponse?> GetUserProfileAsync(int userId);
         Task<UserProfileSummaryResponse?> GetUserProfileSummaryAsync(int userId);
+        Task<User?> GetUserAsync(int userId);
         Task<UserProfileResponse?> UpdateUserProfileAsync(int userId, UserProfileRequest request);
         Task<PasswordChangeResponse> ChangePasswordAsync(int userId, ChangePasswordRequest request);
         Task<EmailChangeResponse> ChangeEmailAsync(int userId, ChangeEmailRequest request);

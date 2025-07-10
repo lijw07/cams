@@ -1,6 +1,5 @@
 using cams.Backend.View;
 using cams.Backend.Enums;
-using cams.Backend.Model;
 using cams.Backend.Constants;
 
 namespace cams.Backend.Validators

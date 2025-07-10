@@ -1,5 +1,4 @@
 using cams.Backend.Enums;
-using cams.Backend.Model;
 
 namespace cams.Backend.Helpers
 {

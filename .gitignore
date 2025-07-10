@@ -44,11 +44,16 @@ out/
 .idea/
 *.sln.iml
 
-# ASP.NET Environment files
-appsettings.Development.json
-appsettings.Production.json
-appsettings.Staging.json
+# ASP.NET Environment files (KEEP appsettings.json for base config)
+appsettings.*.json
+!appsettings.json
 secrets.json
+*.secrets.json
+
+# Environment variables
+.env
+.env.*
+!.env.example
 
 # ------------------------------------------
 # Docker
@@ -102,7 +107,8 @@ lcov-report/
 /Prototype/ClientApp/.env.test.local
 /Prototype/ClientApp/.env.production.local
 /Prototype/obj
-/CLAUDE.md
-env
-CLEAN_CODE_PATTERNS.md
+# Remove these - they should be included:
+# CLAUDE.md - project documentation should be in repo
+# Migrations - database migrations should be in repo
+CLAUDE.md
 /Migrations

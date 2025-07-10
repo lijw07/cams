@@ -1,8 +1,6 @@
-using System.Data;
 using Microsoft.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
 using cams.Backend.Configuration;
 using cams.Backend.Model;

@@ -1,5 +1,3 @@
-using System;
-
 namespace cams.Backend.View
 {
     public class LoginResponse

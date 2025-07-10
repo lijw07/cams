@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using cams.Backend.Enums;
-using cams.Backend.Model;
 
 namespace cams.Backend.View
 {

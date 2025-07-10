@@ -1,4 +1,3 @@
-using cams.Backend.Model;
 using cams.Backend.View;
 
 namespace cams.Backend.Services
@@ -14,5 +13,10 @@ namespace cams.Backend.Services
         Task<bool> UpdateLastAccessedAsync(int id, int userId);
         Task<IEnumerable<DatabaseConnectionSummary>> GetApplicationConnectionsAsync(int applicationId, int userId);
         Task<bool> ValidateApplicationAccessAsync(int applicationId, int userId);
+        
+        // Combined application and database connection operations
+        Task<ApplicationWithConnectionResponse> CreateApplicationWithConnectionAsync(ApplicationWithConnectionRequest request, int userId);
+        Task<ApplicationWithConnectionResponse?> UpdateApplicationWithConnectionAsync(ApplicationWithConnectionUpdateRequest request, int userId);
+        Task<ApplicationWithConnectionResponse?> GetApplicationWithPrimaryConnectionAsync(int applicationId, int userId);
     }
 }

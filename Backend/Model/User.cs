@@ -1,4 +1,3 @@
-using System;
 using System.ComponentModel.DataAnnotations;
 
 namespace cams.Backend.Model
@@ -40,5 +39,7 @@ namespace cams.Backend.Model
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         
         public virtual ICollection<UserRole> AssignedRoles { get; set; } = new List<UserRole>();
+        
+        public virtual ICollection<EmailMessage> SentEmails { get; set; } = new List<EmailMessage>();
     }
 }

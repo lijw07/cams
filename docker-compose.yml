@@ -26,6 +26,16 @@ services:
       - JWT_REFRESH_EXPIRES_IN_DAYS=7
       # Security Configuration
       - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      # Email Configuration (Mailtrap.io)
+      - EmailSettings__SmtpHost=live.smtp.mailtrap.io
+      - EmailSettings__SmtpPort=587
+      - EmailSettings__SmtpUsername=${MAILTRAP_USERNAME:-}
+      - EmailSettings__SmtpPassword=${MAILTRAP_PASSWORD:-}
+      - EmailSettings__FromEmail=${MAILTRAP_FROM_EMAIL:-mailtrap@example.com}
+      - EmailSettings__FromName=CAMS System
+      - EmailSettings__EnableSsl=true
+      - EmailSettings__UseAuthentication=true
+      - EmailSettings__TimeoutSeconds=30
       # Logging
       - Logging__LogLevel__Default=Information
       - Logging__LogLevel__Microsoft.AspNetCore=Warning

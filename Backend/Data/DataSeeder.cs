@@ -16,6 +16,9 @@ namespace cams.Backend.Data
                 // Seed roles
                 await SeedRolesAsync(context);
                 
+                // Seed default users
+                await SeedDefaultUsersAsync(context);
+                
                 // Seed default user roles
                 await SeedDefaultUserRolesAsync(context);
                 
@@ -57,6 +60,55 @@ namespace cams.Backend.Data
             Console.WriteLine($"Seeded {roles.Count} default roles");
         }
         
+        private static async Task SeedDefaultUsersAsync(ApplicationDbContext context)
+        {
+            // Check if users already exist
+            if (await context.Users.AnyAsync())
+            {
+                return; // Users already seeded
+            }
+            
+            var users = new List<User>
+            {
+                new User
+                {
+                    Username = "platformadmin",
+                    Email = "platformadmin@cams.local",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("PlatformAdmin123!"),
+                    FirstName = "Platform",
+                    LastName = "Administrator",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new User
+                {
+                    Username = "admin",
+                    Email = "admin@cams.local",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+                    FirstName = "System",
+                    LastName = "Administrator",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                },
+                new User
+                {
+                    Username = "user",
+                    Email = "user@cams.local",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("User123!"),
+                    FirstName = "Demo",
+                    LastName = "User",
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                }
+            };
+            
+            await context.Users.AddRangeAsync(users);
+            Console.WriteLine($"Seeded {users.Count} default users");
+        }
+        
         private static async Task SeedDefaultUserRolesAsync(ApplicationDbContext context)
         {
             // Check if user roles already exist
@@ -76,12 +128,23 @@ namespace cams.Backend.Data
                 return;
             }
             
+            // Get users by username
+            var platformAdminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "platformadmin");
+            var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+            var regularUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "user");
+            
+            if (platformAdminUser == null || adminUser == null || regularUser == null)
+            {
+                Console.WriteLine("Users not found, cannot seed user roles");
+                return;
+            }
+            
             var userRoles = new List<UserRole>
             {
                 // Platform Admin user gets Platform_Admin role
                 new UserRole
                 {
-                    UserId = 1, // platformadmin
+                    UserId = platformAdminUser.Id,
                     RoleId = platformAdminRole.Id,
                     AssignedAt = DateTime.UtcNow,
                     IsActive = true
@@ -89,7 +152,7 @@ namespace cams.Backend.Data
                 // Admin user gets Admin role
                 new UserRole
                 {
-                    UserId = 2, // admin
+                    UserId = adminUser.Id,
                     RoleId = adminRole.Id,
                     AssignedAt = DateTime.UtcNow,
                     IsActive = true
@@ -97,7 +160,7 @@ namespace cams.Backend.Data
                 // Regular user gets User role
                 new UserRole
                 {
-                    UserId = 3, // user
+                    UserId = regularUser.Id,
                     RoleId = userRole.Id,
                     AssignedAt = DateTime.UtcNow,
                     IsActive = true

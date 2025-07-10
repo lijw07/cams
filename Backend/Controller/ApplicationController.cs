@@ -5,7 +5,6 @@ using cams.Backend.View;
 using cams.Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
-using cams.Backend.Model;
 
 namespace cams.Backend.Controller
 {
@@ -352,6 +351,148 @@ namespace cams.Backend.Controller
                 logger.LogError(ex, "Error updating last accessed time for application {ApplicationId} for user {UserId}", 
                     id, UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse("Error updating last accessed time");
+            }
+        }
+
+        [HttpPost("with-connection")]
+        public async Task<IActionResult> CreateApplicationWithConnection([FromBody] ApplicationWithConnectionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                    ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                        ));
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, request.ApplicationName);
+                
+                var response = await applicationService.CreateApplicationWithConnectionAsync(request, userId);
+                
+                logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
+                    response.Application.Id, response.Application.Name, response.DatabaseConnection.Id, response.DatabaseConnection.Name, userId);
+                
+                // Log audit event for combined creation
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Create.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: response.Application.Id,
+                    entityName: response.Application.Name,
+                    newValues: $"Application: {response.Application.Name}, Connection: {response.DatabaseConnection.Name}",
+                    description: "Created application with database connection",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return CreatedAtAction(nameof(GetApplication), new { id = response.Application.Id }, response);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error creating application with connection {ApplicationName} for user {UserId}", request.ApplicationName, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error creating application with connection");
+            }
+        }
+
+        [HttpPut("{id}/with-connection")]
+        public async Task<IActionResult> UpdateApplicationWithConnection(int id, [FromBody] ApplicationWithConnectionUpdateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                    ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                        ));
+                }
+
+                if (id != request.ApplicationId)
+                {
+                    return HttpResponseHelper.CreateBadRequestResponse("Application ID mismatch");
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} updating application {ApplicationId} with connection {ConnectionId}", 
+                    userId, request.ApplicationId, request.ConnectionId);
+                
+                var response = await applicationService.UpdateApplicationWithConnectionAsync(request, userId);
+                
+                if (response == null)
+                {
+                    logger.LogWarning("Application {ApplicationId} or connection {ConnectionId} not found for update by user {UserId}", 
+                        request.ApplicationId, request.ConnectionId, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application or connection");
+                }
+
+                logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
+                    response.Application.Id, response.Application.Name, response.DatabaseConnection.Id, response.DatabaseConnection.Name, userId);
+
+                // Log audit event for combined update
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Update.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: response.Application.Id,
+                    entityName: response.Application.Name,
+                    newValues: $"Application: {response.Application.Name}, Connection: {response.DatabaseConnection.Name}",
+                    description: "Updated application with database connection",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating application {ApplicationId} with connection for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error updating application with connection");
+            }
+        }
+
+        [HttpGet("{id}/with-primary-connection")]
+        public async Task<IActionResult> GetApplicationWithPrimaryConnection(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} requested application {ApplicationId} with primary connection", userId, id);
+                
+                var response = await applicationService.GetApplicationWithPrimaryConnectionAsync(id, userId);
+                
+                if (response == null)
+                {
+                    logger.LogWarning("Application {ApplicationId} with primary connection not found for user {UserId}", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application or primary connection");
+                }
+
+                logger.LogInformation("Successfully retrieved application {ApplicationId} with primary connection for user {UserId}", id, userId);
+                
+                // Log audit event for retrieval
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Read.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: id,
+                    entityName: response.Application.Name,
+                    description: "Retrieved application with primary connection",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving application {ApplicationId} with primary connection for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error retrieving application with connection");
             }
         }
 

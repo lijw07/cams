@@ -37,11 +37,12 @@
 
 ### 📊 **Application Management**
 - **Create, update, and delete applications** with full CRUD operations
-- **Application status management** (Active/Inactive/Archived)
-- **Environment support** (Development, Testing, Staging, Production, Demo)
-- **Version tracking** and tagging system
+- **User-scoped application management** - each user manages their own applications
+- **Application status management** (Active/Inactive toggle)
+- **Environment and version tracking** with metadata support
+- **Tag-based categorization** for application organization
 - **Last accessed tracking** for usage analytics
-- **Application-connection relationship management**
+- **Application-connection relationship management** with connection counts
 - **Comprehensive audit logging** for all operations
 
 ### 🗄️ **Database Connection Management**
@@ -52,6 +53,18 @@
 - **Connection status management** and health monitoring
 - **Dynamic connection string building** with validation
 - **Application-scoped connections** for better organization
+
+### 📧 **Email Messaging System**
+- **Send and receive emails** with rich HTML content support
+- **Draft management** - save, edit, and send drafts
+- **File attachments** with base64 encoding support
+- **Email filtering and search** with advanced query options
+- **Email statistics** and usage analytics
+- **Priority levels** (Low, Normal, High, Urgent)
+- **Read/unread status tracking** with timestamps
+- **Bulk operations** for email management
+- **Email validation** and address verification
+- **Mailtrap.io integration** for development and testing
 
 ### 📝 **Enterprise Logging & Monitoring**
 - **Structured logging** with correlation IDs
@@ -118,9 +131,9 @@ docker-compose up -d
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| **API** | http://localhost:5000 | Main API endpoints |
-| **Swagger UI** | http://localhost:5000/swagger | Interactive API documentation |
-| **Health Check** | http://localhost:5000/health | Application health status |
+| **API** | http://localhost:8080 | Main API endpoints |
+| **Swagger UI** | http://localhost:8080/swagger | Interactive API documentation |
+| **Health Check** | http://localhost:8080/health | Application health status |
 | **SQL Server** | localhost:1433 | Database server (Docker) |
 
 ---
@@ -140,8 +153,8 @@ docker-compose up -d
 ```json
 POST /login/authenticate
 {
-  "username": "admin",
-  "password": "admin123"
+  "username": "platformadmin",
+  "password": "PlatformAdmin123!"
 }
 
 Response:
@@ -149,7 +162,8 @@ Response:
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "refreshToken": "abc123...",
   "expiration": "2024-07-10T15:30:00Z",
-  "username": "admin",
+  "username": "platformadmin",
+  "email": "platformadmin@cams.local",
   "userId": 1
 }
 ```
@@ -220,6 +234,77 @@ Response:
 - Failed (2) - Connection failed
 - Testing (3) - Currently being tested
 
+### 📧 Email Messaging System
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/email/send` | POST | Send an email to recipients |
+| `/email` | GET | List emails with filtering options |
+| `/email/{id}` | GET | Get specific email details |
+| `/email/sent` | GET | Get sent emails |
+| `/email/drafts` | GET | Get draft emails |
+| `/email/unread` | GET | Get unread emails |
+| `/email/drafts` | POST | Save email as draft |
+| `/email/drafts/{id}` | PUT | Update draft email |
+| `/email/drafts/{id}/send` | POST | Send draft email |
+| `/email/drafts/{id}` | DELETE | Delete draft email |
+| `/email/{id}/read` | PUT | Mark email as read |
+| `/email/{id}/unread` | PUT | Mark email as unread |
+| `/email/{id}` | DELETE | Delete email |
+| `/email/bulk` | DELETE | Delete multiple emails |
+| `/email/stats` | GET | Get email statistics |
+| `/email/attachments/{id}` | GET | Get attachment info |
+| `/email/attachments/{id}/download` | GET | Download attachment |
+| `/email/validate-email` | POST | Validate email address |
+
+**Email Priority Levels:**
+- Low (1) - Low priority emails
+- Normal (2) - Standard priority (default)
+- High (3) - High priority emails
+- Urgent (4) - Urgent emails requiring immediate attention
+
+**Email Status Types:**
+- Draft (1) - Saved but not sent
+- Queued (2) - Queued for sending
+- Sending (3) - Currently being sent
+- Sent (4) - Successfully sent
+- Delivered (5) - Delivered to recipient
+- Failed (6) - Failed to send
+- Cancelled (7) - Sending cancelled
+
+**Send Email Example:**
+```json
+POST /email/send
+{
+  "toEmail": "recipient@example.com",
+  "toName": "John Doe",
+  "ccEmails": "cc1@example.com,cc2@example.com",
+  "subject": "Important Update",
+  "body": "<h1>Hello</h1><p>This is an HTML email.</p>",
+  "isHtml": true,
+  "priority": 2,
+  "attachments": [
+    {
+      "fileName": "document.pdf",
+      "contentType": "application/pdf",
+      "fileDataBase64": "JVBERi0xLjQKJeLjz9M..."
+    }
+  ]
+}
+```
+
+**Email Search & Filtering:**
+```bash
+# Search emails by term
+GET /email?searchTerm=project&page=1&pageSize=20
+
+# Filter by status and date range
+GET /email?status=4&fromDate=2024-01-01&toDate=2024-12-31
+
+# Filter by sender/recipient
+GET /email?fromEmail=admin@example.com&toEmail=user@example.com
+```
+
 ### 📋 Complete API Usage Examples
 
 <details>
@@ -227,21 +312,21 @@ Response:
 
 ```bash
 # 1. Login
-curl -X POST http://localhost:5000/login/authenticate \
+curl -X POST http://localhost:8080/login/authenticate \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "password": "admin123"}'
+  -d '{"username": "platformadmin", "password": "PlatformAdmin123!"}'
 
 # 2. Use token for authenticated requests
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:5000/user/profile
+  http://localhost:8080/user/profile
 
 # 3. Refresh token when needed
-curl -X POST http://localhost:5000/login/refresh-token \
+curl -X POST http://localhost:8080/login/refresh-token \
   -H "Content-Type: application/json" \
-  -d '{"username": "admin", "refreshToken": "YOUR_REFRESH_TOKEN"}'
+  -d '{"username": "platformadmin", "refreshToken": "YOUR_REFRESH_TOKEN"}'
 
 # 4. Logout
-curl -X POST http://localhost:5000/login/logout \
+curl -X POST http://localhost:8080/login/logout \
   -H "Authorization: Bearer YOUR_JWT_TOKEN"
 ```
 </details>
@@ -252,23 +337,23 @@ curl -X POST http://localhost:5000/login/logout \
 ```bash
 # Get full profile with statistics
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:5000/user/profile
+  http://localhost:8080/user/profile
 
 # Update profile information
-curl -X PUT http://localhost:5000/user/profile \
+curl -X PUT http://localhost:8080/user/profile \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"firstName": "John", "lastName": "Smith", "phoneNumber": "+1234567890"}'
 
 # Change password
-curl -X POST http://localhost:5000/user/change-password \
+curl -X POST http://localhost:8080/user/change-password \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"currentPassword": "admin123", "newPassword": "NewSecure123!", "confirmNewPassword": "NewSecure123!"}'
 
 # Check email availability
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:5000/user/check-email/newemail@example.com
+  http://localhost:8080/user/check-email/newemail@example.com
 ```
 </details>
 
@@ -277,7 +362,7 @@ curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
 
 ```bash
 # 1. Create application
-curl -X POST http://localhost:5000/application \
+curl -X POST http://localhost:8080/application \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -291,14 +376,14 @@ curl -X POST http://localhost:5000/application \
 
 # 2. Get all applications
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:5000/application
+  http://localhost:8080/application
 
 # 3. Get specific application with connections
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  http://localhost:5000/application/1
+  http://localhost:8080/application/1
 
 # 4. Update application
-curl -X PUT http://localhost:5000/application/1 \
+curl -X PUT http://localhost:8080/application/1 \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -311,7 +396,7 @@ curl -X PUT http://localhost:5000/application/1 \
   }'
 
 # 5. Toggle application status
-curl -X PATCH http://localhost:5000/application/1/toggle \
+curl -X PATCH http://localhost:8080/application/1/toggle \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"isActive": false}'
@@ -323,10 +408,10 @@ curl -X PATCH http://localhost:5000/application/1/toggle \
 
 ```bash
 # 1. Get supported database types (no auth required)
-curl http://localhost:5000/databaseconnection/types
+curl http://localhost:8080/databaseconnection/types
 
 # 2. Create SQL Server connection
-curl -X POST http://localhost:5000/databaseconnection \
+curl -X POST http://localhost:8080/databaseconnection \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -343,7 +428,7 @@ curl -X POST http://localhost:5000/databaseconnection \
   }'
 
 # 3. Create REST API connection
-curl -X POST http://localhost:5000/databaseconnection \
+curl -X POST http://localhost:8080/databaseconnection \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -357,13 +442,13 @@ curl -X POST http://localhost:5000/databaseconnection \
   }'
 
 # 4. Test existing connection
-curl -X POST http://localhost:5000/databaseconnection/test \
+curl -X POST http://localhost:8080/databaseconnection/test \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"connectionId": 1}'
 
 # 5. Test new connection without saving
-curl -X POST http://localhost:5000/databaseconnection/test \
+curl -X POST http://localhost:8080/databaseconnection/test \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -379,10 +464,10 @@ curl -X POST http://localhost:5000/databaseconnection/test \
 
 # 6. Get connections filtered by application
 curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  "http://localhost:5000/databaseconnection?applicationId=1"
+  "http://localhost:8080/databaseconnection?applicationId=1"
 
 # 7. Build connection string
-curl -X POST http://localhost:5000/databaseconnection/connection-string/build \
+curl -X POST http://localhost:8080/databaseconnection/connection-string/build \
   -H "Authorization: Bearer YOUR_JWT_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -393,6 +478,71 @@ curl -X POST http://localhost:5000/databaseconnection/connection-string/build \
     "username": "user",
     "password": "password"
   }'
+```
+</details>
+
+<details>
+<summary><strong>📧 Email Messaging Workflow</strong></summary>
+
+```bash
+# 1. Send an email with attachment
+curl -X POST http://localhost:8080/email/send \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toEmail": "colleague@company.com",
+    "toName": "John Smith",
+    "ccEmails": "manager@company.com",
+    "subject": "Project Status Report",
+    "body": "<h2>Project Update</h2><p>Please find the status report attached.</p>",
+    "isHtml": true,
+    "priority": 2,
+    "attachments": [
+      {
+        "fileName": "report.pdf",
+        "contentType": "application/pdf",
+        "fileDataBase64": "JVBERi0xLjQKJeLjz9MKNCAwIG9iago8..."
+      }
+    ]
+  }'
+
+# 2. Save email as draft
+curl -X POST http://localhost:8080/email/drafts \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "toEmail": "draft@example.com",
+    "subject": "Draft Email",
+    "body": "This is a draft email to be sent later.",
+    "isHtml": false
+  }'
+
+# 3. Send draft email
+curl -X POST http://localhost:8080/email/drafts/1/send \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 4. Get email statistics
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  http://localhost:8080/email/stats
+
+# 5. Search emails
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  "http://localhost:8080/email?searchTerm=project&page=1&pageSize=10"
+
+# 6. Download attachment
+curl -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  http://localhost:8080/email/attachments/1/download \
+  --output downloaded_file.pdf
+
+# 7. Mark email as read
+curl -X PUT http://localhost:8080/email/5/read \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+
+# 8. Delete multiple emails
+curl -X DELETE http://localhost:8080/email/bulk \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[1, 2, 3, 4]'
 ```
 </details>
 
@@ -713,15 +863,18 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 ### 🏥 Health Monitoring
 ```bash
 # Check application health
-curl http://localhost:5000/health
+curl http://localhost:8080/health
 
 # Check with Docker
-docker-compose exec backend curl -f http://localhost:5000/health
+docker-compose exec backend curl -f http://localhost:8080/health
 ```
 
 ### 📋 Default Test Credentials
-For development and testing purposes:
-- **Admin User**: `admin` / `admin123`
-- **Regular User**: `user` / `user123`
+For development and testing purposes (seeded automatically):
+- **Platform Admin**: `platformadmin` / `PlatformAdmin123!` (platformadmin@cams.local)
+- **Admin User**: `admin` / `Admin123!` (admin@cams.local)
+- **Regular User**: `user` / `User123!` (user@cams.local)
+
+**Note**: These accounts are automatically created with proper role assignments during application startup.
 
 ---
