@@ -43,6 +43,8 @@ namespace cams.Backend.Model
         
         public DateTime CreatedAt { get; set; }
         
+        public DateTime UpdatedAt { get; set; }
+        
         public DateTime? SentAt { get; set; }
         
         public DateTime? DeliveredAt { get; set; }

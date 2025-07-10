@@ -5,33 +5,23 @@ using cams.Backend.Enums;
 
 namespace cams.Backend.Services
 {
-    public class EmailMessagingService : IEmailMessagingService
+    public class EmailMessagingService(
+        IEmailService emailService,
+        IUserService userService,
+        ILogger<EmailMessagingService> logger)
+        : IEmailMessagingService
     {
-        private readonly IEmailService _emailService;
-        private readonly IUserService _userService;
-        private readonly ILogger<EmailMessagingService> _logger;
-        
-        // In-memory storage (replace with database in real implementation)
+        // In-memory storage (replace with a database in real implementation)
         private static readonly List<EmailMessage> _emails = new();
         private static readonly List<EmailAttachment> _attachments = new();
         private static int _nextEmailId = 1;
         private static int _nextAttachmentId = 1;
 
-        public EmailMessagingService(
-            IEmailService emailService, 
-            IUserService userService, 
-            ILogger<EmailMessagingService> logger)
-        {
-            _emailService = emailService;
-            _userService = userService;
-            _logger = logger;
-        }
-
         public async Task<SendEmailResponse> SendEmailAsync(int userId, SendEmailRequest request)
         {
             try
             {
-                var user = await _userService.GetUserAsync(userId);
+                var user = await userService.GetUserAsync(userId);
                 if (user == null)
                 {
                     return new SendEmailResponse
@@ -110,7 +100,7 @@ namespace cams.Backend.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, "Failed to process attachment {FileName}", attachmentReq.FileName);
+                            logger.LogWarning(ex, "Failed to process attachment {FileName}", attachmentReq.FileName);
                         }
                     }
                 }
@@ -136,12 +126,12 @@ namespace cams.Backend.Services
                     var plainTextBody = request.IsHtml ? null : request.Body;
                     var htmlBody = request.IsHtml ? request.Body : $"<pre>{request.Body}</pre>";
                     
-                    await _emailService.SendEmailAsync(request.ToEmail, request.Subject, htmlBody, plainTextBody);
+                    await emailService.SendEmailAsync(request.ToEmail, request.Subject, htmlBody, plainTextBody);
                     
                     emailMessage.Status = EmailStatus.Sent;
                     emailMessage.SentAt = DateTime.UtcNow;
                     
-                    _logger.LogInformation("Email sent successfully from user {UserId} to {ToEmail}", userId, request.ToEmail);
+                    logger.LogInformation("Email sent successfully from user {UserId} to {ToEmail}", userId, request.ToEmail);
                     
                     return new SendEmailResponse
                     {
@@ -156,7 +146,7 @@ namespace cams.Backend.Services
                     emailMessage.Status = EmailStatus.Failed;
                     emailMessage.ErrorMessage = ex.Message;
                     
-                    _logger.LogError(ex, "Failed to send email from user {UserId} to {ToEmail}", userId, request.ToEmail);
+                    logger.LogError(ex, "Failed to send email from user {UserId} to {ToEmail}", userId, request.ToEmail);
                     
                     return new SendEmailResponse
                     {
@@ -168,7 +158,7 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing send email request for user {UserId}", userId);
+                logger.LogError(ex, "Error processing send email request for user {UserId}", userId);
                 return new SendEmailResponse
                 {
                     Success = false,
@@ -211,7 +201,7 @@ namespace cams.Backend.Services
         {
             await Task.CompletedTask;
             
-            var user = await _userService.GetUserAsync(userId);
+            var user = await userService.GetUserAsync(userId);
             if (user == null)
                 throw new ArgumentException("User not found");
 
