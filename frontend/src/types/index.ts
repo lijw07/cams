@@ -68,7 +68,7 @@ export enum DatabaseType {
   SQLite = 5,
   MongoDB = 6,
   Redis = 7,
-  RestAPI = 8,
+  RestApi = 8,
   GraphQL = 9,
   WebSocket = 10,
   Custom = 99,

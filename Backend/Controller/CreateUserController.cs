@@ -135,6 +135,9 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
 
+                logger.LogInformation("User {UserId} created new user {NewUserId} ({NewUsername}) with roles: {Roles}",
+                    currentUserId, user.Id, user.Username, string.Join(", ", validRoles.Select(r => r.Name)));
+
                 return CreatedAtAction(
                     "GetUserById",
                     "Users",
@@ -174,6 +177,9 @@ namespace cams.Backend.Controller
                     description: $"Retrieved available roles for user creation - {roles.Count()} roles found"
                 );
 
+                logger.LogInformation("User {UserId} retrieved {RoleCount} available roles for user creation",
+                    currentUserId, roles.Count());
+
                 return Ok(roles);
             }
             catch (Exception ex)
@@ -196,6 +202,10 @@ namespace cams.Backend.Controller
                 var exists = await context.Users
                     .AnyAsync(u => u.Username == request.Username);
 
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} validated username '{Username}' - Available: {IsAvailable}",
+                    currentUserId, request.Username, !exists);
+
                 return Ok(new { isAvailable = !exists });
             }
             catch (Exception ex)
@@ -217,6 +227,10 @@ namespace cams.Backend.Controller
 
                 var exists = await context.Users
                     .AnyAsync(u => u.Email == request.Email);
+
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} validated email '{Email}' - Available: {IsAvailable}",
+                    currentUserId, request.Email, !exists);
 
                 return Ok(new { isAvailable = !exists });
             }

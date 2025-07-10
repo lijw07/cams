@@ -375,6 +375,8 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, request.ApplicationName);
+                logger.LogInformation("Request data: ApplicationName={ApplicationName}, ConnectionName={ConnectionName}, DatabaseType={DatabaseType}, Server={Server}", 
+                    request.ApplicationName, request.ConnectionName, request.DatabaseType, request.Server);
                 
                 var response = await applicationService.CreateApplicationWithConnectionAsync(request, userId);
                 

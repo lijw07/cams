@@ -80,7 +80,21 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
 
   const handleFormSubmit = async (data: ApplicationWithConnectionRequest) => {
     try {
-      await onSubmit(data);
+      // Convert port from string to number if provided
+      const submissionData = {
+        ...data,
+        port: data.port ? parseInt(data.port.toString()) : undefined
+      };
+      
+      console.log('Form submission data before sending:', submissionData);
+      console.log('Required fields check:', {
+        applicationName: submissionData.applicationName,
+        connectionName: submissionData.connectionName,
+        databaseType: submissionData.databaseType,
+        server: submissionData.server
+      });
+      
+      await onSubmit(submissionData);
       reset();
       setCurrentStep(1);
       onClose();
@@ -173,14 +187,14 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     { value: DatabaseType.SQLite, label: 'SQLite' },
     { value: DatabaseType.MongoDB, label: 'MongoDB' },
     { value: DatabaseType.Redis, label: 'Redis' },
-    { value: DatabaseType.RestAPI, label: 'REST API' },
+    { value: DatabaseType.RestApi, label: 'REST API' },
     { value: DatabaseType.GraphQL, label: 'GraphQL' },
     { value: DatabaseType.WebSocket, label: 'WebSocket' },
     { value: DatabaseType.Custom, label: 'Custom' }
   ];
 
   const isApiType = () => {
-    return [DatabaseType.RestAPI, DatabaseType.GraphQL, DatabaseType.WebSocket].includes(selectedDbType);
+    return [DatabaseType.RestApi, DatabaseType.GraphQL, DatabaseType.WebSocket].includes(selectedDbType);
   };
 
   const isConnectionStringType = () => {
@@ -497,11 +511,16 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                         </label>
                         <input
                           {...register('port', {
-                            valueAsNumber: true,
-                            min: { value: 1, message: 'Port must be greater than 0' },
-                            max: { value: 65535, message: 'Port must be less than 65536' }
+                            validate: (value: number | undefined) => {
+                              if (!value) return true; // Optional field
+                              const port = Number(value);
+                              if (isNaN(port)) return 'Port must be a number';
+                              if (port < 1) return 'Port must be greater than 0';
+                              if (port > 65535) return 'Port must be less than 65536';
+                              return true;
+                            }
                           })}
-                          type="number"
+                          type="text"
                           id="port"
                           className="input"
                           placeholder="1433"

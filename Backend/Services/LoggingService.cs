@@ -1,19 +1,19 @@
 using cams.Backend.Model;
 using cams.Backend.Constants;
+using cams.Backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
 {
     public class LoggingService : ILoggingService
     {
         private readonly ILogger<LoggingService> _logger;
-        private readonly List<AuditLog> _auditLogs = new();
-        private readonly List<SecurityLog> _securityLogs = new();
-        private readonly List<SystemLog> _systemLogs = new();
-        private readonly List<PerformanceLog> _performanceLogs = new();
+        private readonly ApplicationDbContext _context;
 
-        public LoggingService(ILogger<LoggingService> logger)
+        public LoggingService(ILogger<LoggingService> logger, ApplicationDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         // Audit Log methods
@@ -24,7 +24,6 @@ namespace cams.Backend.Services
         {
             var auditLog = new AuditLog
             {
-                Id = _auditLogs.Count + 1,
                 UserId = userId,
                 Action = action,
                 EntityType = entityType,
@@ -39,23 +38,23 @@ namespace cams.Backend.Services
                 Severity = severity
             };
 
-            _auditLogs.Add(auditLog);
+            _context.AuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+            
             _logger.LogInformation("Audit log created: User {UserId} performed {Action} on {EntityType} {EntityId}",
                 userId, action, entityType, entityId);
-
-            await Task.CompletedTask;
         }
 
         public async Task<IEnumerable<AuditLog>> GetAuditLogsAsync(int? userId = null, string? entityType = null,
             DateTime? fromDate = null, DateTime? toDate = null, int pageSize = 100, int pageNumber = 1)
         {
-            var query = _auditLogs.AsEnumerable();
+            var query = _context.AuditLogs.Include(a => a.User).AsQueryable();
 
             if (userId.HasValue)
                 query = query.Where(log => log.UserId == userId.Value);
 
             if (!string.IsNullOrEmpty(entityType))
-                query = query.Where(log => log.EntityType.Equals(entityType, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.EntityType == entityType);
 
             if (fromDate.HasValue)
                 query = query.Where(log => log.Timestamp >= fromDate.Value);
@@ -63,12 +62,13 @@ namespace cams.Backend.Services
             if (toDate.HasValue)
                 query = query.Where(log => log.Timestamp <= toDate.Value);
 
-            var result = query
+            var result = await query
                 .OrderByDescending(log => log.Timestamp)
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize);
+                .Take(pageSize)
+                .ToListAsync();
 
-            return await Task.FromResult(result);
+            return result;
         }
 
         // Security Log methods
@@ -79,7 +79,6 @@ namespace cams.Backend.Services
         {
             var securityLog = new SecurityLog
             {
-                Id = _securityLogs.Count + 1,
                 UserId = userId,
                 Username = username,
                 EventType = eventType,
@@ -96,24 +95,24 @@ namespace cams.Backend.Services
                 RequiresAction = severity == "Critical" || severity == "Error"
             };
 
-            _securityLogs.Add(securityLog);
+            _context.SecurityLogs.Add(securityLog);
+            await _context.SaveChangesAsync();
+            
             _logger.LogInformation("Security event logged: {EventType} - {Status} for user {UserId}",
                 eventType, status, userId);
-
-            await Task.CompletedTask;
         }
 
         public async Task<IEnumerable<SecurityLog>> GetSecurityLogsAsync(string? eventType = null, string? status = null,
             int? userId = null, DateTime? fromDate = null, DateTime? toDate = null,
             int pageSize = 100, int pageNumber = 1)
         {
-            var query = _securityLogs.AsEnumerable();
+            var query = _context.SecurityLogs.Include(s => s.User).AsQueryable();
 
             if (!string.IsNullOrEmpty(eventType))
-                query = query.Where(log => log.EventType.Equals(eventType, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.EventType == eventType);
 
             if (!string.IsNullOrEmpty(status))
-                query = query.Where(log => log.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.Status == status);
 
             if (userId.HasValue)
                 query = query.Where(log => log.UserId == userId.Value);
@@ -124,20 +123,21 @@ namespace cams.Backend.Services
             if (toDate.HasValue)
                 query = query.Where(log => log.Timestamp <= toDate.Value);
 
-            var result = query
+            var result = await query
                 .OrderByDescending(log => log.Timestamp)
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize);
+                .Take(pageSize)
+                .ToListAsync();
 
-            return await Task.FromResult(result);
+            return result;
         }
 
         public async Task<IEnumerable<SecurityLog>> GetFailedLoginAttemptsAsync(string? ipAddress = null,
             DateTime? fromDate = null, int? threshold = 5)
         {
-            var query = _securityLogs
+            var query = _context.SecurityLogs
                 .Where(log => log.EventType == "LoginFailure")
-                .AsEnumerable();
+                .AsQueryable();
 
             if (!string.IsNullOrEmpty(ipAddress))
                 query = query.Where(log => log.IpAddress == ipAddress);
@@ -145,13 +145,15 @@ namespace cams.Backend.Services
             if (fromDate.HasValue)
                 query = query.Where(log => log.Timestamp >= fromDate.Value);
 
-            var failedAttempts = query
+            var logs = await query.ToListAsync();
+            
+            var failedAttempts = logs
                 .GroupBy(log => log.IpAddress)
                 .Where(group => group.Count() >= (threshold ?? 5))
                 .SelectMany(group => group)
                 .OrderByDescending(log => log.Timestamp);
 
-            return await Task.FromResult(failedAttempts);
+            return failedAttempts;
         }
 
         // System Log methods
@@ -162,7 +164,6 @@ namespace cams.Backend.Services
         {
             var systemLog = new SystemLog
             {
-                Id = _systemLogs.Count + 1,
                 EventType = eventType,
                 Level = level,
                 Source = source,
@@ -183,24 +184,24 @@ namespace cams.Backend.Services
                 IsResolved = level == "Information" || level == "Debug"
             };
 
-            _systemLogs.Add(systemLog);
+            _context.SystemLogs.Add(systemLog);
+            await _context.SaveChangesAsync();
+            
             _logger.LogInformation("System event logged: {EventType} - {Level} from {Source}: {Message}",
                 eventType, level, source, message);
-
-            await Task.CompletedTask;
         }
 
         public async Task<IEnumerable<SystemLog>> GetSystemLogsAsync(string? level = null, string? source = null,
             DateTime? fromDate = null, DateTime? toDate = null, bool? isResolved = null,
             int pageSize = 100, int pageNumber = 1)
         {
-            var query = _systemLogs.AsEnumerable();
+            var query = _context.SystemLogs.Include(s => s.User).AsQueryable();
 
             if (!string.IsNullOrEmpty(level))
-                query = query.Where(log => log.Level.Equals(level, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.Level == level);
 
             if (!string.IsNullOrEmpty(source))
-                query = query.Where(log => log.Source.Equals(source, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.Source == source);
 
             if (fromDate.HasValue)
                 query = query.Where(log => log.Timestamp >= fromDate.Value);
@@ -211,26 +212,26 @@ namespace cams.Backend.Services
             if (isResolved.HasValue)
                 query = query.Where(log => log.IsResolved == isResolved.Value);
 
-            var result = query
+            var result = await query
                 .OrderByDescending(log => log.Timestamp)
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize);
+                .Take(pageSize)
+                .ToListAsync();
 
-            return await Task.FromResult(result);
+            return result;
         }
 
         public async Task MarkSystemLogResolvedAsync(int logId, string? resolutionNotes = null)
         {
-            var log = _systemLogs.FirstOrDefault(l => l.Id == logId);
+            var log = await _context.SystemLogs.FirstOrDefaultAsync(l => l.Id == logId);
             if (log != null)
             {
                 log.IsResolved = true;
                 log.ResolvedAt = DateTime.UtcNow;
                 log.ResolutionNotes = resolutionNotes;
+                await _context.SaveChangesAsync();
                 _logger.LogInformation("System log {LogId} marked as resolved", logId);
             }
-
-            await Task.CompletedTask;
         }
 
         // Performance Log methods
@@ -247,7 +248,6 @@ namespace cams.Backend.Services
 
             var performanceLog = new PerformanceLog
             {
-                Id = _performanceLogs.Count + 1,
                 Operation = operation,
                 Controller = controller,
                 Action = action,
@@ -272,28 +272,27 @@ namespace cams.Backend.Services
                 Metadata = metadata
             };
 
-            _performanceLogs.Add(performanceLog);
+            _context.PerformanceLogs.Add(performanceLog);
+            await _context.SaveChangesAsync();
 
             if (isSlowQuery)
             {
                 _logger.LogWarning("Slow operation detected: {Operation} took {Duration}ms",
                     operation, duration.TotalMilliseconds);
             }
-
-            await Task.CompletedTask;
         }
 
         public async Task<IEnumerable<PerformanceLog>> GetPerformanceLogsAsync(string? operation = null,
             string? performanceLevel = null, DateTime? fromDate = null, DateTime? toDate = null,
             bool? isSlowQuery = null, int pageSize = 100, int pageNumber = 1)
         {
-            var query = _performanceLogs.AsEnumerable();
+            var query = _context.PerformanceLogs.Include(p => p.User).AsQueryable();
 
             if (!string.IsNullOrEmpty(operation))
-                query = query.Where(log => log.Operation.Equals(operation, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.Operation == operation);
 
             if (!string.IsNullOrEmpty(performanceLevel))
-                query = query.Where(log => log.PerformanceLevel.Equals(performanceLevel, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.PerformanceLevel == performanceLevel);
 
             if (fromDate.HasValue)
                 query = query.Where(log => log.Timestamp >= fromDate.Value);
@@ -304,18 +303,19 @@ namespace cams.Backend.Services
             if (isSlowQuery.HasValue)
                 query = query.Where(log => log.IsSlowQuery == isSlowQuery.Value);
 
-            var result = query
+            var result = await query
                 .OrderByDescending(log => log.Timestamp)
                 .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize);
+                .Take(pageSize)
+                .ToListAsync();
 
-            return await Task.FromResult(result);
+            return result;
         }
 
         public async Task<PerformanceMetrics> GetPerformanceMetricsAsync(DateTime? fromDate = null,
             DateTime? toDate = null, string? operation = null)
         {
-            var query = _performanceLogs.AsEnumerable();
+            var query = _context.PerformanceLogs.AsQueryable();
 
             if (fromDate.HasValue)
                 query = query.Where(log => log.Timestamp >= fromDate.Value);
@@ -324,9 +324,9 @@ namespace cams.Backend.Services
                 query = query.Where(log => log.Timestamp <= toDate.Value);
 
             if (!string.IsNullOrEmpty(operation))
-                query = query.Where(log => log.Operation.Equals(operation, StringComparison.OrdinalIgnoreCase));
+                query = query.Where(log => log.Operation == operation);
 
-            var logs = query.ToList();
+            var logs = await query.ToListAsync();
             if (!logs.Any())
             {
                 return new PerformanceMetrics();
@@ -367,57 +367,53 @@ namespace cams.Backend.Services
         public async Task CleanupAuditLogsAsync(int retentionDays = 365)
         {
             var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
-            var logsToRemove = _auditLogs.Where(log => log.Timestamp < cutoffDate).ToList();
+            var logsToRemove = await _context.AuditLogs
+                .Where(log => log.Timestamp < cutoffDate)
+                .ToListAsync();
             
-            foreach (var log in logsToRemove)
-            {
-                _auditLogs.Remove(log);
-            }
+            _context.AuditLogs.RemoveRange(logsToRemove);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Cleaned up {Count} audit logs older than {Days} days", logsToRemove.Count, retentionDays);
-            await Task.CompletedTask;
         }
 
         public async Task CleanupSecurityLogsAsync(int retentionDays = 180)
         {
             var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
-            var logsToRemove = _securityLogs.Where(log => log.Timestamp < cutoffDate).ToList();
+            var logsToRemove = await _context.SecurityLogs
+                .Where(log => log.Timestamp < cutoffDate)
+                .ToListAsync();
             
-            foreach (var log in logsToRemove)
-            {
-                _securityLogs.Remove(log);
-            }
+            _context.SecurityLogs.RemoveRange(logsToRemove);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Cleaned up {Count} security logs older than {Days} days", logsToRemove.Count, retentionDays);
-            await Task.CompletedTask;
         }
 
         public async Task CleanupSystemLogsAsync(int retentionDays = 90)
         {
             var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
-            var logsToRemove = _systemLogs.Where(log => log.Timestamp < cutoffDate).ToList();
+            var logsToRemove = await _context.SystemLogs
+                .Where(log => log.Timestamp < cutoffDate)
+                .ToListAsync();
             
-            foreach (var log in logsToRemove)
-            {
-                _systemLogs.Remove(log);
-            }
+            _context.SystemLogs.RemoveRange(logsToRemove);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Cleaned up {Count} system logs older than {Days} days", logsToRemove.Count, retentionDays);
-            await Task.CompletedTask;
         }
 
         public async Task CleanupPerformanceLogsAsync(int retentionDays = 30)
         {
             var cutoffDate = DateTime.UtcNow.AddDays(-retentionDays);
-            var logsToRemove = _performanceLogs.Where(log => log.Timestamp < cutoffDate).ToList();
+            var logsToRemove = await _context.PerformanceLogs
+                .Where(log => log.Timestamp < cutoffDate)
+                .ToListAsync();
             
-            foreach (var log in logsToRemove)
-            {
-                _performanceLogs.Remove(log);
-            }
+            _context.PerformanceLogs.RemoveRange(logsToRemove);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Cleaned up {Count} performance logs older than {Days} days", logsToRemove.Count, retentionDays);
-            await Task.CompletedTask;
         }
 
         // Helper methods
