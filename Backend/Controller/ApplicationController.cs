@@ -1,0 +1,359 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using cams.Backend.Services;
+using cams.Backend.View;
+using cams.Backend.Helpers;
+using cams.Backend.Constants;
+using cams.Backend.Enums;
+using cams.Backend.Model;
+
+namespace cams.Backend.Controller
+{
+    [ApiController]
+    [Route("[controller]")]
+    [Authorize]
+    public class ApplicationController(
+        IApplicationService applicationService,
+        ILogger<ApplicationController> logger,
+        ILoggingService loggingService)
+        : ControllerBase
+    {
+        [HttpGet]
+        public async Task<IActionResult> GetApplications()
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} requested applications list", userId);
+                
+                var applications = await applicationService.GetUserApplicationsAsync(userId);
+                
+                logger.LogInformation("Retrieved {ApplicationCount} applications for user {UserId}", applications.Count(), userId);
+                
+                // Log audit event for application list retrieval
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Read.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    description: $"Retrieved {applications.Count()} applications",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return Ok(applications);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving applications for user {UserId}", UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving applications");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetApplication(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} requested application {ApplicationId}", userId, id);
+                
+                var application = await applicationService.GetApplicationByIdAsync(id, userId);
+                
+                if (application == null)
+                {
+                    logger.LogWarning("Application {ApplicationId} not found for user {UserId}", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application");
+                }
+
+                // Update last accessed time
+                await applicationService.UpdateLastAccessedAsync(id, userId);
+
+                logger.LogInformation("Successfully retrieved application {ApplicationId} for user {UserId}", id, userId);
+                
+                // Log audit event for application retrieval
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Read.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: id,
+                    entityName: application.Name,
+                    description: "Retrieved application details",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return Ok(application);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error retrieving application");
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateApplication([FromBody] ApplicationRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                    ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                        ));
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} creating new application: {ApplicationName}", userId, request.Name);
+                
+                var application = await applicationService.CreateApplicationAsync(request, userId);
+                
+                logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) for user {UserId}", 
+                    application.Id, application.Name, userId);
+                
+                // Log audit event for application creation
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Create.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: application.Id,
+                    entityName: application.Name,
+                    newValues: $"Name: {application.Name}, Description: {request.Description}",
+                    description: "Created new application",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, application);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error creating application {ApplicationName} for user {UserId}", request.Name, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error creating application");
+            }
+        }
+
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateApplication(int id, [FromBody] ApplicationUpdateRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                    ModelState.Where(x => x.Value?.Errors.Count > 0)
+                        .ToDictionary(
+                            kvp => kvp.Key,
+                            kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                        ));
+                }
+
+                if (id != request.Id)
+                {
+                    return HttpResponseHelper.CreateBadRequestResponse(ApplicationConstants.ErrorMessages.APPLICATION_ID_MISMATCH);
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} updating application {ApplicationId}: {ApplicationName}", userId, id, request.Name);
+                
+                var application = await applicationService.UpdateApplicationAsync(request, userId);
+                
+                if (application == null)
+                {
+                    logger.LogWarning("Application {ApplicationId} not found for update by user {UserId}", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application");
+                }
+
+                logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) for user {UserId}", 
+                    application.Id, application.Name, userId);
+
+                // Log audit event for application update
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Update.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: application.Id,
+                    entityName: application.Name,
+                    newValues: $"Name: {application.Name}, Description: {request.Description}",
+                    description: "Updated application",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                return Ok(application);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error updating application");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteApplication(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} deleting application {ApplicationId}", userId, id);
+                
+                var deleted = await applicationService.DeleteApplicationAsync(id, userId);
+                
+                if (!deleted)
+                {
+                    logger.LogWarning("Application {ApplicationId} not found for deletion by user {UserId}", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application");
+                }
+
+                logger.LogInformation("Successfully deleted application {ApplicationId} for user {UserId}", id, userId);
+                
+                // Log audit event for application deletion
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Delete.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: id,
+                    description: "Deleted application",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error deleting application");
+            }
+        }
+
+        [HttpPatch("{id}/toggle")]
+        public async Task<IActionResult> ToggleApplicationStatus(int id, [FromBody] ToggleApplicationStatusRequest request)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} toggling application {ApplicationId} status to {Status}", 
+                    userId, id, request.IsActive ? "active" : "inactive");
+                
+                var updated = await applicationService.ToggleApplicationStatusAsync(id, userId, request.IsActive);
+                
+                if (!updated)
+                {
+                    logger.LogWarning("Application {ApplicationId} not found for status toggle by user {UserId}", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application");
+                }
+
+                logger.LogInformation("Successfully toggled application {ApplicationId} status to {Status} for user {UserId}", 
+                    id, request.IsActive ? "active" : "inactive", userId);
+
+                // Log audit event for application status toggle
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.StatusChange.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: id,
+                    description: $"Application status changed to {(request.IsActive ? "active" : "inactive")}",
+                    newValues: $"IsActive: {request.IsActive}",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                return Ok(new { message = $"Application {(request.IsActive ? "activated" : "deactivated")} successfully" });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error toggling application status for {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error toggling application status");
+            }
+        }
+
+        [HttpGet("{id}/connections")]
+        public async Task<IActionResult> GetApplicationConnections(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} requested connections for application {ApplicationId}", userId, id);
+                
+                var connections = await applicationService.GetApplicationConnectionsAsync(id, userId);
+                
+                if (!connections.Any())
+                {
+                    // Check if application exists
+                    var application = await applicationService.GetApplicationByIdAsync(id, userId);
+                    if (application == null)
+                    {
+                        logger.LogWarning("Application {ApplicationId} not found when retrieving connections for user {UserId}", id, userId);
+                        return HttpResponseHelper.CreateNotFoundResponse("Application");
+                    }
+                }
+
+                logger.LogInformation("Retrieved {ConnectionCount} connections for application {ApplicationId} for user {UserId}", 
+                    connections.Count(), id, userId);
+
+                // Log audit event for application connections retrieval
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Read.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: id,
+                    description: $"Retrieved {connections.Count()} connections for application",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                return Ok(connections);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving connections for application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse( "Error retrieving application connections");
+            }
+        }
+
+        [HttpPost("{id}/access")]
+        public async Task<IActionResult> UpdateLastAccessed(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} updating last accessed time for application {ApplicationId}", userId, id);
+                
+                var updated = await applicationService.UpdateLastAccessedAsync(id, userId);
+                
+                if (!updated)
+                {
+                    logger.LogWarning("Application {ApplicationId} not found for last access update by user {UserId}", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Application");
+                }
+
+                logger.LogInformation("Successfully updated last accessed time for application {ApplicationId} for user {UserId}", id, userId);
+                
+                // Log audit event for last accessed update
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Update.ToString(),
+                    AuditEntityTypes.APPLICATION,
+                    entityId: id,
+                    description: "Updated last accessed time",
+                    newValues: $"LastAccessedAt: {DateTime.UtcNow}",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return Ok(new { message = "Last accessed time updated" });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating last accessed time for application {ApplicationId} for user {UserId}", 
+                    id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error updating last accessed time");
+            }
+        }
+
+    }
+}

@@ -1,0 +1,85 @@
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+      target: dev
+    container_name: "${COMPOSE_PROJECT_NAME:-cams}-backend"
+    ports:
+      - "8080:8080"
+      - "57404:57404"  # Debug port
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - DOTNET_MODIFIABLE_ASSEMBLIES=Debug
+      # Database Configuration
+      - DB_HOST=db
+      - DB_PORT=1433
+      - DB_NAME=CamsDb
+      - DB_USER=sa
+      - DB_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
+      # JWT Configuration
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-that-is-at-least-32-characters-long!}
+      - JWT_ISSUER=CamsApp
+      - JWT_AUDIENCE=CamsUsers
+      - JWT_EXPIRES_IN_MINUTES=60
+      - JWT_REFRESH_EXPIRES_IN_DAYS=7
+      # Security Configuration
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:-}
+      # Logging
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.AspNetCore=Warning
+    volumes:
+      - ./:/src:consistent
+      - backend_cache:/src/obj
+      - backend_bin:/src/bin
+      - dotnet_nuget:/home/dotnetuser/.nuget
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    networks:
+      - cams-network
+    restart: unless-stopped
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: "${COMPOSE_PROJECT_NAME:-cams}-database"
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 1 bash -c '</dev/tcp/localhost/1433' || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    networks:
+      - cams-network
+    restart: unless-stopped
+
+
+networks:
+  cams-network:
+    driver: bridge
+    name: "${COMPOSE_PROJECT_NAME:-cams}-network"
+
+volumes:
+  sql_data:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-sql-data"
+  backend_cache:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-backend-cache"
+  backend_bin:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-backend-bin"
+  dotnet_nuget:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-dotnet-nuget"
