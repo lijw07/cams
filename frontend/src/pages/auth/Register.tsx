@@ -7,13 +7,13 @@ import { useNotifications } from '../../contexts/NotificationContext';
 import SEOHead from '../../components/SEO/SEOHead';
 
 interface RegisterFormData {
-  username: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
+  Username: string;
+  Email: string;
+  Password: string;
+  ConfirmPassword: string;
+  FirstName: string;
+  LastName: string;
+  PhoneNumber?: string;
 }
 
 const Register: React.FC = () => {
@@ -34,8 +34,8 @@ const Register: React.FC = () => {
     clearErrors
   } = useForm<RegisterFormData>();
 
-  const password = watch('password');
-  const email = watch('email');
+  const password = watch('Password');
+  const email = watch('Email');
 
   // Check email availability
   const checkEmailAvailability = React.useCallback(async (email: string) => {
@@ -49,9 +49,9 @@ const Register: React.FC = () => {
       const result = await authService.checkEmailAvailability(email);
       setEmailAvailable(result.isAvailable);
       if (!result.isAvailable) {
-        setError('email', { message: result.message });
+        setError('Email', { message: result.message });
       } else {
-        clearErrors('email');
+        clearErrors('Email');
       }
     } catch (error) {
       setEmailAvailable(null);
@@ -72,8 +72,8 @@ const Register: React.FC = () => {
   }, [email, checkEmailAvailability]);
 
   const onSubmit = async (data: RegisterFormData) => {
-    if (data.password !== data.confirmPassword) {
-      setError('confirmPassword', { message: 'Passwords do not match' });
+    if (data.Password !== data.ConfirmPassword) {
+      setError('ConfirmPassword', { message: 'Passwords do not match' });
       return;
     }
 
@@ -131,9 +131,9 @@ const Register: React.FC = () => {
                 <input
                   id="firstName"
                   type="text"
-                  className={`input mt-1 ${errors.firstName ? 'border-red-500' : ''}`}
+                  className={`input mt-1 ${errors.FirstName ? 'border-red-500' : ''}`}
                   placeholder="First name"
-                  {...register('firstName', { 
+                  {...register('FirstName', { 
                     required: 'First name is required',
                     minLength: {
                       value: 2,
@@ -141,8 +141,8 @@ const Register: React.FC = () => {
                     }
                   })}
                 />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.firstName.message}</p>
+                {errors.FirstName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.FirstName.message}</p>
                 )}
               </div>
               
@@ -153,9 +153,9 @@ const Register: React.FC = () => {
                 <input
                   id="lastName"
                   type="text"
-                  className={`input mt-1 ${errors.lastName ? 'border-red-500' : ''}`}
+                  className={`input mt-1 ${errors.LastName ? 'border-red-500' : ''}`}
                   placeholder="Last name"
-                  {...register('lastName', { 
+                  {...register('LastName', { 
                     required: 'Last name is required',
                     minLength: {
                       value: 2,
@@ -163,8 +163,8 @@ const Register: React.FC = () => {
                     }
                   })}
                 />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-600">{errors.lastName.message}</p>
+                {errors.LastName && (
+                  <p className="mt-1 text-sm text-red-600">{errors.LastName.message}</p>
                 )}
               </div>
             </div>
@@ -177,9 +177,9 @@ const Register: React.FC = () => {
               <input
                 id="username"
                 type="text"
-                className={`input mt-1 ${errors.username ? 'border-red-500' : ''}`}
+                className={`input mt-1 ${errors.Username ? 'border-red-500' : ''}`}
                 placeholder="Username"
-                {...register('username', { 
+                {...register('Username', { 
                   required: 'Username is required',
                   minLength: {
                     value: 3,
@@ -191,8 +191,8 @@ const Register: React.FC = () => {
                   }
                 })}
               />
-              {errors.username && (
-                <p className="mt-1 text-sm text-red-600">{errors.username.message}</p>
+              {errors.Username && (
+                <p className="mt-1 text-sm text-red-600">{errors.Username.message}</p>
               )}
             </div>
 
@@ -205,9 +205,9 @@ const Register: React.FC = () => {
                 <input
                   id="email"
                   type="email"
-                  className={`input pr-10 ${errors.email ? 'border-red-500' : emailAvailable === true ? 'border-green-500' : ''}`}
+                  className={`input pr-10 ${errors.Email ? 'border-red-500' : emailAvailable === true ? 'border-green-500' : ''}`}
                   placeholder="Email address"
-                  {...register('email', { 
+                  {...register('Email', { 
                     required: 'Email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -226,8 +226,8 @@ const Register: React.FC = () => {
                   </div>
                 )}
               </div>
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+              {errors.Email && (
+                <p className="mt-1 text-sm text-red-600">{errors.Email.message}</p>
               )}
             </div>
 
@@ -241,7 +241,7 @@ const Register: React.FC = () => {
                 type="tel"
                 className="input mt-1"
                 placeholder="Phone number"
-                {...register('phoneNumber')}
+                {...register('PhoneNumber')}
               />
             </div>
 
@@ -254,9 +254,9 @@ const Register: React.FC = () => {
                 <input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  className={`input pr-10 ${errors.password ? 'border-red-500' : ''}`}
+                  className={`input pr-10 ${errors.Password ? 'border-red-500' : ''}`}
                   placeholder="Password"
-                  {...register('password', { 
+                  {...register('Password', { 
                     required: 'Password is required',
                     minLength: {
                       value: 8,
@@ -280,8 +280,8 @@ const Register: React.FC = () => {
                   )}
                 </button>
               </div>
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+              {errors.Password && (
+                <p className="mt-1 text-sm text-red-600">{errors.Password.message}</p>
               )}
             </div>
 
@@ -294,9 +294,9 @@ const Register: React.FC = () => {
                 <input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
-                  className={`input pr-10 ${errors.confirmPassword ? 'border-red-500' : ''}`}
+                  className={`input pr-10 ${errors.ConfirmPassword ? 'border-red-500' : ''}`}
                   placeholder="Confirm password"
-                  {...register('confirmPassword', { 
+                  {...register('ConfirmPassword', { 
                     required: 'Please confirm your password',
                     validate: (value) => value === password || 'Passwords do not match'
                   })}
@@ -313,8 +313,8 @@ const Register: React.FC = () => {
                   )}
                 </button>
               </div>
-              {errors.confirmPassword && (
-                <p className="mt-1 text-sm text-red-600">{errors.confirmPassword.message}</p>
+              {errors.ConfirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{errors.ConfirmPassword.message}</p>
               )}
             </div>
           </div>

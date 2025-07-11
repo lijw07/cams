@@ -174,8 +174,8 @@ export const useApplicationWithConnection = ({
 
       const result = await databaseConnectionService.testConnection(testData);
       
-      if (result.isSuccessful) {
-        setTestResult({ success: true, message: result.message || 'Connection successful!' });
+      if (result.IsSuccessful) {
+        setTestResult({ success: true, message: result.Message || 'Connection successful!' });
         addNotification({
           title: 'Connection Test Successful',
           message: 'Database connection test passed!',
@@ -183,10 +183,10 @@ export const useApplicationWithConnection = ({
           source: 'Database Connection'
         });
       } else {
-        setTestResult({ success: false, message: result.message || 'Connection failed' });
+        setTestResult({ success: false, message: result.Message || 'Connection failed' });
         addNotification({
           title: 'Connection Test Failed',
-          message: `Connection test failed: ${result.message}`,
+          message: `Connection test failed: ${result.Message}`,
           type: 'error',
           source: 'Database Connection'
         });

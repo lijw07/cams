@@ -8,6 +8,7 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Enums;
 using cams.Backend.Data;
+using Backend.Helpers;
 
 namespace cams.Backend.Services
 {
@@ -83,7 +84,8 @@ namespace cams.Backend.Services
                 .Reference(c => c.Application)
                 .LoadAsync();
             
-            logger.LogInformation("Created database connection {ConnectionName} for user {UserId}", request.Name, userId);
+            logger.LogInformation("Created database connection {ConnectionName} for user {UserId}", 
+                LoggingHelper.Sanitize(request.Name), userId);
             
             return MapToResponse(connection);
         }
@@ -122,7 +124,8 @@ namespace cams.Backend.Services
 
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Updated database connection {ConnectionName} for user {UserId}", request.Name, userId);
+            logger.LogInformation("Updated database connection {ConnectionName} for user {UserId}", 
+                LoggingHelper.Sanitize(request.Name), userId);
             
             return MapToResponse(connection);
         }

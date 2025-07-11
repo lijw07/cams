@@ -3,6 +3,7 @@ using cams.Backend.View;
 using cams.Backend.Model;
 using cams.Backend.Data;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 using Microsoft.AspNetCore.SignalR;
@@ -270,15 +271,15 @@ namespace cams.Backend.Services
                                 AuditAction.Create.ToString(),
                                 AuditEntityTypes.USER,
                                 entityId: newUser.Id,
-                                description: $"User created via bulk migration: {userDto.Username}",
-                                newValues: $"Email: {userDto.Email}, FirstName: {userDto.FirstName}, LastName: {userDto.LastName}"
+                                description: $"User created via bulk migration: {LoggingHelper.Sanitize(userDto.Username)}",
+                                newValues: $"Email: {LoggingHelper.Sanitize(userDto.Email)}, FirstName: {LoggingHelper.Sanitize(userDto.FirstName)}, LastName: {LoggingHelper.Sanitize(userDto.LastName)}"
                             );
                         }
                     }
                     catch (Exception userEx)
                     {
-                        logger.LogError(userEx, "Error importing user {Username}", userDto.Username);
-                        errors.Add($"Failed to import user '{userDto.Username}': {userEx.Message}");
+                        logger.LogError(userEx, "Error importing user {Username}", LoggingHelper.Sanitize(userDto.Username));
+                        errors.Add($"Failed to import user '{LoggingHelper.Sanitize(userDto.Username)}': {userEx.Message}");
                     }
                     finally
                     {

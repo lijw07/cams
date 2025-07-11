@@ -80,7 +80,7 @@ export const roleService = {
     return apiService.post('/management/roles', data);
   },
 
-  async updateRole(id: number, data: UpdateRoleRequest): Promise<Role> {
+  async updateRole(id: string, data: UpdateRoleRequest): Promise<Role> {
     return apiService.put(`/management/roles/${id}`, data);
   },
 

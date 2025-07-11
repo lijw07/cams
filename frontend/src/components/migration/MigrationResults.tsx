@@ -41,15 +41,15 @@ const MigrationResults: React.FC<MigrationResultsProps> = ({
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Valid:</span>
-                <span className="ml-2 font-medium text-green-600">{validationResult.ValidRecords}</span>
+                <span className="ml-2 font-medium text-green-600">{validationResult.TotalRecords - (validationResult.Errors?.length || 0)}</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Invalid:</span>
-                <span className="ml-2 font-medium text-red-600">{validationResult.InvalidRecords}</span>
+                <span className="ml-2 font-medium text-red-600">{validationResult.Errors?.length || 0}</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Warnings:</span>
-                <span className="ml-2 font-medium text-yellow-600">{validationResult.Warnings}</span>
+                <span className="ml-2 font-medium text-yellow-600">{validationResult.Warnings?.length || 0}</span>
               </div>
             </div>
 
@@ -81,13 +81,8 @@ const MigrationResults: React.FC<MigrationResultsProps> = ({
             Migration Progress
           </h3>
           <ProgressTracker
-            currentStep={currentProgress.CurrentStep}
-            totalSteps={currentProgress.TotalSteps}
-            stepName={currentProgress.StepName}
-            progress={currentProgress.Percentage}
-            isCompleted={currentProgress.IsCompleted}
-            isSuccessful={currentProgress.IsSuccessful}
-            message={currentProgress.Message}
+            progress={currentProgress}
+            isVisible={true}
           />
         </Card>
       )}
@@ -96,7 +91,7 @@ const MigrationResults: React.FC<MigrationResultsProps> = ({
       {migrationResult && (
         <Card>
           <div className="flex items-center mb-4">
-            {migrationResult.IsSuccessful ? (
+            {migrationResult.Success ? (
               <CheckCircle className="w-6 h-6 text-green-600 mr-2" />
             ) : (
               <AlertCircle className="w-6 h-6 text-yellow-600 mr-2" />
@@ -110,19 +105,19 @@ const MigrationResults: React.FC<MigrationResultsProps> = ({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Processed:</span>
-                <span className="ml-2 font-medium">{migrationResult.TotalProcessed}</span>
+                <span className="ml-2 font-medium">{migrationResult.TotalRecords}</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Success:</span>
-                <span className="ml-2 font-medium text-green-600">{migrationResult.SuccessCount}</span>
+                <span className="ml-2 font-medium text-green-600">{migrationResult.SuccessfulRecords}</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Failed:</span>
-                <span className="ml-2 font-medium text-red-600">{migrationResult.FailureCount}</span>
+                <span className="ml-2 font-medium text-red-600">{migrationResult.FailedRecords}</span>
               </div>
               <div>
                 <span className="text-gray-500 dark:text-gray-400">Duration:</span>
-                <span className="ml-2 font-medium">{migrationResult.Duration}ms</span>
+                <span className="ml-2 font-medium">{migrationResult.Duration}</span>
               </div>
             </div>
 

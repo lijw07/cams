@@ -96,7 +96,7 @@ export const useRoleManagement = () => {
 
   const updateRole = async (data: UpdateRoleRequest) => {
     try {
-      await roleService.updateRole(data);
+      await roleService.updateRole(data.Id, data);
       addNotification({ 
         title: 'Success', 
         message: 'Role updated successfully', 
@@ -137,7 +137,7 @@ export const useRoleManagement = () => {
 
   const toggleRoleStatus = async (id: string, isActive: boolean) => {
     try {
-      await roleService.toggleRoleStatus(id, isActive);
+      await roleService.toggleRoleStatus(id);
       addNotification({ 
         title: 'Success', 
         message: `Role ${isActive ? 'activated' : 'deactivated'} successfully`, 

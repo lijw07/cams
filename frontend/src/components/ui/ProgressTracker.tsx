@@ -164,7 +164,7 @@ const ProgressTracker: React.FC<ProgressTrackerProps> = ({
           <div className={`text-sm font-medium ${
             progress.IsSuccessful ? 'text-green-800' : 'text-red-800'
           }`}>
-            {progress.isSuccessful 
+            {progress.IsSuccessful 
               ? 'Migration completed successfully!' 
               : 'Migration completed with errors'
             }

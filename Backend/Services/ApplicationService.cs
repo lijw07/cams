@@ -2,6 +2,7 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Enums;
 using cams.Backend.Data;
+using Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
@@ -101,7 +102,8 @@ namespace cams.Backend.Services
             context.Applications.Add(application);
             await context.SaveChangesAsync();
             
-            logger.LogInformation("Created application {ApplicationName} for user {UserId}", request.Name, userId);
+            logger.LogInformation("Created application {ApplicationName} for user {UserId}", 
+                LoggingHelper.Sanitize(request.Name), userId);
             
             return MapToResponse(application);
         }
@@ -123,7 +125,8 @@ namespace cams.Backend.Services
             application.UpdatedAt = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
-            logger.LogInformation("Updated application {ApplicationName} for user {UserId}", request.Name, userId);
+            logger.LogInformation("Updated application {ApplicationName} for user {UserId}", 
+                LoggingHelper.Sanitize(request.Name), userId);
             
             return MapToResponse(application);
         }
@@ -302,7 +305,7 @@ namespace cams.Backend.Services
             await context.SaveChangesAsync();
             
             logger.LogInformation("Created application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
-                application.Name, connection.Name, userId);
+                LoggingHelper.Sanitize(application.Name), LoggingHelper.Sanitize(connection.Name), userId);
             
             // Simple connection test simulation if requested
             bool testResult = false;
@@ -387,7 +390,7 @@ namespace cams.Backend.Services
             
             await context.SaveChangesAsync();
             logger.LogInformation("Updated application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
-                existingApp.Name, existingConnection.Name, userId);
+                LoggingHelper.Sanitize(existingApp.Name), LoggingHelper.Sanitize(existingConnection.Name), userId);
             
             // Test connection if requested
             bool testResult = false;

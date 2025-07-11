@@ -2,6 +2,7 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Mappers;
 using cams.Backend.Data;
+using Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
@@ -150,7 +151,7 @@ namespace cams.Backend.Services
             context.Users.Update(user);
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Email changed successfully for user {UserId} to {NewEmail}", userId, request.NewEmail);
+            logger.LogInformation("Email changed successfully for user {UserId} to {NewEmail}", userId, LoggingHelper.Sanitize(request.NewEmail));
 
             return new EmailChangeResponse
             {

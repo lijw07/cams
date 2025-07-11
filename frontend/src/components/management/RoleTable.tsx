@@ -32,6 +32,7 @@ interface RoleTableProps {
     hasPrevious: boolean;
   };
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
 }
 
 const RoleTable: React.FC<RoleTableProps> = ({
@@ -44,7 +45,8 @@ const RoleTable: React.FC<RoleTableProps> = ({
   onToggleStatus,
   onViewUsers,
   pagination,
-  onPageChange
+  onPageChange,
+  onPageSizeChange
 }) => {
   const getRoleIcon = (role: Role) => {
     if (role.Name.toLowerCase().includes('admin')) return Crown;
@@ -209,6 +211,7 @@ const RoleTable: React.FC<RoleTableProps> = ({
         totalItems={pagination.totalItems}
         pageSize={pagination.perPage}
         onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
     </div>
   );

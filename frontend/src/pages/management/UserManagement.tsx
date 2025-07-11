@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserManagement, CreateUserRequest, UpdateUserRequest } from '../../services/usersService';
+import { UserWithRoles } from '../../types/management';
 import { useUserManagement } from '../../hooks/useUserManagement';
 import UserHeader from '../../components/management/UserHeader';
 import UserTable from '../../components/management/UserTable';
@@ -28,7 +29,7 @@ const UserManagementPage: React.FC = () => {
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [selectedUser, setSelectedUser] = useState<UserManagement | null>(null);
+  const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
 
   const toggleUserSelection = (id: string) => {
     setSelectedUsers(prev => 
@@ -46,7 +47,12 @@ const UserManagementPage: React.FC = () => {
 
   const handleEditUser = (user: UserManagement) => {
     setModalMode('edit');
-    setSelectedUser(user);
+    // Convert UserManagement to UserWithRoles format
+    const userWithRoles: UserWithRoles = {
+      ...user,
+      Roles: user.Roles || []
+    };
+    setSelectedUser(userWithRoles);
     setIsUserModalOpen(true);
   };
 
@@ -117,7 +123,7 @@ const UserManagementPage: React.FC = () => {
           setSelectedUser(null);
         }}
         onSubmit={handleModalSubmit}
-        user={selectedUser}
+        user={selectedUser || undefined}
         mode={modalMode}
       />
     </div>

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
 using cams.Backend.View;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 
@@ -28,7 +29,7 @@ namespace cams.Backend.Controller
                 
                 if (response == null)
                 {
-                    logger.LogWarning(ApplicationConstants.LogMessages.USER_LOGIN_FAILED, request.Username);
+                    logger.LogWarning(ApplicationConstants.LogMessages.USER_LOGIN_FAILED, LoggingHelper.Sanitize(request.Username));
                     
                     // Log security event for failed login
                     await loggingService.LogSecurityEventAsync(
@@ -82,7 +83,7 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error during authentication for username: {Username}", request.Username);
+                logger.LogError(ex, "Error during authentication for username: {Username}", LoggingHelper.Sanitize(request.Username));
                 return HttpResponseHelper.CreateErrorResponse("An error occurred during authentication");
             }
         }

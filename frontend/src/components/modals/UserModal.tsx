@@ -5,6 +5,7 @@ import Modal from '../common/Modal';
 import Button from '../common/Button';
 import UserFormFields from '../forms/UserFormFields';
 import UserRoleSelection from '../forms/UserRoleSelection';
+import { UserWithRoles } from '../../types/management';
 
 interface CreateUserRequest {
   Username: string;
@@ -27,32 +28,10 @@ interface UpdateUserRequest {
   IsActive: boolean;
 }
 
-interface UserWithRoles {
-  Id: string;
-  Username: string;
-  Email: string;
-  FirstName?: string;
-  LastName?: string;
-  PhoneNumber?: string;
-  IsActive: boolean;
-  CreatedAt: string;
-  LastLoginAt?: string;
-  ApplicationCount: number;
-  DatabaseConnectionCount: number;
-  Roles: Array<{
-    Id: number;
-    Name: string;
-    Description?: string;
-    IsActive: boolean;
-    CreatedAt: string;
-    UpdatedAt: string;
-  }>;
-}
-
 interface UserModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateUserRequest | UpdateUserRequest, roleIds: number[]) => Promise<void>;
+  onSubmit: (data: CreateUserRequest | UpdateUserRequest, roleIds: string[]) => Promise<void>;
   user?: UserWithRoles;
   mode?: 'create' | 'edit';
 }
@@ -83,7 +62,7 @@ const UserModal: React.FC<UserModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} maxWidth="4xl">
+    <Modal isOpen={isOpen} onClose={handleClose} size="xl">
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           {mode === 'create' ? 'Create New User' : 'Edit User'}

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
 using cams.Backend.View;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 using cams.Backend.Model;
@@ -117,12 +118,12 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} creating database connection: {ConnectionName} (Type: {DatabaseType})", 
-                    userId, request.Name, request.Type);
+                    userId, LoggingHelper.Sanitize(request.Name), request.Type);
                 
                 var connection = await connectionService.CreateConnectionAsync(request, userId);
                 
                 logger.LogInformation("Successfully created database connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
-                    connection.Id, connection.Name, userId);
+                    connection.Id, LoggingHelper.Sanitize(connection.Name), userId);
                 
                 // Log audit event for database connection creation
                 await loggingService.LogAuditAsync(
@@ -131,7 +132,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.DATABASE_CONNECTION,
                     entityId: connection.Id,
                     entityName: connection.Name,
-                    newValues: $"Name: {connection.Name}, Type: {request.Type}, ApplicationId: {request.ApplicationId}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(connection.Name)}, Type: {request.Type}, ApplicationId: {request.ApplicationId}",
                     description: "Created new database connection",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -142,7 +143,7 @@ namespace cams.Backend.Controller
                     SystemEventType.ConfigurationChange.ToString(),
                     SystemLogLevel.Information.ToString(),
                     SystemLogSources.DATABASE,
-                    $"Database connection created: {connection.Name}",
+                    $"Database connection created: {LoggingHelper.Sanitize(connection.Name)}",
                     details: $"ConnectionId: {connection.Id}, Type: {request.Type}, ApplicationId: {request.ApplicationId}, UserId: {userId}",
                     userId: userId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
@@ -167,7 +168,7 @@ namespace cams.Backend.Controller
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error creating database connection {ConnectionName} for user {UserId}", 
-                    request.Name, UserHelper.GetCurrentUserId(User));
+                    LoggingHelper.Sanitize(request.Name), UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse("Error creating database connection");
             }
         }

@@ -1,6 +1,7 @@
 using cams.Backend.Attributes;
 using cams.Backend.Constants;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Services;
 using cams.Backend.View;
 using Microsoft.AspNetCore.Authorization;
@@ -97,7 +98,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} retrieved role {RoleId} ({RoleName})",
-                    currentUserId, id, role.Name);
+                    currentUserId, id, LoggingHelper.Sanitize(role.Name));
 
                 return Ok(role);
             }
@@ -128,8 +129,8 @@ namespace cams.Backend.Controller
                     "Role",
                     entityId: role.Id,
                     entityName: role.Name,
-                    description: $"Created new role: {role.Name}",
-                    newValues: $"Name: {role.Name}, Description: {role.Description}"
+                    description: $"Created new role: {LoggingHelper.Sanitize(role.Name)}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(role.Name)}, Description: {LoggingHelper.Sanitize(role.Description)}"
                 );
 
                 // Log system event for role creation
@@ -137,8 +138,8 @@ namespace cams.Backend.Controller
                     "RoleCreated",
                     "Information",
                     "Authorization",
-                    $"New role created: {role.Name}",
-                    details: $"RoleId: {role.Id}, RoleName: {role.Name}, Description: {role.Description}, CreatedBy: {currentUserId}",
+                    $"New role created: {LoggingHelper.Sanitize(role.Name)}",
+                    details: $"RoleId: {role.Id}, RoleName: {LoggingHelper.Sanitize(role.Name)}, Description: {LoggingHelper.Sanitize(role.Description)}, CreatedBy: {currentUserId}",
                     userId: currentUserId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -147,7 +148,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} created role {RoleId} ({RoleName})",
-                    currentUserId, role.Id, role.Name);
+                    currentUserId, role.Id, LoggingHelper.Sanitize(role.Name));
 
                 return CreatedAtAction(
                     nameof(GetRoleById),
@@ -190,12 +191,12 @@ namespace cams.Backend.Controller
                     "Role",
                     entityId: id,
                     entityName: role.Name,
-                    description: $"Updated role: {role.Name}",
-                    newValues: $"Name: {role.Name}, Description: {role.Description}"
+                    description: $"Updated role: {LoggingHelper.Sanitize(role.Name)}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(role.Name)}, Description: {LoggingHelper.Sanitize(role.Description)}"
                 );
 
                 logger.LogInformation("User {UserId} updated role {RoleId} ({RoleName})",
-                    currentUserId, id, role.Name);
+                    currentUserId, id, LoggingHelper.Sanitize(role.Name));
 
                 return Ok(role);
             }

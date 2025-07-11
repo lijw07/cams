@@ -135,8 +135,8 @@ export const databaseConnectionService = {
     message: string;
   }> {
     return apiService.post('/database-connections/bulk/toggle', {
-      connectionIds,
-      isActive,
+      ConnectionIds: connectionIds,
+      IsActive: isActive,
     });
   },
 
@@ -146,7 +146,7 @@ export const databaseConnectionService = {
     message: string;
   }> {
     return apiService.post('/database-connections/bulk/delete', {
-      connectionIds,
+      ConnectionIds: connectionIds,
     });
   },
 

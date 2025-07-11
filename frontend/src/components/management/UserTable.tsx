@@ -30,6 +30,7 @@ interface UserTableProps {
     hasPrevious: boolean;
   };
   onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
 }
 
 const UserTable: React.FC<UserTableProps> = ({
@@ -42,7 +43,8 @@ const UserTable: React.FC<UserTableProps> = ({
   onToggleStatus,
   onViewUser,
   pagination,
-  onPageChange
+  onPageChange,
+  onPageSizeChange
 }) => {
   const getUserStatusIcon = (user: UserManagement) => {
     return user.IsActive ? UserCheck : UserX;
@@ -204,6 +206,7 @@ const UserTable: React.FC<UserTableProps> = ({
         totalItems={pagination.totalItems}
         pageSize={pagination.perPage}
         onPageChange={onPageChange}
+        onPageSizeChange={onPageSizeChange}
       />
     </div>
   );

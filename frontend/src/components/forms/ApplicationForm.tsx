@@ -3,7 +3,7 @@ import { UseFormRegister, FieldErrors, FieldValues } from 'react-hook-form';
 import { Server } from 'lucide-react';
 import { FormField, Input, Textarea, Select, Checkbox } from '../common';
 
-interface ApplicationFormProps<T extends FieldValues = any> {
+interface ApplicationFormProps<T extends FieldValues = FieldValues> {
   register: UseFormRegister<T>;
   errors: FieldErrors<T>;
 }
@@ -26,7 +26,7 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ register, errors }) =
       <FormField 
         label="Application Name" 
         required 
-        error={errors.Name?.message as string}
+        error={errors.Name?.message || undefined}
       >
         <Input
           {...register('Name', {

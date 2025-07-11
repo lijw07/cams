@@ -32,6 +32,22 @@ export interface UserManagementDto extends User {
   LastLoginFormatted?: string;
 }
 
+export interface UserWithRoles {
+  Id: string;
+  Username: string;
+  Email: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
+  IsActive: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  LastLoginAt?: string;
+  Roles: Role[];
+  ApplicationCount: number;
+  DatabaseConnectionCount: number;
+}
+
 export interface UserCreateRequest {
   Username: string;
   Email: string;

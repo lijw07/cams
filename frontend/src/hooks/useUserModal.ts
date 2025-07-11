@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { roleService } from '../services/roleService';
+import { roleService, Role } from '../services/roleService';
+import { UserWithRoles } from '../types/management';
 
 interface CreateUserRequest {
   Username: string;
@@ -21,34 +22,6 @@ interface UpdateUserRequest {
   LastName?: string;
   PhoneNumber?: string;
   IsActive: boolean;
-}
-
-interface UserWithRoles {
-  Id: string;
-  Username: string;
-  Email: string;
-  FirstName?: string;
-  LastName?: string;
-  PhoneNumber?: string;
-  IsActive: boolean;
-  CreatedAt: string;
-  LastLoginAt?: string;
-  ApplicationCount: number;
-  DatabaseConnectionCount: number;
-  Roles: Array<{
-    Id: number;
-    Name: string;
-    Description?: string;
-    IsActive: boolean;
-    CreatedAt: string;
-    UpdatedAt: string;
-  }>;
-}
-
-interface Role {
-  Id: number;
-  Name: string;
-  IsSystem: boolean;
 }
 
 interface UseUserModalProps {
@@ -106,7 +79,7 @@ export const useUserModal = ({ isOpen, user, mode, onSubmit, onClose }: UseUserM
           PhoneNumber: user.PhoneNumber || '',
           IsActive: user.IsActive
         });
-        setSelectedRoles(user.Roles.map(role => role.Id));
+        setSelectedRoles(user.Roles.map(role => role.Id.toString()));
       } else {
         reset({
           Username: '',

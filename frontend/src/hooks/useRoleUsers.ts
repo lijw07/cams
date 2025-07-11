@@ -64,7 +64,7 @@ export const useRoleUsers = (role: Role | null, isOpen: boolean) => {
     const change: UserRoleChange = {
       userId,
       username: user.Username,
-      currentRole: currentUserRole?.Role || role!,
+      currentRole: role!,
       newRoleId,
       action: newRoleId === null ? 'remove' : 
               currentUserRole ? 'change' : 'assign'

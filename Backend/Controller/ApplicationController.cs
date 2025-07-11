@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
 using cams.Backend.View;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 
@@ -130,12 +131,12 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} creating new application: {ApplicationName}", userId, request.Name);
+                logger.LogInformation("User {UserId} creating new application: {ApplicationName}", userId, LoggingHelper.Sanitize(request.Name));
                 
                 var application = await applicationService.CreateApplicationAsync(request, userId);
                 
                 logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) for user {UserId}", 
-                    application.Id, application.Name, userId);
+                    application.Id, LoggingHelper.Sanitize(application.Name), userId);
                 
                 // Log audit event for application creation
                 await loggingService.LogAuditAsync(
@@ -144,7 +145,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: application.Id,
                     entityName: application.Name,
-                    newValues: $"Name: {application.Name}, Description: {request.Description}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(application.Name)}, Description: {LoggingHelper.Sanitize(request.Description)}",
                     description: "Created new application",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -155,8 +156,8 @@ namespace cams.Backend.Controller
                     "ApplicationCreated",
                     "Information",
                     "Application",
-                    $"New application created: {application.Name}",
-                    details: $"ApplicationId: {application.Id}, Name: {application.Name}, Environment: {request.Environment}, IsActive: {request.IsActive}, CreatedBy: {userId}",
+                    $"New application created: {LoggingHelper.Sanitize(application.Name)}",
+                    details: $"ApplicationId: {application.Id}, Name: {LoggingHelper.Sanitize(application.Name)}, Environment: {LoggingHelper.Sanitize(request.Environment)}, IsActive: {request.IsActive}, CreatedBy: {userId}",
                     userId: userId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -168,7 +169,7 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating application {ApplicationName} for user {UserId}", request.Name, UserHelper.GetCurrentUserId(User));
+                logger.LogError(ex, "Error creating application {ApplicationName} for user {UserId}", LoggingHelper.Sanitize(request.Name), UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse( "Error creating application");
             }
         }
@@ -194,7 +195,7 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} updating application {ApplicationId}: {ApplicationName}", userId, id, request.Name);
+                logger.LogInformation("User {UserId} updating application {ApplicationId}: {ApplicationName}", userId, id, LoggingHelper.Sanitize(request.Name));
                 
                 var application = await applicationService.UpdateApplicationAsync(request, userId);
                 
@@ -205,7 +206,7 @@ namespace cams.Backend.Controller
                 }
 
                 logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) for user {UserId}", 
-                    application.Id, application.Name, userId);
+                    application.Id, LoggingHelper.Sanitize(application.Name), userId);
 
                 // Log audit event for application update
                 await loggingService.LogAuditAsync(
@@ -214,7 +215,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: application.Id,
                     entityName: application.Name,
-                    newValues: $"Name: {application.Name}, Description: {request.Description}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(application.Name)}, Description: {LoggingHelper.Sanitize(request.Description)}",
                     description: "Updated application",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -426,14 +427,14 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, request.ApplicationName);
+                logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, LoggingHelper.Sanitize(request.ApplicationName));
                 logger.LogInformation("Request data: ApplicationName={ApplicationName}, ConnectionName={ConnectionName}, DatabaseType={DatabaseType}, Server={Server}", 
-                    request.ApplicationName, request.ConnectionName, request.DatabaseType, request.Server);
+                    LoggingHelper.Sanitize(request.ApplicationName), LoggingHelper.Sanitize(request.ConnectionName), request.DatabaseType, LoggingHelper.Sanitize(request.Server));
                 
                 var response = await applicationService.CreateApplicationWithConnectionAsync(request, userId);
                 
                 logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
-                    response.Application.Id, response.Application.Name, response.DatabaseConnection.Id, response.DatabaseConnection.Name, userId);
+                    response.Application.Id, LoggingHelper.Sanitize(response.Application.Name), response.DatabaseConnection.Id, LoggingHelper.Sanitize(response.DatabaseConnection.Name), userId);
                 
                 // Log audit event for combined creation
                 await loggingService.LogAuditAsync(
@@ -442,7 +443,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: response.Application.Id,
                     entityName: response.Application.Name,
-                    newValues: $"Application: {response.Application.Name}, Connection: {response.DatabaseConnection.Name}",
+                    newValues: $"Application: {LoggingHelper.Sanitize(response.Application.Name)}, Connection: {LoggingHelper.Sanitize(response.DatabaseConnection.Name)}",
                     description: "Created application with database connection",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -452,7 +453,7 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating application with connection {ApplicationName} for user {UserId}", request.ApplicationName, UserHelper.GetCurrentUserId(User));
+                logger.LogError(ex, "Error creating application with connection {ApplicationName} for user {UserId}", LoggingHelper.Sanitize(request.ApplicationName), UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse( "Error creating application with connection");
             }
         }
@@ -491,7 +492,7 @@ namespace cams.Backend.Controller
                 }
 
                 logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
-                    response.Application.Id, response.Application.Name, response.DatabaseConnection.Id, response.DatabaseConnection.Name, userId);
+                    response.Application.Id, LoggingHelper.Sanitize(response.Application.Name), response.DatabaseConnection.Id, LoggingHelper.Sanitize(response.DatabaseConnection.Name), userId);
 
                 // Log audit event for combined update
                 await loggingService.LogAuditAsync(
@@ -500,7 +501,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: response.Application.Id,
                     entityName: response.Application.Name,
-                    newValues: $"Application: {response.Application.Name}, Connection: {response.DatabaseConnection.Name}",
+                    newValues: $"Application: {LoggingHelper.Sanitize(response.Application.Name)}, Connection: {LoggingHelper.Sanitize(response.DatabaseConnection.Name)}",
                     description: "Updated application with database connection",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()

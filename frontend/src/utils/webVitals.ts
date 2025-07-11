@@ -32,7 +32,8 @@ const getRating = (name: VitalName, value: number): 'good' | 'needs-improvement'
 // Send metrics to analytics service
 const sendToAnalytics = (metric: VitalMetric) => {
   // Send to Google Analytics if available
-  if (typeof gtag !== 'undefined') {
+  if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
+    const gtag = (window as any).gtag;
     gtag('event', ANALYTICS_EVENTS.PAGE_LOAD_TIME, {
       event_category: 'Web Vitals',
       event_label: metric.name,
@@ -45,7 +46,7 @@ const sendToAnalytics = (metric: VitalMetric) => {
   }
 
   // Log to console in development
-  if (process.env.NODE_ENV === 'development') {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
     const emoji = metric.rating === 'good' ? '✅' : metric.rating === 'needs-improvement' ? '⚠️' : '❌';
     console.log(
       `${emoji} ${metric.name}: ${metric.value.toFixed(2)}ms (${metric.rating})`,
@@ -61,7 +62,7 @@ const sendToAnalytics = (metric: VitalMetric) => {
 const sendToCustomAnalytics = async (metric: VitalMetric) => {
   try {
     // Only send in production to avoid development noise
-    if (process.env.NODE_ENV === 'production') {
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'production') {
       await fetch('/api/analytics/web-vitals', {
         method: 'POST',
         headers: {
@@ -146,7 +147,8 @@ export const initWebVitals = () => {
 // Hook for React components to track custom performance metrics
 export const usePerformanceTracking = () => {
   const trackCustomMetric = (name: string, value: number, unit: 'ms' | 's' = 'ms') => {
-    if (typeof gtag !== 'undefined') {
+    if (typeof window !== 'undefined' && typeof (window as any).gtag !== 'undefined') {
+    const gtag = (window as any).gtag;
       gtag('event', 'custom_performance_metric', {
         event_category: 'Performance',
         event_label: name,
@@ -157,7 +159,7 @@ export const usePerformanceTracking = () => {
       });
     }
 
-    if (process.env.NODE_ENV === 'development') {
+    if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
       console.log(`📊 Custom Metric - ${name}: ${value}${unit}`);
     }
   };

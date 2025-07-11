@@ -36,7 +36,7 @@ const RoleUsersModal: React.FC<RoleUsersModalProps> = ({
   if (!isOpen || !role) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} maxWidth="4xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center">
           <Users className="w-6 h-6 text-primary-600 mr-3" />

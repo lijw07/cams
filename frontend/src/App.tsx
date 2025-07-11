@@ -5,6 +5,7 @@ import { usePageTracking } from './hooks/usePageTracking';
 import { logSEOStatus } from './utils/seoValidation';
 import { PerformanceMonitor } from './utils/webVitals';
 import LoadingSpinner from './components/common/LoadingSpinner';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -25,10 +26,10 @@ import RoleManagement from './pages/management/RoleManagement';
 import BulkMigration from './pages/migration/BulkMigration';
 
 // Log pages
-import AuditLogs from './pages/logs/AuditLogs.tsx';
-import SystemLogs from './pages/logs/SystemLogs.tsx';
-import SecurityLogs from './pages/logs/SecurityLogs.tsx';
-import PerformanceLogs from './pages/logs/PerformanceLogs.tsx';
+import AuditLogs from './pages/logs/AuditLogs';
+import SystemLogs from './pages/logs/SystemLogs';
+import SecurityLogs from './pages/logs/SecurityLogs';
+import PerformanceLogs from './pages/logs/PerformanceLogs';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -62,9 +63,10 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen">
-      <PerformanceMonitor />
-      <Routes>
+    <ErrorBoundary>
+      <div className="min-h-screen">
+        <PerformanceMonitor />
+        <Routes>
         {/* Home page - accessible to all */}
         <Route path="/" element={<HomePage />} />
         
@@ -124,7 +126,8 @@ const App: React.FC = () => {
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </div>
+      </div>
+    </ErrorBoundary>
   );
 };
 

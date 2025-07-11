@@ -22,8 +22,8 @@ export const useEditUser = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [roles, setRoles] = useState<Array<{ Id: string; Name: string; IsSystem: boolean }>>([]);
-  const [userRoles, setUserRoles] = useState<number[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const form = useForm<EditUserFormData>();
 
@@ -36,9 +36,9 @@ export const useEditUser = () => {
 
   const loadUser = async () => {
     try {
-      const userData = await usersService.getUser(parseInt(id!));
+      const userData = await usersService.getUser(id!);
       setUser(userData);
-      const roleIds = userData.Roles.map((r: any) => r.Id);
+      const roleIds = userData.Roles.map((r: any) => r.Id.toString());
       setUserRoles(roleIds);
       setSelectedRoles(roleIds);
       
@@ -90,11 +90,11 @@ export const useEditUser = () => {
         PhoneNumber: data.PhoneNumber?.trim() || null
       };
       
-      await usersService.updateUser(parseInt(id!), updateData as any);
+      await usersService.updateUser(id!, updateData as any);
       
       // Update roles if changed
       if (JSON.stringify(selectedRoles.sort()) !== JSON.stringify(userRoles.sort())) {
-        await usersService.updateUserRoles(parseInt(id!), selectedRoles);
+        await usersService.updateUserRoles(id!, selectedRoles);
       }
       
       addNotification({
@@ -169,7 +169,7 @@ export const useEditUser = () => {
 
     try {
       setIsDeleting(true);
-      await usersService.deleteUser(parseInt(id!));
+      await usersService.deleteUser(id!);
       
       addNotification({
         title: 'Success',

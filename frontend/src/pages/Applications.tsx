@@ -87,7 +87,7 @@ const Applications: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
       await applicationService.toggleApplicationStatus(id, !currentStatus);
       addNotification({ title: 'Success', message: `Application ${!currentStatus ? 'activated' : 'deactivated'} successfully`, type: 'success', source: 'Applications' });
@@ -98,7 +98,7 @@ const Applications: React.FC = () => {
     }
   };
 
-  const handleDeleteApplication = async (id: number) => {
+  const handleDeleteApplication = async (id: string) => {
     if (!confirm('Are you sure you want to delete this application?')) return;
     
     try {

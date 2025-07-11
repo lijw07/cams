@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
 using cams.Backend.View;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Enums;
 
 namespace cams.Backend.Controller
@@ -127,7 +128,7 @@ namespace cams.Backend.Controller
                     AuditAction.CreateOrUpdate.ToString(),
                     "ConnectionTestSchedule",
                     entityId: schedule.Id,
-                    newValues: $"ApplicationId: {request.ApplicationId}, CronExpression: {request.CronExpression}, IsEnabled: {request.IsEnabled}",
+                    newValues: $"ApplicationId: {request.ApplicationId}, CronExpression: {LoggingHelper.Sanitize(request.CronExpression)}, IsEnabled: {request.IsEnabled}",
                     description: "Created or updated connection test schedule",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -193,7 +194,7 @@ namespace cams.Backend.Controller
                     AuditAction.Update.ToString(),
                     "ConnectionTestSchedule",
                     entityId: schedule.Id,
-                    newValues: $"CronExpression: {request.CronExpression}, IsEnabled: {request.IsEnabled}",
+                    newValues: $"CronExpression: {LoggingHelper.Sanitize(request.CronExpression)}, IsEnabled: {request.IsEnabled}",
                     description: "Updated connection test schedule",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()

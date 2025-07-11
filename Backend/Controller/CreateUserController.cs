@@ -2,6 +2,7 @@ using cams.Backend.Attributes;
 using cams.Backend.Constants;
 using cams.Backend.Data;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Model;
 using cams.Backend.Services;
 using cams.Backend.View;
@@ -136,7 +137,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} created new user {NewUserId} ({NewUsername}) with roles: {Roles}",
-                    currentUserId, user.Id, user.Username, string.Join(", ", validRoles.Select(r => r.Name)));
+                    currentUserId, user.Id, LoggingHelper.Sanitize(user.Username), string.Join(", ", validRoles.Select(r => r.Name)));
 
                 return CreatedAtAction(
                     "GetUserById",
@@ -153,7 +154,7 @@ namespace cams.Backend.Controller
                     "Failed",
                     userId: UserHelper.GetCurrentUserId(User),
                     username: UserHelper.GetCurrentUsername(User),
-                    description: $"Failed to create user: {request.Username}",
+                    description: $"Failed to create user: {LoggingHelper.Sanitize(request.Username)}",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
@@ -204,7 +205,7 @@ namespace cams.Backend.Controller
 
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} validated username '{Username}' - Available: {IsAvailable}",
-                    currentUserId, request.Username, !exists);
+                    currentUserId, LoggingHelper.Sanitize(request.Username), !exists);
 
                 return Ok(new { isAvailable = !exists });
             }
@@ -230,7 +231,7 @@ namespace cams.Backend.Controller
 
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} validated email '{Email}' - Available: {IsAvailable}",
-                    currentUserId, request.Email, !exists);
+                    currentUserId, LoggingHelper.Sanitize(request.Email), !exists);
 
                 return Ok(new { isAvailable = !exists });
             }

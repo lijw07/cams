@@ -37,6 +37,17 @@ export const useApplicationModal = ({
 
   const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = form;
 
+  const loadConnections = useCallback(async () => {
+    const appId = application?.id;
+    if (!appId) return;
+    try {
+      const connectionData = await databaseConnectionService.getConnections(appId);
+      setConnections(connectionData);
+    } catch (error) {
+      console.error('Error loading connections:', error);
+    }
+  }, [application?.id]);
+
   useEffect(() => {
     if (mode === 'edit' && isOpen) {
       if (application?.connections) {
@@ -61,17 +72,6 @@ export const useApplicationModal = ({
       });
     }
   }, [application, reset]);
-
-  const loadConnections = useCallback(async () => {
-    const appId = application?.id;
-    if (!appId) return;
-    try {
-      const connectionData = await databaseConnectionService.getConnections(appId);
-      setConnections(connectionData);
-    } catch (error) {
-      console.error('Error loading connections:', error);
-    }
-  }, [application?.id]);
 
   const handleFormSubmit = async (data: ApplicationRequest) => {
     try {

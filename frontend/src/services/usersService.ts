@@ -31,7 +31,7 @@ export interface UserManagement {
   CreatedAt: string;
   UpdatedAt: string;
   LastLoginAt?: string;
-  Roles: Array<{ Id: string; Name: string; Description: string; IsActive: boolean; CreatedAt: string; UpdatedAt: string }>;
+  Roles: Array<{ Id: string; Name: string; Description?: string; IsActive: boolean; IsSystem: boolean; UserCount: number; CreatedAt: string; UpdatedAt: string }>;
   ApplicationCount: number;
   DatabaseConnectionCount: number;
 }

@@ -69,6 +69,18 @@ export interface ApplicationWithConnectionRequest {
   Audience?: string;
   GrantType?: string;
   TokenEndpoint?: string;
+  
+  // Additional cloud fields
+  ResourceGroup?: string;
+  ServiceAccountKey?: string;
+  RedirectUri?: string;
+  PrivateKey?: string;
+  PublicKey?: string;
+  Account?: string;
+  Warehouse?: string;
+  Schema?: string;
+  WorkspaceUrl?: string;
+  ClusterId?: string;
 }
 
 export interface ApplicationWithConnectionResponse {

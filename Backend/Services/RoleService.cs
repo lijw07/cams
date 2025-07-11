@@ -1,6 +1,7 @@
 using cams.Backend.Data;
 using cams.Backend.Model;
 using cams.Backend.View;
+using Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
@@ -113,7 +114,7 @@ namespace cams.Backend.Services
             context.Roles.Add(role);
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Created new role: {RoleName}", request.Name);
+            logger.LogInformation("Created new role: {RoleName}", LoggingHelper.Sanitize(request.Name));
 
             return MapToResponse(role);
         }
@@ -142,7 +143,7 @@ namespace cams.Backend.Services
 
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Updated role: {RoleName}", request.Name);
+            logger.LogInformation("Updated role: {RoleName}", LoggingHelper.Sanitize(request.Name));
 
             return MapToResponse(role);
         }
@@ -185,7 +186,7 @@ namespace cams.Backend.Services
             await context.SaveChangesAsync();
 
             logger.LogInformation("Permanently deleted role: {RoleName} (cleaned up {InactiveCount} inactive user assignments)", 
-                role.Name, inactiveUserRoles.Count);
+                LoggingHelper.Sanitize(role.Name), inactiveUserRoles.Count);
 
             return true;
         }
@@ -205,7 +206,7 @@ namespace cams.Backend.Services
             await context.SaveChangesAsync();
 
             logger.LogInformation("Toggled role status: {RoleName} is now {Status}", 
-                role.Name, role.IsActive ? "active" : "inactive");
+                LoggingHelper.Sanitize(role.Name), role.IsActive ? "active" : "inactive");
 
             return true;
         }
@@ -313,7 +314,7 @@ namespace cams.Backend.Services
 
         public async Task<bool> UserHasRoleAsync(Guid userId, string roleName)
         {
-            logger.LogInformation("RoleService.UserHasRoleAsync: Checking if user {UserId} has role '{RoleName}'", userId, roleName);
+            logger.LogInformation("RoleService.UserHasRoleAsync: Checking if user {UserId} has role '{RoleName}'", userId, LoggingHelper.Sanitize(roleName));
             
             var userRoles = await context.UserRoles
                 .Include(ur => ur.Role)
@@ -325,7 +326,7 @@ namespace cams.Backend.Services
             foreach (var ur in userRoles)
             {
                 logger.LogInformation("RoleService.UserHasRoleAsync: User {UserId} role assignment - Role: '{RoleName}', IsActive: {IsActive}, RoleIsActive: {RoleIsActive}",
-                    userId, ur.Role?.Name ?? "NULL", ur.IsActive, ur.Role?.IsActive ?? false);
+                    userId, LoggingHelper.Sanitize(ur.Role?.Name ?? "NULL"), ur.IsActive, ur.Role?.IsActive ?? false);
             }
             
             var hasRole = await context.UserRoles
@@ -335,7 +336,7 @@ namespace cams.Backend.Services
                               ur.IsActive && 
                               ur.Role.IsActive);
                               
-            logger.LogInformation("RoleService.UserHasRoleAsync: Final result for user {UserId} and role '{RoleName}': {HasRole}", userId, roleName, hasRole);
+            logger.LogInformation("RoleService.UserHasRoleAsync: Final result for user {UserId} and role '{RoleName}': {HasRole}", userId, LoggingHelper.Sanitize(roleName), hasRole);
             
             return hasRole;
         }

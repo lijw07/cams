@@ -22,6 +22,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
   const {
     currentStep,
     selectedDbType,
+    setSelectedDbType,
     isTestingConnection,
     testResult,
     register,
@@ -34,7 +35,6 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     handleClose,
     nextStep,
     prevStep,
-    handleTestConnection,
     getDatabaseTypeOptions,
     isApiType,
     isConnectionStringType,
@@ -42,14 +42,14 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
   } = useApplicationWithConnection({ isOpen, onSubmit, onClose });
 
   const steps = [
-    { number: 1, title: 'Application', description: 'Basic info' },
-    { number: 2, title: 'Connection', description: 'Database setup' }
+    { number: 1, label: 'Application', completed: currentStep > 1, active: currentStep === 1 },
+    { number: 2, label: 'Connection', completed: false, active: currentStep === 2 }
   ];
 
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} maxWidth="4xl">
+    <Modal isOpen={isOpen} onClose={handleClose} size="xl">
       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
           Create Application with Connection
@@ -63,14 +63,13 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
       </div>
 
       <div className="p-6">
-        <StepIndicator steps={steps} currentStep={currentStep} />
+        <StepIndicator steps={steps} />
 
         <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
           {currentStep === 1 && (
             <ApplicationDetailsStep
               register={register}
               errors={errors}
-              control={control}
             />
           )}
 
@@ -81,13 +80,12 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
               control={control}
               watch={watch}
               selectedDbType={selectedDbType}
-              isTestingConnection={isTestingConnection}
-              testResult={testResult}
-              onTestConnection={handleTestConnection}
+              setSelectedDbType={setSelectedDbType}
               getDatabaseTypeOptions={getDatabaseTypeOptions}
               isApiType={isApiType}
               isConnectionStringType={isConnectionStringType}
               isCloudPlatform={isCloudPlatform}
+              testResult={testResult}
             />
           )}
 

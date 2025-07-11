@@ -2,6 +2,7 @@ using cams.Backend.Attributes;
 using cams.Backend.Constants;
 using cams.Backend.Data;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Services;
 using cams.Backend.View;
 using Microsoft.AspNetCore.Authorization;
@@ -208,7 +209,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} retrieved details for user {TargetUserId} ({TargetUsername})",
-                    currentUserId, id, user.Username);
+                    currentUserId, id, LoggingHelper.Sanitize(user.Username));
 
                 return Ok(user);
             }
@@ -261,7 +262,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: user.Id,
                     entityName: user.Username,
-                    description: $"Created user: {user.Username}"
+                    description: $"Created user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 // Log system event for user creation
@@ -269,8 +270,8 @@ namespace cams.Backend.Controller
                     "UserCreated",
                     "Information",
                     "Authentication",
-                    $"New user account created: {user.Username}",
-                    details: $"UserId: {user.Id}, Username: {user.Username}, Email: {user.Email}, IsActive: {user.IsActive}, CreatedBy: {currentUserId}",
+                    $"New user account created: {LoggingHelper.Sanitize(user.Username)}",
+                    details: $"UserId: {user.Id}, Username: {LoggingHelper.Sanitize(user.Username)}, Email: {LoggingHelper.Sanitize(user.Email)}, IsActive: {user.IsActive}, CreatedBy: {currentUserId}",
                     userId: currentUserId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -330,7 +331,7 @@ namespace cams.Backend.Controller
                 {
                     string duplicateField = existingUser.Username == request.Username ? "Username" : "Email";
                     logger.LogWarning("User update failed - duplicate {Field}: {Value}", duplicateField, 
-                        duplicateField == "Username" ? request.Username : request.Email);
+                        LoggingHelper.Sanitize(duplicateField == "Username" ? request.Username : request.Email));
                     return HttpResponseHelper.CreateBadRequestResponse($"{duplicateField} already exists");
                 }
 
@@ -350,7 +351,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Updated user: {user.Username}"
+                    description: $"Updated user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "User updated successfully" });
@@ -401,7 +402,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: username,
-                    description: $"Permanently deleted user: {username}"
+                    description: $"Permanently deleted user: {LoggingHelper.Sanitize(username)}"
                 );
 
                 // Log system event for user deletion
@@ -409,8 +410,8 @@ namespace cams.Backend.Controller
                     "UserDeleted",
                     "Information",
                     "Authentication",
-                    $"User account permanently deleted: {username}",
-                    details: $"DeletedUserId: {id}, DeletedUsername: {username}, PerformedBy: {currentUserId}, RolesRemoved: {userRoles.Count}",
+                    $"User account permanently deleted: {LoggingHelper.Sanitize(username)}",
+                    details: $"DeletedUserId: {id}, DeletedUsername: {LoggingHelper.Sanitize(username)}, PerformedBy: {currentUserId}, RolesRemoved: {userRoles.Count}",
                     userId: currentUserId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -454,7 +455,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Toggled user status: {user.Username} - {(request.IsActive ? "Activated" : "Deactivated")}"
+                    description: $"Toggled user status: {LoggingHelper.Sanitize(user.Username)} - {(request.IsActive ? "Activated" : "Deactivated")}"
                 );
 
                 return Ok(new { message = $"User {(request.IsActive ? "activated" : "deactivated")} successfully" });
@@ -512,7 +513,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: request.UserId,
                     entityName: user.Username,
-                    description: $"Assigned roles to user: {user.Username}"
+                    description: $"Assigned roles to user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "Roles assigned successfully" });
@@ -556,7 +557,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: request.UserId,
                     entityName: user.Username,
-                    description: $"Removed roles from user: {user.Username}"
+                    description: $"Removed roles from user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "Roles removed successfully" });
@@ -637,7 +638,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Reset password for user: {user.Username}"
+                    description: $"Reset password for user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "Password reset successfully" });
@@ -676,7 +677,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Forced password change for user: {user.Username}"
+                    description: $"Forced password change for user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "User will be required to change password on next login" });

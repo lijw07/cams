@@ -22,6 +22,7 @@ const RoleModal: React.FC<RoleModalProps> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<CreateRoleRequest | UpdateRoleRequest>({
     defaultValues: {
@@ -170,7 +171,7 @@ const RoleModal: React.FC<RoleModalProps> = ({
                   </div>
                 )}
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {(register('Description').value?.length || 0)}/500 characters
+                  {(watch('Description')?.length || 0)}/500 characters
                 </p>
               </div>
 

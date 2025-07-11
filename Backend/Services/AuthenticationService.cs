@@ -10,6 +10,7 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Data;
 using cams.Backend.Mappers;
+using Backend.Helpers;
 
 namespace cams.Backend.Services
 {
@@ -30,7 +31,7 @@ namespace cams.Backend.Services
             
             if (user == null)
             {
-                logger.LogWarning("Authentication failed for user: {Username}", request.Username);
+                logger.LogWarning("Authentication failed for user: {Username}", LoggingHelper.Sanitize(request.Username));
                 return null;
             }
 

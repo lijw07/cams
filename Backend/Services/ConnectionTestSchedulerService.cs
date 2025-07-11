@@ -3,6 +3,7 @@ using NCrontab;
 using cams.Backend.Data;
 using cams.Backend.Model;
 using cams.Backend.View;
+using Backend.Helpers;
 
 namespace cams.Backend.Services
 {
@@ -117,20 +118,20 @@ namespace cams.Backend.Services
                         {
                             successCount++;
                             logger.LogDebug("Connection test successful for connection {ConnectionId} ({ConnectionName})", 
-                                connection.Id, connection.Name);
+                                connection.Id, LoggingHelper.Sanitize(connection.Name));
                         }
                         else
                         {
                             failCount++;
                             logger.LogWarning("Connection test failed for connection {ConnectionId} ({ConnectionName}): {Error}", 
-                                connection.Id, connection.Name, testResult.Message);
+                                connection.Id, LoggingHelper.Sanitize(connection.Name), LoggingHelper.Sanitize(testResult.Message));
                         }
                     }
                     catch (Exception ex)
                     {
                         failCount++;
                         logger.LogError(ex, "Error testing connection {ConnectionId} ({ConnectionName})", 
-                            connection.Id, connection.Name);
+                            connection.Id, LoggingHelper.Sanitize(connection.Name));
                     }
                 }
 

@@ -62,7 +62,7 @@ export const validateSEO = () => {
 
 // Development helper to log SEO status
 export const logSEOStatus = () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (typeof process !== 'undefined' && process.env?.NODE_ENV === 'development') {
     setTimeout(() => {
       const result = validateSEO();
       console.group('🔍 SEO Validation');

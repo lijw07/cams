@@ -97,7 +97,7 @@ export const useUserManagement = () => {
 
   const updateUser = async (data: UpdateUserRequest) => {
     try {
-      await usersService.updateUser(data);
+      await usersService.updateUser(data.Id, data);
       addNotification({ 
         title: 'Success', 
         message: 'User updated successfully', 
