@@ -4,7 +4,7 @@ import { migrationService } from '../../services/migrationService';
 import { signalRService } from '../../services/signalRService';
 import { BulkMigrationRequest, MigrationResult, MigrationValidationResult, MigrationProgress } from '../../types';
 import ProgressTracker from '../../components/ui/ProgressTracker';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const BulkMigration: React.FC = () => {
   const [selectedType, setSelectedType] = useState<'Users' | 'Roles' | 'Applications'>('Users');

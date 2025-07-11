@@ -107,8 +107,31 @@ lcov-report/
 /Prototype/ClientApp/.env.test.local
 /Prototype/ClientApp/.env.production.local
 /Prototype/obj
-# Remove these - they should be included:
-# CLAUDE.md - project documentation should be in repo
-# Migrations - database migrations should be in repo
+# ------------------------------------------
+# GitHub Actions & CI/CD
+# ------------------------------------------
+.github/secrets/
+*.pem
+*.p12
+
+# ------------------------------------------
+# Security & Keys (IMPORTANT: Never commit these)
+# ------------------------------------------
+*.key
+*.pem
+*.p12
+secrets/
+.secrets/
+certificates/
+
+# ------------------------------------------
+# Temporary files
+# ------------------------------------------
+tmp/
+temp/
+*.tmp
+*.temp
+
 CLAUDE.md
 /Migrations
+frontend/dist/

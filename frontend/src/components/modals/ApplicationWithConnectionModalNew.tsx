@@ -1,0 +1,260 @@
+import React, { useState, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { Zap } from 'lucide-react';
+import { ApplicationWithConnectionRequest, DatabaseType } from '../../types';
+import { Modal, Button } from '../common';
+import { useConnectionTest } from '../../hooks';
+import ApplicationForm from '../forms/ApplicationForm';
+import DatabaseConnectionForm from '../forms/DatabaseConnectionForm';
+import StepIndicator from '../ui/StepIndicator';
+import TestResult from '../ui/TestResult';
+import { useNotifications } from '../../contexts/NotificationContext';
+
+interface ApplicationWithConnectionModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (data: ApplicationWithConnectionRequest) => Promise<void>;
+}
+
+const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalProps> = ({
+  isOpen,
+  onClose,
+  onSubmit
+}) => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedDbType, setSelectedDbType] = useState<DatabaseType>(DatabaseType.SqlServer);
+  const { addNotification } = useNotifications();
+  
+  const {
+    isTestingConnection,
+    testResult,
+    testConnection,
+    clearTestResult
+  } = useConnectionTest();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    watch,
+    control,
+    clearErrors,
+    trigger,
+    formState: { errors, isSubmitting }
+  } = useForm<ApplicationWithConnectionRequest>({
+    defaultValues: {
+      applicationName: '',
+      applicationDescription: '',
+      version: '',
+      environment: 'Development',
+      tags: '',
+      isApplicationActive: true,
+      connectionName: '',
+      connectionDescription: '',
+      databaseType: DatabaseType.SqlServer,
+      server: '',
+      port: undefined,
+      database: '',
+      username: '',
+      password: '',
+      connectionString: '',
+      apiBaseUrl: '',
+      apiKey: '',
+      additionalSettings: '',
+      isConnectionActive: true,
+      testConnectionOnCreate: false
+    }
+  });
+
+  const watchedDbType = watch('databaseType');
+
+  useEffect(() => {
+    setSelectedDbType(watchedDbType);
+    clearTestResult();
+  }, [watchedDbType, clearTestResult]);
+
+  useEffect(() => {
+    if (currentStep === 2) {
+      clearTestResult();
+    }
+  }, [watch('server'), watch('port'), watch('database'), watch('username'), watch('password'), watch('connectionString'), watch('apiBaseUrl'), currentStep, clearTestResult]);
+
+  useEffect(() => {
+    if (isOpen) {
+      clearErrors();
+      setCurrentStep(1);
+      clearTestResult();
+    }
+  }, [isOpen, clearErrors, clearTestResult]);
+
+  const handleFormSubmit = async (data: ApplicationWithConnectionRequest) => {
+    try {
+      const submissionData = {
+        ...data,
+        port: data.port ? parseInt(data.port.toString()) : undefined
+      };
+      
+      await onSubmit(submissionData);
+      reset();
+      setCurrentStep(1);
+      onClose();
+    } catch (error) {
+      console.error('Error submitting application with connection:', error);
+    }
+  };
+
+  const handleClose = () => {
+    reset();
+    setCurrentStep(1);
+    clearTestResult();
+    clearErrors();
+    onClose();
+  };
+
+  const nextStep = async () => {
+    const isStep1Valid = await trigger(['applicationName']);
+    
+    if (isStep1Valid) {
+      setCurrentStep(2);
+      clearTestResult();
+      clearErrors(['connectionName', 'databaseType', 'server', 'database', 'username', 'password', 'connectionString', 'apiBaseUrl']);
+    }
+  };
+
+  const prevStep = () => {
+    setCurrentStep(1);
+    clearTestResult();
+    clearErrors(['connectionName', 'databaseType', 'server', 'database', 'username', 'password', 'connectionString', 'apiBaseUrl']);
+  };
+
+  const handleTestConnection = async () => {
+    const formData = watch();
+    
+    const isApiType = [DatabaseType.RestApi, DatabaseType.GraphQL, DatabaseType.WebSocket].includes(selectedDbType);
+    const isConnectionStringType = [DatabaseType.Custom].includes(selectedDbType);
+    
+    if (isConnectionStringType) {
+      addNotification({
+        title: 'Connection Test',
+        message: 'Connection testing not available for custom connection strings',
+        type: 'error',
+        source: 'Database Test'
+      });
+      return;
+    }
+    
+    if (isApiType) {
+      addNotification({
+        title: 'Connection Test',
+        message: 'Connection testing not available for API endpoints',
+        type: 'error',
+        source: 'Database Test'
+      });
+      return;
+    }
+
+    const testData = {
+      databaseType: formData.databaseType,
+      server: formData.server || '',
+      database: formData.database || '',
+      username: formData.username || '',
+      password: formData.password || '',
+      port: formData.port
+    };
+
+    await testConnection(testData);
+  };
+
+  const steps = [
+    { number: 1, label: 'Application', completed: currentStep > 1, active: currentStep === 1 },
+    { number: 2, label: 'Database', completed: false, active: currentStep === 2 }
+  ];
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      title="Create Application"
+      size="lg"
+    >
+      <StepIndicator steps={steps} />
+
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
+        {currentStep === 1 && (
+          <ApplicationForm
+            register={register}
+            errors={errors}
+          />
+        )}
+
+        {currentStep === 2 && (
+          <>
+            <DatabaseConnectionForm
+              register={register}
+              control={control}
+              errors={errors}
+              selectedDbType={selectedDbType}
+              onDbTypeChange={setSelectedDbType}
+            />
+
+            {testResult && (
+              <TestResult
+                success={testResult.success}
+                message={testResult.message}
+              />
+            )}
+          </>
+        )}
+
+        <div className="flex justify-between pt-4">
+          <div>
+            {currentStep === 2 && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={prevStep}
+                disabled={isSubmitting}
+              >
+                Previous
+              </Button>
+            )}
+          </div>
+          
+          <div className="flex space-x-3">
+            {currentStep === 1 ? (
+              <Button
+                type="button"
+                onClick={nextStep}
+                disabled={isSubmitting}
+              >
+                Next: Database Connection
+              </Button>
+            ) : (
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleTestConnection}
+                  disabled={isSubmitting || isTestingConnection}
+                  loading={isTestingConnection}
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  Test Connection
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  loading={isSubmitting}
+                >
+                  Create Application & Connection
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+export default ApplicationWithConnectionModal;

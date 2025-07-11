@@ -15,7 +15,7 @@ import {
   FileText
 } from 'lucide-react';
 import { emailService, EmailMessage, EmailStatus, EmailPriority } from '../../services/emailService';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const EmailManagementPage: React.FC = () => {
   const navigate = useNavigate();

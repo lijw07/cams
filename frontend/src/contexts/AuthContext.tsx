@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/authService';
 import { UserProfileResponse } from '../types';
-import toast from 'react-hot-toast';
+import { useNotifications } from './NotificationContext';
 
 interface AuthContextType {
   user: UserProfileResponse | null;
@@ -43,6 +43,7 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { addNotification } = useNotifications();
 
   const isAuthenticated = !!user && authService.isAuthenticated();
 
@@ -82,14 +83,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Get user profile after successful login
         const userProfile = await authService.getUserProfile();
         setUser(userProfile);
-        toast.success('Successfully logged in');
+        addNotification({
+          title: 'Login Successful',
+          message: 'Successfully logged in',
+          type: 'success',
+          source: 'Authentication'
+        });
       } else {
         throw new Error(response.message || 'Login failed');
       }
     } catch (error) {
       console.error('Login error:', error);
       const message = error instanceof Error ? error.message : 'Login failed';
-      toast.error(message);
+      addNotification({
+        title: 'Login Failed',
+        message: message,
+        type: 'error',
+        source: 'Authentication'
+      });
       throw error;
     } finally {
       setIsLoading(false);
@@ -101,7 +112,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(true);
       await authService.logout();
       setUser(null);
-      toast.success('Successfully logged out');
+      addNotification({
+        title: 'Logout Successful',
+        message: 'Successfully logged out',
+        type: 'success',
+        source: 'Authentication'
+      });
     } catch (error) {
       console.error('Logout error:', error);
       // Still clear local state even if API call fails
@@ -119,7 +135,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setUser(userProfile);
     } catch (error) {
       console.error('Profile refresh error:', error);
-      toast.error('Failed to refresh profile');
+      addNotification({
+        title: 'Profile Refresh Failed',
+        message: 'Failed to refresh profile',
+        type: 'error',
+        source: 'Profile'
+      });
     }
   };
 
@@ -131,11 +152,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const updatedProfile = await authService.updateProfile(data);
       setUser(updatedProfile);
-      toast.success('Profile updated successfully');
+      addNotification({
+        title: 'Profile Updated',
+        message: 'Profile updated successfully',
+        type: 'success',
+        source: 'Profile'
+      });
     } catch (error) {
       console.error('Profile update error:', error);
       const message = error instanceof Error ? error.message : 'Failed to update profile';
-      toast.error(message);
+      addNotification({
+        title: 'Profile Update Failed',
+        message: message,
+        type: 'error',
+        source: 'Profile'
+      });
       throw error;
     }
   };
@@ -147,11 +178,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }) => {
     try {
       await authService.changePassword(data);
-      toast.success('Password changed successfully');
+      addNotification({
+        title: 'Password Changed',
+        message: 'Password changed successfully',
+        type: 'success',
+        source: 'Profile'
+      });
     } catch (error) {
       console.error('Password change error:', error);
       const message = error instanceof Error ? error.message : 'Failed to change password';
-      toast.error(message);
+      addNotification({
+        title: 'Password Change Failed',
+        message: message,
+        type: 'error',
+        source: 'Profile'
+      });
       throw error;
     }
   };
@@ -164,11 +205,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authService.changeEmail(data);
       // Refresh profile to get updated email
       await refreshUserProfile();
-      toast.success('Email changed successfully');
+      addNotification({
+        title: 'Email Changed',
+        message: 'Email changed successfully',
+        type: 'success',
+        source: 'Profile'
+      });
     } catch (error) {
       console.error('Email change error:', error);
       const message = error instanceof Error ? error.message : 'Failed to change email';
-      toast.error(message);
+      addNotification({
+        title: 'Email Change Failed',
+        message: message,
+        type: 'error',
+        source: 'Profile'
+      });
       throw error;
     }
   };

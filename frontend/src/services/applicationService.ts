@@ -47,7 +47,6 @@ export const applicationService = {
     try {
       return await apiService.post('/application/with-connection', data);
     } catch (error: any) {
-      console.error('API Error Details:', {
         status: error?.response?.status,
         statusText: error?.response?.statusText,
         data: error?.response?.data,
