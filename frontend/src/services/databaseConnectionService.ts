@@ -1,4 +1,3 @@
-import { apiService } from './api';
 import {
   DatabaseConnection,
   DatabaseConnectionRequest,
@@ -9,11 +8,14 @@ import {
   DatabaseTestRequest,
 } from '../types';
 
+import { apiService } from './api';
+
 export const databaseConnectionService = {
   // Regular database connection CRUD
   async getConnections(applicationId?: string): Promise<DatabaseConnection[]> {
-    const params = applicationId ? { applicationId: applicationId } : undefined;
-    return apiService.get('/database-connections', params);
+    const params = new URLSearchParams();
+    if (applicationId) params.append('application-id', applicationId);
+    return apiService.get(`/database-connections${params.toString() ? `?${params.toString()}` : ''}`);
   },
 
   async getConnection(id: string): Promise<DatabaseConnection> {
@@ -103,8 +105,9 @@ export const databaseConnectionService = {
   },
 
   async getConnectionsSummary(applicationId?: string): Promise<DatabaseConnectionSummary[]> {
-    const params = applicationId ? { applicationId } : undefined;
-    return apiService.get('/database-connections/summary', params);
+    const params = new URLSearchParams();
+    if (applicationId) params.append('application-id', applicationId);
+    return apiService.get(`/database-connections/summary${params.toString() ? `?${params.toString()}` : ''}`);
   },
 
   // Connection health and monitoring

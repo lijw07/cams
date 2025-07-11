@@ -1,5 +1,6 @@
-import { apiService } from './api';
 import { User, UserProfileResponse } from '../types';
+
+import { apiService } from './api';
 
 export interface UserProfileUpdateRequest {
   FirstName?: string | null;

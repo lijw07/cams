@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+
 import { X } from 'lucide-react';
+
 import { useUserModal } from '../../hooks/useUserModal';
-import Modal from '../common/Modal';
+import { UserWithRoles } from '../../types/management';
 import Button from '../common/Button';
+import Modal from '../common/Modal';
 import UserFormFields from '../forms/UserFormFields';
 import UserRoleSelection from '../forms/UserRoleSelection';
-import { UserWithRoles } from '../../types/management';
 
 interface CreateUserRequest {
   Username: string;

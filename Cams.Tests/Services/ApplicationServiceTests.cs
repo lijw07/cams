@@ -280,9 +280,9 @@ public class ApplicationServiceTests : IClassFixture<DatabaseFixture>
         var userId = Guid.NewGuid();
         var applications = new[]
         {
-            new ApplicationBuilder().WithUserId(userId).WithName("Production App").Build(),
-            new ApplicationBuilder().WithUserId(userId).WithName("Test App").Build(),
-            new ApplicationBuilder().WithUserId(userId).WithName("Development App").Build()
+            new ApplicationBuilder().WithUserId(userId).WithName("Production App").WithDescription("Production Description").WithTags("prod,live").Build(),
+            new ApplicationBuilder().WithUserId(userId).WithName("MyTestApp").WithDescription("QA Application").WithTags("QA,validation").Build(),
+            new ApplicationBuilder().WithUserId(userId).WithName("Development App").WithDescription("Development Description").WithTags("dev,staging").Build()
         };
         
         context.Applications.AddRange(applications);
@@ -303,7 +303,7 @@ public class ApplicationServiceTests : IClassFixture<DatabaseFixture>
         // Assert
         result.TotalCount.Should().Be(1);
         result.Items.Should().HaveCount(1);
-        result.Items.First().Name.Should().Be("Test App");
+        result.Items.First().Name.Should().Be("MyTestApp");
     }
 
     [Fact]

@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react';
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 
 export interface UseFormOptions<T> {
   initialValues: T;

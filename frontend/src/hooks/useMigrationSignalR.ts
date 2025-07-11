@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+
+import { useNotifications } from '../contexts/NotificationContext';
 import { signalRService } from '../services/signalRService';
 import { MigrationProgress } from '../types';
-import { useNotifications } from '../contexts/NotificationContext';
 
 /**
  * Hook for managing SignalR connection and migration progress updates

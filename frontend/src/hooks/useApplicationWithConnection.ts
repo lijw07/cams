@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
-import { ApplicationWithConnectionRequest, DatabaseType } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
+
 import { useNotifications } from '../contexts/NotificationContext';
+import { databaseConnectionService } from '../services/databaseConnectionService';
+import { ApplicationWithConnectionRequest, DatabaseType } from '../types';
 
 interface UseApplicationWithConnectionProps {
   isOpen: boolean;

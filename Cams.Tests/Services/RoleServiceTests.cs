@@ -132,7 +132,7 @@ public class RoleServiceTests : IClassFixture<DatabaseFixture>
         // Act & Assert
         await service.Invoking(s => s.CreateRoleAsync(request))
             .Should().ThrowAsync<InvalidOperationException>()
-            .WithMessage("A role with the name 'ExistingRole' already exists.");
+            .WithMessage("Role with name 'ExistingRole' already exists");
     }
 
     [Fact]
@@ -218,7 +218,7 @@ public class RoleServiceTests : IClassFixture<DatabaseFixture>
         var service = new RoleService(context, _loggerMock.Object);
 
         // Act
-        await service.AssignRoleToUserAsync(role.Id, userId);
+        await service.AssignRoleToUserAsync(userId, role.Id);
 
         // Assert
         var userRole = await context.UserRoles
@@ -249,7 +249,7 @@ public class RoleServiceTests : IClassFixture<DatabaseFixture>
         var service = new RoleService(context, _loggerMock.Object);
 
         // Act
-        await service.RemoveRoleFromUserAsync(roleId, userId);
+        await service.RemoveRoleFromUserAsync(userId, roleId);
 
         // Assert
         var removedUserRole = await context.UserRoles
@@ -313,6 +313,11 @@ public class RoleServiceTests : IClassFixture<DatabaseFixture>
         // Arrange
         using var context = _fixture.CreateContext();
         var userId = Guid.NewGuid();
+        
+        var user = new UserBuilder()
+            .WithId(userId)
+            .Build();
+            
         var roles = new[]
         {
             new Role { Id = Guid.NewGuid(), Name = "Role1", IsActive = true },
@@ -323,11 +328,11 @@ public class RoleServiceTests : IClassFixture<DatabaseFixture>
         {
             UserId = userId,
             RoleId = r.Id,
-            Role = r,
             IsActive = true,
             AssignedAt = DateTime.UtcNow
         }).ToArray();
 
+        context.Users.Add(user);
         context.Roles.AddRange(roles);
         context.UserRoles.AddRange(userRoles);
         await context.SaveChangesAsync();

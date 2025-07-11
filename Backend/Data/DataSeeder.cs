@@ -30,16 +30,23 @@ namespace cams.Backend.Data
                 else
                 {
                     Console.WriteLine("Database already exists, checking migrations...");
-                    // Only apply migrations if there are pending ones
-                    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-                    if (pendingMigrations.Any())
+                    // Only apply migrations if we're using a relational database provider
+                    if (context.Database.IsRelational())
                     {
-                        Console.WriteLine($"Applying {pendingMigrations.Count()} pending migrations...");
-                        await context.Database.MigrateAsync();
+                        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                        if (pendingMigrations.Any())
+                        {
+                            Console.WriteLine($"Applying {pendingMigrations.Count()} pending migrations...");
+                            await context.Database.MigrateAsync();
+                        }
+                        else
+                        {
+                            Console.WriteLine("No pending migrations found.");
+                        }
                     }
                     else
                     {
-                        Console.WriteLine("No pending migrations found.");
+                        Console.WriteLine("Using in-memory database, skipping migrations.");
                     }
                 }
 

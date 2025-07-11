@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
+
 import { Link } from 'react-router-dom';
+
 import { Package, Users, Shield } from 'lucide-react';
+
 import { useAuth } from '../contexts/AuthContext';
-import { dashboardService } from '../services/dashboardService';
 import { useNotifications } from '../contexts/NotificationContext';
+import { dashboardService } from '../services/dashboardService';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();

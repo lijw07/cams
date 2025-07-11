@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors, FieldValues } from 'react-hook-form';
+
 import { Server } from 'lucide-react';
+
 import { FormField, Input, Textarea, Select, Checkbox } from '../common';
 
 interface ApplicationFormProps<T extends FieldValues = FieldValues> {

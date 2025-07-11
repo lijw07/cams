@@ -207,8 +207,7 @@ public class LoginControllerTests : ControllerTestBase
         var result = await _controller.RefreshToken(request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400); // BadRequest for invalid token format
+        var unauthorizedResult = result.Should().BeOfType<UnauthorizedObjectResult>().Subject;
     }
 
     [Fact]
@@ -254,8 +253,21 @@ public class LoginControllerTests : ControllerTestBase
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value as dynamic;
-        response!.isValid.ToString().Should().Be("True");
-        response!.username.ToString().Should().Be("testuser");
+        var response = okResult.Value;
+        response.Should().NotBeNull();
+        
+        // Check if it's an anonymous object with the expected properties
+        var responseType = response!.GetType();
+        var isValidProperty = responseType.GetProperty("isValid");
+        var usernameProperty = responseType.GetProperty("username");
+        
+        isValidProperty.Should().NotBeNull();
+        usernameProperty.Should().NotBeNull();
+        
+        var isValidValue = isValidProperty!.GetValue(response);
+        var usernameValue = usernameProperty!.GetValue(response);
+        
+        isValidValue.Should().Be(true);
+        usernameValue.Should().Be("testuser");
     }
 }

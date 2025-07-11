@@ -1,6 +1,7 @@
-import { apiService } from './api';
 import { LoginRequest, LoginResponse, UserProfileResponse } from '../types';
 import { secureStorage } from '../utils/secureStorage';
+
+import { apiService } from './api';
 
 /**
  * Authentication service for managing user authentication and profile operations

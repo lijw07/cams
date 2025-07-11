@@ -1,8 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import { Application, ConnectionTestSchedule, ConnectionTestScheduleRequest } from '../types';
+
+import { useNotifications } from '../contexts/NotificationContext';
 import { applicationService } from '../services/applicationService';
 import { connectionTestScheduleService } from '../services/connectionTestScheduleService';
-import { useNotifications } from '../contexts/NotificationContext';
+import { Application, ConnectionTestSchedule, ConnectionTestScheduleRequest } from '../types';
 
 export const useConnectionScheduling = () => {
   const [applications, setApplications] = useState<Application[]>([]);

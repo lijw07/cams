@@ -1,3 +1,4 @@
+import { DEFAULT_CONFIG } from '../constants/AnalyticsConstants';
 import { 
   AnalyticsConfig, 
   PageViewEvent, 
@@ -5,7 +6,6 @@ import {
   UserEvent, 
   IAnalyticsService 
 } from '../types/analytics';
-import { DEFAULT_CONFIG } from '../constants/AnalyticsConstants';
 
 declare global {
   interface Window {

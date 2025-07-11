@@ -1,8 +1,10 @@
 import React from 'react';
+
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+
 import { MigrationValidationResult, MigrationResult, MigrationProgress } from '../../types';
-import ProgressTracker from '../ui/ProgressTracker';
 import Card from '../common/Card';
+import ProgressTracker from '../ui/ProgressTracker';
 
 interface MigrationResultsProps {
   validationResult: MigrationValidationResult | null;

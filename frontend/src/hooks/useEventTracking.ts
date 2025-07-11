@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAnalytics } from './useAnalytics';
+
 import {
   createAuthEvent,
   createApplicationEvent,
@@ -9,6 +9,8 @@ import {
   createNavigationEvent,
   sanitizeEventData,
 } from '../utils/analyticsHelpers';
+
+import { useAnalytics } from './useAnalytics';
 
 export const useEventTracking = () => {
   const { trackEvent } = useAnalytics();

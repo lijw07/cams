@@ -1,9 +1,12 @@
 import React from 'react';
+
 import { X } from 'lucide-react';
-import { ApplicationRequest } from '../../types';
+
 import { useApplicationModal } from '../../hooks/useApplicationModal';
-import { ApplicationForm } from '../application/ApplicationForm';
+import { ApplicationRequest } from '../../types';
 import { ApplicationConnections } from '../application/ApplicationConnections';
+import { ApplicationForm } from '../application/ApplicationForm';
+
 import DatabaseConnectionModal from './DatabaseConnectionModal';
 
 interface ApplicationModalProps {

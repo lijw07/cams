@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { DatabaseType } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
+
 import { useNotifications } from '../contexts/NotificationContext';
+import { databaseConnectionService } from '../services/databaseConnectionService';
+import { DatabaseType } from '../types';
 
 export interface ConnectionTestData {
   DatabaseType: DatabaseType;

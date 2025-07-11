@@ -1,8 +1,10 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
+
+import { SESSION_CONFIG } from '../config/security';
 import { authService } from '../services/authService';
 import { UserProfileResponse } from '../types';
+
 import { useNotifications } from './NotificationContext';
-import { SESSION_CONFIG } from '../config/security';
 
 interface AuthContextType {
   user: UserProfileResponse | null;
@@ -45,9 +47,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserProfileResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { addNotification } = useNotifications();
-  const sessionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const sessionWarningRef = useRef<NodeJS.Timeout | null>(null);
-  const tokenRefreshRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionTimeoutRef = useRef<number | null>(null);
+  const sessionWarningRef = useRef<number | null>(null);
+  const tokenRefreshRef = useRef<number | null>(null);
 
   const isAuthenticated = !!user && authService.isAuthenticated();
 

@@ -1,4 +1,3 @@
-import { apiService as api } from './api';
 import {
   AuditLog,
   SystemLog,
@@ -13,6 +12,8 @@ import {
   LogStatistics,
   LogTrends
 } from '../types';
+
+import { apiService as api } from './api';
 
 class LogService {
   // Audit Logs

@@ -111,7 +111,7 @@ public class ApplicationApiIntegrationTests : IClassFixture<CustomWebApplication
         var createdApp = await createResponse.Content.ReadFromJsonAsync<ApplicationResponse>(_jsonOptions);
 
         // Act
-        var response = await _client.GetAsync($"/application/{createdApp!.Id}");
+        var response = await _client.GetAsync($"/applications/{createdApp!.Id}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -147,7 +147,7 @@ public class ApplicationApiIntegrationTests : IClassFixture<CustomWebApplication
         };
 
         // Act
-        var response = await _client.PutAsJsonAsync($"/application/{createdApp.Id}", updateRequest, _jsonOptions);
+        var response = await _client.PutAsJsonAsync($"/applications/{createdApp.Id}", updateRequest, _jsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -175,13 +175,13 @@ public class ApplicationApiIntegrationTests : IClassFixture<CustomWebApplication
         var createdApp = await createResponse.Content.ReadFromJsonAsync<ApplicationResponse>(_jsonOptions);
 
         // Act
-        var response = await _client.DeleteAsync($"/application/{createdApp!.Id}");
+        var response = await _client.DeleteAsync($"/applications/{createdApp!.Id}");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         // Verify it's deleted
-        var getResponse = await _client.GetAsync($"/application/{createdApp.Id}");
+        var getResponse = await _client.GetAsync($"/applications/{createdApp.Id}");
         getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
@@ -204,7 +204,7 @@ public class ApplicationApiIntegrationTests : IClassFixture<CustomWebApplication
         }
 
         // Act
-        var response = await _client.GetAsync("/applications?pageNumber=1&pageSize=2");
+        var response = await _client.GetAsync("/applications?page-number=1&page-size=2");
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -240,7 +240,7 @@ public class ApplicationApiIntegrationTests : IClassFixture<CustomWebApplication
         };
 
         // Act
-        var response = await _client.PostAsJsonAsync("/application/with-connection", request, _jsonOptions);
+        var response = await _client.PostAsJsonAsync("/applications/with-connection", request, _jsonOptions);
 
         // Assert
         response.StatusCode.Should().Be(HttpStatusCode.Created);

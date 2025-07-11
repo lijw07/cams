@@ -1,4 +1,5 @@
 import DOMPurify from 'dompurify';
+
 import { SANITIZATION_CONFIG } from '../config/security';
 
 /**

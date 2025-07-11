@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+
 import { Application, ConnectionTestSchedule, ConnectionTestScheduleRequest } from '../../types';
 import { Modal, Button } from '../common';
+
 import CronExpressionEditor from './CronExpressionEditor';
 
 interface ScheduleEditModalProps {

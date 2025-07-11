@@ -1,6 +1,7 @@
 import React from 'react';
+
 import { NavLink, useLocation } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+
 import { 
   Home, 
   Package, 
@@ -12,8 +13,12 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Upload
+  Upload,
+  Plug,
+  TestTube
 } from 'lucide-react';
+
+import { useAuth } from '../../contexts/AuthContext';
 
 interface SidebarProps {
   open: boolean;
@@ -42,6 +47,18 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       href: '/applications',
       icon: Package,
       current: location.pathname.startsWith('/applications')
+    },
+    {
+      name: 'Database Connections',
+      href: '/database-connections',
+      icon: Plug,
+      current: location.pathname.startsWith('/database-connections')
+    },
+    {
+      name: 'Connection Testing',
+      href: '/connection-test-demo',
+      icon: TestTube,
+      current: location.pathname.startsWith('/connection-test-demo')
     }
   ];
 

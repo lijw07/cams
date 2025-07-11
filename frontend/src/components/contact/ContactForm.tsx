@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { UseFormReturn } from 'react-hook-form';
+
 import { Mail, Send, Loader2 } from 'lucide-react';
+
 import { companySizes, industries, useCases } from '../../constants/contactSalesData';
 
 interface ContactFormData {

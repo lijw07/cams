@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
-import { UserManagement, CreateUserRequest, UpdateUserRequest } from '../../services/usersService';
-import { UserWithRoles } from '../../types/management';
-import { useUserManagement } from '../../hooks/useUserManagement';
+
 import UserHeader from '../../components/management/UserHeader';
 import UserTable from '../../components/management/UserTable';
 import UserModal from '../../components/modals/UserModal';
+import { useUserManagement } from '../../hooks/useUserManagement';
+import { UserManagement, CreateUserRequest, UpdateUserRequest } from '../../services/usersService';
+import { UserWithRoles } from '../../types/management';
 
 const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();

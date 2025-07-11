@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
+
 import { Clock } from 'lucide-react';
-import { Application, ConnectionTestSchedule } from '../../types';
+
 import { useConnectionScheduling } from '../../hooks/useConnectionScheduling';
-import Card, { CardHeader, CardTitle, CardContent } from '../common/Card';
+import { Application, ConnectionTestSchedule } from '../../types';
 import { LoadingSpinner } from '../common';
-import ScheduleListItem from './ScheduleListItem';
+import Card, { CardHeader, CardTitle, CardContent } from '../common/Card';
+
 import ScheduleEditModal from './ScheduleEditModal';
+import ScheduleListItem from './ScheduleListItem';
 
 const ConnectionTestScheduling: React.FC = () => {
   const [editingApp, setEditingApp] = useState<Application | null>(null);

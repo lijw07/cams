@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { Link, useNavigate } from 'react-router-dom';
+
 import { Database, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
-import { authService } from '../../services/authService';
-import { useNotifications } from '../../contexts/NotificationContext';
+
 import SEOHead from '../../components/SEO/SEOHead';
+import { useNotifications } from '../../contexts/NotificationContext';
+import { authService } from '../../services/authService';
 
 interface RegisterFormData {
   Username: string;

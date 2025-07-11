@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
+
 import { DatabaseType, AuthenticationMethod, ApplicationWithConnectionRequest } from '../../../types';
 import { FormField, Input } from '../../common';
 

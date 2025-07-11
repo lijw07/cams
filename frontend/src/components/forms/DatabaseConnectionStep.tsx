@@ -1,7 +1,11 @@
 import React from 'react';
+
 import { UseFormRegister, Control, Controller, FieldErrors, UseFormWatch } from 'react-hook-form';
+
 import { Database, Key } from 'lucide-react';
+
 import { ApplicationWithConnectionRequest, DatabaseType } from '../../types';
+
 import CloudConnectionForm from './CloudConnectionForm';
 
 interface DatabaseConnectionStepProps {

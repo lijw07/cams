@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { Database, Plus, Edit, ToggleLeft, ToggleRight, Trash2 } from 'lucide-react';
+
 import { DatabaseConnection } from '../../types';
 
 interface ApplicationConnectionsProps {

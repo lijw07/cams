@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Database, Shield, Zap, Sparkles } from 'lucide-react';
 
 const LoginBranding: React.FC = () => {

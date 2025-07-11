@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
+
 import { User, Phone, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+
 import FormField from '../common/FormField';
 import Input from '../common/Input';
 import Switch from '../common/Switch';

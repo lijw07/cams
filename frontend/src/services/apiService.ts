@@ -1,10 +1,10 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
-import { ApiError, ApiResponse, ErrorCode } from '../types/api';
+
+import { env } from '../config/environment';
+import { ApiError, ApiResponse } from '../types/api';
 import { normalizeError } from '../utils/errorNormalizer';
 import { addRetryInterceptor } from '../utils/retryHelper';
 import { secureStorage } from '../utils/secureStorage';
-
-const API_BASE_URL = import.meta.env.VITE_APP_API_URL || import.meta.env.VITE_API_URL || '';
 
 /**
  * Enhanced API Service with standardized error handling and retry logic
@@ -53,11 +53,11 @@ class ApiService {
 
   constructor() {
     this._client = axios.create({
-      baseURL: API_BASE_URL,
+      baseURL: env.api.baseUrl,
       headers: {
         'Content-Type': 'application/json',
       },
-      timeout: 30000, // 30 second timeout
+      timeout: env.api.timeout,
       withCredentials: true, // Enable cookies for future httpOnly implementation
     });
 
@@ -138,7 +138,7 @@ class ApiService {
   
   private logErrorToMonitoring(error: ApiError, originalError: AxiosError) {
     // Placeholder for Sentry or other monitoring service
-    if (import.meta.env.MODE === 'production') {
+    if (env.app.isProduction) {
       // TODO: Integrate with monitoring service
       console.error('API Error:', {
         error,

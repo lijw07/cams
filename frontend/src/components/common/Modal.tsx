@@ -1,7 +1,10 @@
 import React, { useEffect, useRef, useId } from 'react';
+
 import { X } from 'lucide-react';
-import Button from './Button';
+
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+
+import Button from './Button';
 
 export interface ModalProps {
   isOpen: boolean;

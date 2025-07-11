@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
+
 import { Database, Key, Settings } from 'lucide-react';
+
 import { DatabaseConnectionRequest, DatabaseType } from '../../types';
 import { FormField, Input, Textarea, Select, Checkbox } from '../common';
 

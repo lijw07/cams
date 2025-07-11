@@ -120,7 +120,7 @@ public class ApplicationControllerTests : ControllerTestBase
         var result = await _controller.GetApplication(applicationId);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -226,7 +226,7 @@ public class ApplicationControllerTests : ControllerTestBase
         var result = await _controller.UpdateApplication(applicationId, request);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -264,7 +264,7 @@ public class ApplicationControllerTests : ControllerTestBase
         var result = await _controller.DeleteApplication(applicationId);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -289,8 +289,10 @@ public class ApplicationControllerTests : ControllerTestBase
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
-        var response = okResult.Value as dynamic;
-        response!.message.ToString().Should().Contain("status updated successfully");
+        var responseType = okResult.Value!.GetType();
+        var messageProperty = responseType.GetProperty("message");
+        var message = messageProperty!.GetValue(okResult.Value)!.ToString();
+        message.Should().Contain("deactivated successfully");
     }
 
     [Fact]
@@ -326,7 +328,7 @@ public class ApplicationControllerTests : ControllerTestBase
 
         // Assert
         var createdResult = result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        createdResult.ActionName.Should().Be(nameof(ApplicationController.GetApplicationWithPrimaryConnection));
+        createdResult.ActionName.Should().Be(nameof(ApplicationController.GetApplication));
         createdResult.Value.Should().Be(response);
     }
 }

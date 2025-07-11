@@ -1,8 +1,9 @@
 import React from 'react';
-import { useProfile } from '../hooks/useProfile';
-import { usePasswordChange } from '../hooks/usePasswordChange';
-import ProfileForm from '../components/profile/ProfileForm';
+
 import PasswordChangeModal from '../components/profile/PasswordChangeModal';
+import ProfileForm from '../components/profile/ProfileForm';
+import { usePasswordChange } from '../hooks/usePasswordChange';
+import { useProfile } from '../hooks/useProfile';
 
 const Profile: React.FC = () => {
   const profileHook = useProfile();

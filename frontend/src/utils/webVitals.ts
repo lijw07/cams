@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { onCLS, onINP, onFCP, onLCP, onTTFB } from 'web-vitals';
+
 import { ANALYTICS_EVENTS } from '../constants/AnalyticsConstants';
 
 // Core Web Vitals thresholds (Google recommendations)

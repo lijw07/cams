@@ -54,6 +54,12 @@ public class ApplicationBuilder
         return this;
     }
 
+    public ApplicationBuilder WithTags(string tags)
+    {
+        _application.Tags = tags;
+        return this;
+    }
+
     public ApplicationBuilder WithDatabaseConnections(params DatabaseConnection[] connections)
     {
         _application.DatabaseConnections = connections.ToList();

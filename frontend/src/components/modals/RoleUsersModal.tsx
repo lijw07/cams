@@ -1,10 +1,13 @@
 import React from 'react';
+
 import { Users, X, Search, Save, RotateCcw } from 'lucide-react';
-import { Role } from '../../services/roleService';
+
 import { useRoleUsers } from '../../hooks/useRoleUsers';
-import Modal from '../common/Modal';
+import { Role } from '../../services/roleService';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import Modal from '../common/Modal';
+
 import RoleUsersTable from './RoleUsersTable';
 
 interface RoleUsersModalProps {

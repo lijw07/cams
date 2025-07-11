@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
+
+import { useNotifications } from '../contexts/NotificationContext';
 import { roleService, Role, UserRoleInfo } from '../services/roleService';
 import { usersService, UserManagement } from '../services/usersService';
-import { useNotifications } from '../contexts/NotificationContext';
 
 interface UserRoleChange {
   userId: string;

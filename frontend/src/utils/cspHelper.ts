@@ -1,3 +1,4 @@
+import { env } from '../config/environment';
 import { CSP_DIRECTIVES } from '../config/security';
 
 /**
@@ -63,12 +64,12 @@ export function reportCSPViolation(violation: SecurityPolicyViolationEvent): voi
   };
 
   // Log to console in development
-  if (import.meta.env.MODE === 'development') {
+  if (env.app.isDevelopment) {
     console.warn('CSP Violation:', report);
   }
 
   // TODO: Send to monitoring service in production
-  if (import.meta.env.MODE === 'production') {
+  if (env.app.isProduction) {
     // Example: Send to monitoring endpoint
     // fetch('/api/security/csp-report', {
     //   method: 'POST',

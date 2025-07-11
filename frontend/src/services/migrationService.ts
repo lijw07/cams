@@ -1,4 +1,3 @@
-import { apiService } from './api';
 import {
   BulkMigrationRequest,
   BulkUserImportRequest,
@@ -7,6 +6,8 @@ import {
   MigrationResult,
   MigrationValidationResult
 } from '../types';
+
+import { apiService } from './api';
 
 export const migrationService = {
   // Validate migration data

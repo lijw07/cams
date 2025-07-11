@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { ArrowLeft, Save, User, Mail, Phone, Shield, Power, Trash2 } from 'lucide-react';
+
 import { useNotifications } from '../../contexts/NotificationContext';
-import { usersService } from '../../services/usersService';
 import { roleService } from '../../services/roleService';
+import { usersService } from '../../services/usersService';
 
 interface EditUserFormData {
   Username: string;

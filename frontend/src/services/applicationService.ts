@@ -1,4 +1,3 @@
-import { apiService } from './api';
 import {
   Application,
   ApplicationRequest,
@@ -8,6 +7,8 @@ import {
   PaginationRequest,
   PagedResult,
 } from '../types';
+
+import { apiService } from './api';
 
 export const applicationService = {
   // Regular application CRUD

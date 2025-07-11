@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+
 import { User, Edit, Save, X } from 'lucide-react';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { Button, Input, FormField, Card, CardHeader, CardTitle, CardContent } from '../common';
 import { profileService } from '../../services/profileService';
+import { Button, Input, FormField, Card, CardHeader, CardTitle, CardContent } from '../common';
 
 const ProfileInfo: React.FC = () => {
   const { user, refreshUserProfile } = useAuth();

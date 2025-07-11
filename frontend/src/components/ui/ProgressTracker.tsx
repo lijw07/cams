@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { CheckCircle, XCircle, AlertCircle, Loader } from 'lucide-react';
+
 import { MigrationProgress } from '../../types';
 
 interface ProgressTrackerProps {

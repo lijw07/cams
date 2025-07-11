@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { usersService, UserManagement, CreateUserRequest, UpdateUserRequest, PaginationRequest } from '../services/usersService';
+
 import { useNotifications } from '../contexts/NotificationContext';
+import { usersService, UserManagement, CreateUserRequest, UpdateUserRequest, PaginationRequest } from '../services/usersService';
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<UserManagement[]>([]);

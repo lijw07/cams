@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
+
 import { Server } from 'lucide-react';
+
 import { ApplicationRequest } from '../../types';
 
 interface ApplicationFormProps {

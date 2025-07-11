@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { X, Database } from 'lucide-react';
-import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseConnection } from '../../types';
+
 import { useDatabaseConnectionModal } from '../../hooks/useDatabaseConnectionModal';
+import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseConnection } from '../../types';
 import { DatabaseConnectionFields } from '../forms/DatabaseConnectionFields';
 
 interface DatabaseConnectionModalProps {

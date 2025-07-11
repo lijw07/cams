@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+
+import { useNotifications } from '../contexts/NotificationContext';
 import { logService } from '../services/logService';
 import { AuditLog, AuditLogFilters } from '../types';
-import { useNotifications } from '../contexts/NotificationContext';
 
 export const useAuditLogs = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);

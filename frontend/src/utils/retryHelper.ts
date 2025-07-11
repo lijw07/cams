@@ -1,4 +1,5 @@
 import { AxiosError, AxiosInstance, AxiosRequestConfig } from 'axios';
+
 import { DEFAULT_RETRY_CONFIG, RetryConfig } from '../types/api';
 
 /**

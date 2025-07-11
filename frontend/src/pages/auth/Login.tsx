@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Database } from 'lucide-react';
-import { useLoginForm } from '../../hooks/useLoginForm';
-import SEOHead from '../../components/SEO/SEOHead';
+
+import { Database, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
+
 import LoginBackground from '../../components/auth/LoginBackground';
 import LoginBranding from '../../components/auth/LoginBranding';
 import LoginForm from '../../components/auth/LoginForm';
+import SEOHead from '../../components/SEO/SEOHead';
+import { useLoginForm } from '../../hooks/useLoginForm';
 
 const Login: React.FC = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -41,6 +44,17 @@ const Login: React.FC = () => {
       />
       
       <LoginBackground mousePosition={mousePosition} />
+
+      {/* Back to Home Button */}
+      <div className="absolute top-4 left-4 z-20">
+        <Link
+          to="/"
+          className="inline-flex items-center px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 rounded-lg transition-all duration-200"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Home
+        </Link>
+      </div>
 
       <div className="relative z-10 min-h-screen flex">
         {/* Left side - Branding */}

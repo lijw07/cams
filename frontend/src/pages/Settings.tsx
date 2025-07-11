@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+
 import { Monitor, Moon, Sun, Clock, Trash2, AlertTriangle } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { useNotifications } from '../contexts/NotificationContext';
-import { profileService } from '../services/profileService';
+
 import ConnectionTestScheduling from '../components/settings/ConnectionTestScheduling';
+import { useAuth } from '../contexts/AuthContext';
+import { useNotifications } from '../contexts/NotificationContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { profileService } from '../services/profileService';
 
 const Settings: React.FC = () => {
   const { logout } = useAuth();

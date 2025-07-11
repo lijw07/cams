@@ -1,7 +1,9 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { Link } from 'react-router-dom';
+
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 interface LoginFormData {
   Username: string;

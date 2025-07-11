@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { ArrowLeft, User, Power, Trash2 } from 'lucide-react';
 
 interface EditUserHeaderProps {

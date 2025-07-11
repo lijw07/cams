@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+
+import { useNotifications } from '../contexts/NotificationContext';
 import { logService } from '../services/logService';
 import { PerformanceLog, PerformanceLogFilters } from '../types';
-import { useNotifications } from '../contexts/NotificationContext';
 
 export const usePerformanceLogs = () => {
   const [logs, setLogs] = useState<PerformanceLog[]>([]);

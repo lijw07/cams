@@ -1,5 +1,6 @@
-import { apiService } from './api';
 import { ConnectionTestSchedule, ConnectionTestScheduleRequest } from '../types';
+
+import { apiService } from './api';
 
 export const connectionTestScheduleService = {
   // Get all schedules

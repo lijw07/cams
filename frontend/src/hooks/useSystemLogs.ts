@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
+
+import { useNotifications } from '../contexts/NotificationContext';
 import { logService } from '../services/logService';
 import { SystemLog, SystemLogFilters } from '../types';
-import { useNotifications } from '../contexts/NotificationContext';
 
 export const useSystemLogs = () => {
   const [logs, setLogs] = useState<SystemLog[]>([]);

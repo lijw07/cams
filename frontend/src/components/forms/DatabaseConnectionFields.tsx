@@ -1,6 +1,9 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
+
 import { Key, Settings } from 'lucide-react';
+
 import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseType } from '../../types';
 
 interface DatabaseConnectionFieldsProps {

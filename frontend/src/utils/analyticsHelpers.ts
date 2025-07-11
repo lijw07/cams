@@ -1,5 +1,5 @@
-import { PageViewEvent, CustomEvent, ApplicationEvent, AuthEvent, ErrorEvent } from '../types/analytics';
 import { ANALYTICS_EVENTS, ANALYTICS_CATEGORIES } from '../constants/AnalyticsConstants';
+import { PageViewEvent, CustomEvent, ApplicationEvent, AuthEvent, ErrorEvent } from '../types/analytics';
 
 export const createPageViewEvent = (
   title: string, 

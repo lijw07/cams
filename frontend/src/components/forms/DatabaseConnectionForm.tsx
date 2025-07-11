@@ -1,7 +1,11 @@
 import React from 'react';
+
 import { UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
+
 import { Database, Key } from 'lucide-react';
+
 import { ApplicationWithConnectionRequest, DatabaseType } from '@/types';
+
 import { FormField, Input, Textarea, Select } from '../common';
 
 interface DatabaseConnectionFormProps {

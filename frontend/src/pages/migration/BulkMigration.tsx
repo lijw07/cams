@@ -1,10 +1,11 @@
 import React from 'react';
-import { useBulkMigration } from '../../hooks/useBulkMigration';
-import MigrationTypeSelector from '../../components/migration/MigrationTypeSelector';
-import DataInput from '../../components/migration/DataInput';
-import MigrationResults from '../../components/migration/MigrationResults';
+
 import Button from '../../components/common/Button';
 import Card from '../../components/common/Card';
+import DataInput from '../../components/migration/DataInput';
+import MigrationResults from '../../components/migration/MigrationResults';
+import MigrationTypeSelector from '../../components/migration/MigrationTypeSelector';
+import { useBulkMigration } from '../../hooks/useBulkMigration';
 
 const BulkMigration: React.FC = () => {
   const {

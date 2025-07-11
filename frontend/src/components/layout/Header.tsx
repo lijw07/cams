@@ -1,10 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+
+import { useNavigate } from 'react-router-dom';
+
 import { Menu, User, Settings, LogOut, Bell, X, Trash2, CheckCheck, AlertCircle, Info, CheckCircle, AlertTriangle } from 'lucide-react';
+
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
-import { useNavigate } from 'react-router-dom';
-import { Notification } from '../../types';
 import { useEventTracking } from '../../hooks/useEventTracking';
+import { Notification } from '../../types';
 
 interface HeaderProps {
   onMenuClick: () => void;

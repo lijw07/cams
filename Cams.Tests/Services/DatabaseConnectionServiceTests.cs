@@ -34,6 +34,15 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
         var userId = Guid.NewGuid();
         var applicationId = Guid.NewGuid();
 
+        // Create the Application entity first
+        var application = new ApplicationBuilder()
+            .WithId(applicationId)
+            .WithUserId(userId)
+            .WithName("Test Application")
+            .Build();
+        
+        context.Applications.Add(application);
+
         var connections = new[]
         {
             new DatabaseConnectionBuilder()
@@ -75,8 +84,18 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
         // Arrange
         using var context = _fixture.CreateContext();
         var userId = Guid.NewGuid();
+        
+        // Create the Application entity first
+        var application = new ApplicationBuilder()
+            .WithUserId(userId)
+            .WithName("Test Application")
+            .Build();
+        
+        context.Applications.Add(application);
+        
         var connection = new DatabaseConnectionBuilder()
             .WithUserId(userId)
+            .WithApplicationId(application.Id)
             .WithName("Test Connection")
             .Build();
 
@@ -180,8 +199,18 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
         // Arrange
         using var context = _fixture.CreateContext();
         var userId = Guid.NewGuid();
+        
+        // Create the Application entity first
+        var application = new ApplicationBuilder()
+            .WithUserId(userId)
+            .WithName("Test Application")
+            .Build();
+        
+        context.Applications.Add(application);
+        
         var connection = new DatabaseConnectionBuilder()
             .WithUserId(userId)
+            .WithApplicationId(application.Id)
             .WithName("Original Name")
             .WithServer("original-server")
             .Build();

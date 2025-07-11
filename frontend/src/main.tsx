@@ -1,24 +1,27 @@
 import React from 'react'
-import ReactDOM from 'react-dom/client'
+
+import { HelmetProvider } from 'react-helmet-async'
 import { QueryClient, QueryClientProvider } from 'react-query'
 import { BrowserRouter } from 'react-router-dom'
-import { HelmetProvider } from 'react-helmet-async'
-import { AuthProvider } from './contexts/AuthContext'
-import { ThemeProvider } from './contexts/ThemeContext'
-import { NotificationProvider } from './contexts/NotificationContext'
-import { AnalyticsProvider } from './contexts/AnalyticsContext'
+
+import ReactDOM from 'react-dom/client'
+
 import App from './App'
+import { queryClient } from './config/queryClient'
+import { validateEnvironment } from './config/environment'
+import { AnalyticsProvider } from './contexts/AnalyticsContext'
+import { AuthProvider } from './contexts/AuthContext'
+import { NotificationProvider } from './contexts/NotificationContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import './index.css'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      refetchOnWindowFocus: false,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-    },
-  },
-})
+// Validate environment configuration on startup
+try {
+  validateEnvironment();
+} catch (error) {
+  console.error('Environment validation failed:', error);
+  // In production, you might want to show a user-friendly error page
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

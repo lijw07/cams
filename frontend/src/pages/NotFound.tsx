@@ -1,11 +1,14 @@
 import React from 'react';
+
 import { Link } from 'react-router-dom';
+
 import { Home, ArrowLeft, Search, Database } from 'lucide-react';
+
 import SEOHead from '../components/SEO/SEOHead';
 
 const NotFound: React.FC = () => {
   const popularPages = [
-    { name: 'Database Management', path: '/applications', icon: Database },
+    { name: 'Database Management', path: '/', icon: Database },
     { name: 'User Login', path: '/login', icon: Home },
     { name: 'Contact Sales', path: '/contact-sales', icon: Search },
   ];

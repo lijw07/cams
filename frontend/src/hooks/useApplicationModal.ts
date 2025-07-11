@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
+
 import { useForm } from 'react-hook-form';
-import { ApplicationRequest, DatabaseConnection, DatabaseConnectionRequest, DatabaseConnectionUpdateRequest } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
+
 import { useNotifications } from '../contexts/NotificationContext';
+import { databaseConnectionService } from '../services/databaseConnectionService';
+import { ApplicationRequest, DatabaseConnection, DatabaseConnectionRequest, DatabaseConnectionUpdateRequest } from '../types';
 
 interface UseApplicationModalProps {
   isOpen: boolean;

@@ -1,10 +1,12 @@
 // Re-export from new apiService for backward compatibility
-export { apiService as default, apiService } from './apiService';
-
 // Legacy implementation (deprecated - will be removed)
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+export { apiService as default, apiService } from './apiService';
+
+import { env } from '../config/environment';
+
+const API_BASE_URL = env.api.baseUrl;
 
 class LegacyApiService {
   private _client: AxiosInstance;

@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
+
 import { ApplicationWithConnectionRequest, DatabaseType } from '../types';
+
 import { useApplicationForm } from './useApplicationForm';
-import { useWizardSteps } from './useWizardSteps';
-import { useDatabaseTypeUtils } from './useDatabaseTypeUtils';
 import { useConnectionTesting } from './useConnectionTesting';
+import { useDatabaseTypeUtils } from './useDatabaseTypeUtils';
+import { useWizardSteps } from './useWizardSteps';
 
 interface UseApplicationWithConnectionProps {
   isOpen: boolean;

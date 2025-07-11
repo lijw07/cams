@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import NavigationHeader from '../components/home/NavigationHeader';
-import HeroSection from '../components/home/HeroSection';
+
 import FeaturesSection from '../components/home/FeaturesSection';
+import HeroSection from '../components/home/HeroSection';
 import IntegrationsSection from '../components/home/IntegrationsSection';
+import NavigationHeader from '../components/home/NavigationHeader';
 import ScrollToTop from '../components/home/ScrollToTop';
+import Footer from '../components/layout/Footer';
 import SEOHead from '../components/SEO/SEOHead';
 
 const HomePage: React.FC = () => {
@@ -15,19 +17,23 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const updateGradientPosition = () => {
       setGradientPosition(prev => {
-        let newX = prev.x - 0.005;
-        let newY = prev.y + (Math.random() - 0.5) * 0.01;
+        // Move from right to left (1.0 to 0.0)
+        let newX = prev.x - 0.008; // Smooth, consistent movement
+        let newY = prev.y + (Math.random() - 0.5) * 0.002;
         
-        if (newX < -0.2) {
-          newX = 1.2;
-          newY = Math.random();
+        // Seamless wrapping: when it reaches 0, wrap back to 1
+        if (newX <= 0) {
+          newX = 1;
         }
+        
+        // Keep Y within reasonable bounds
+        newY = Math.max(0.3, Math.min(0.7, newY));
         
         return { x: newX, y: newY };
       });
     };
 
-    const interval = setInterval(updateGradientPosition, 16);
+    const interval = setInterval(updateGradientPosition, 32); // Slightly slower for smoother animation
     return () => clearInterval(interval);
   }, []);
 
@@ -45,11 +51,11 @@ const HomePage: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'About Us', href: '#about' },
-    { name: 'Features', href: '#features' },
-    { name: 'Integrations', href: '#tools' },
-    { name: 'Documentation', href: '#docs' },
-    { name: 'Pricing', href: '#pricing' },
+    { name: 'About Us', href: '/about', isRoute: true },
+    { name: 'Features', href: '/features', isRoute: true },
+    { name: 'Integrations', href: '/integrations', isRoute: true },
+    { name: 'Documentation', href: '/documentation', isRoute: true },
+    { name: 'Pricing', href: '/pricing', isRoute: true },
   ];
 
   return (
@@ -74,6 +80,8 @@ const HomePage: React.FC = () => {
       <FeaturesSection />
 
       <IntegrationsSection />
+
+      <Footer />
 
       <ScrollToTop
         showScrollTop={showScrollTop}

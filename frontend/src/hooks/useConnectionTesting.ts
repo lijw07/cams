@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react';
-import { ApplicationWithConnectionRequest, DatabaseType } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
+
 import { useNotifications } from '../contexts/NotificationContext';
-import { useDatabaseTypeUtils } from './useDatabaseTypeUtils';
+import { databaseConnectionService } from '../services/databaseConnectionService';
+import { ApplicationWithConnectionRequest, DatabaseType } from '../types';
+
 
 interface TestResult {
   success: boolean;
@@ -26,7 +27,9 @@ export const useConnectionTesting = () => {
     formData: ApplicationWithConnectionRequest,
     selectedDbType: DatabaseType
   ) => {
-    const { isConnectionStringType, isCloudPlatform, isApiType } = useDatabaseTypeUtils(selectedDbType);
+    // Import utility function instead of using hook
+    const { getDatabaseTypeInfo } = await import('../utils/databaseTypeUtils');
+    const { isConnectionStringType, isCloudPlatform, isApiType } = getDatabaseTypeInfo(selectedDbType);
 
     setIsTestingConnection(true);
     setTestResult(null);

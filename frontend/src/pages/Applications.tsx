@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
+import { Link } from 'react-router-dom';
+
 import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search } from 'lucide-react';
-import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
-import { applicationService } from '../services/applicationService';
+
+import Pagination from '../components/common/Pagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
-import Pagination from '../components/common/Pagination';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Link } from 'react-router-dom';
+import { applicationService } from '../services/applicationService';
+import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
 
 const Applications: React.FC = () => {
   const [pagedData, setPagedData] = useState<PagedResult<Application> | null>(null);

@@ -1,12 +1,15 @@
 import React from 'react';
-import { ApplicationWithConnectionRequest } from '../../types';
+
+import { X, ArrowLeft, ArrowRight } from 'lucide-react';
+
 import { useApplicationWithConnection } from '../../hooks/useApplicationWithConnection';
+import { ApplicationWithConnectionRequest } from '../../types';
+import Button from '../common/Button';
 import Modal from '../common/Modal';
-import StepIndicator from '../ui/StepIndicator';
 import ApplicationDetailsStep from '../forms/ApplicationDetailsStep';
 import DatabaseConnectionStep from '../forms/DatabaseConnectionStep';
-import Button from '../common/Button';
-import { X, ArrowLeft, ArrowRight } from 'lucide-react';
+import StepIndicator from '../ui/StepIndicator';
+
 
 interface ApplicationWithConnectionModalProps {
   isOpen: boolean;

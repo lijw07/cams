@@ -1,7 +1,10 @@
 import React from 'react';
+
 import { PlayCircle, Edit2, Trash2, Loader2 } from 'lucide-react';
+
 import { Application, ConnectionTestSchedule } from '../../types';
 import { Switch, Button } from '../common';
+
 import ScheduleStatusDisplay from './ScheduleStatusDisplay';
 
 interface ScheduleListItemProps {

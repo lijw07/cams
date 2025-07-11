@@ -19,7 +19,8 @@
   "plugins": [
     "react-refresh",
     "@typescript-eslint",
-    "react-hooks"
+    "react-hooks",
+    "import"
   ],
   "rules": {
     "react-refresh/only-export-components": [
@@ -31,7 +32,61 @@
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "prefer-const": "error",
     "no-console": "off",
-    "no-debugger": "error"
+    "no-debugger": "error",
+    
+    // Import organization rules per CLAUDE.md standards
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external", 
+          "internal",
+          "parent",
+          "sibling",
+          "type",
+          "object"
+        ],
+        "pathGroups": [
+          {
+            "pattern": "react",
+            "group": "external",
+            "position": "before"
+          },
+          {
+            "pattern": "react-*",
+            "group": "external",
+            "position": "before"
+          },
+          {
+            "pattern": "@/**",
+            "group": "internal"
+          },
+          {
+            "pattern": "../**",
+            "group": "parent"
+          },
+          {
+            "pattern": "./**",
+            "group": "sibling"
+          },
+          {
+            "pattern": "*.css",
+            "group": "object",
+            "position": "after"
+          }
+        ],
+        "pathGroupsExcludedImportTypes": ["react"],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ],
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error",
+    "import/first": "error"
   },
   "ignorePatterns": ["dist", ".eslintrc.json"]
 }

@@ -1,5 +1,7 @@
 import React from 'react';
+
 import { Mail, Phone, Clock, CheckCircle } from 'lucide-react';
+
 import { benefits } from '../../constants/contactSalesData';
 
 const ContactInfo: React.FC = () => {
