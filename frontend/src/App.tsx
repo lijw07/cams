@@ -151,6 +151,11 @@ const App: React.FC = () => {
           {/* Migration routes */}
           <Route path="migration" element={<BulkMigration />} />
           
+          {/* Legacy redirects for database connections - redirect to applications page */}
+          <Route path="database-connections" element={<Navigate to="/applications" replace />} />
+          <Route path="database-connections/*" element={<Navigate to="/applications" replace />} />
+          <Route path="connection-test-demo" element={<Navigate to="/applications" replace />} />
+          
           {/* Log routes */}
           <Route path="logs/audit" element={<AuditLogs />} />
           <Route path="logs/system" element={<SystemLogs />} />
