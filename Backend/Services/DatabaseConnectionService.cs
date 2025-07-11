@@ -408,12 +408,22 @@ namespace cams.Backend.Services
                 return DecryptSensitiveData(connection.ConnectionString);
 
             if (request?.ConnectionString != null)
-                return request.ConnectionString;
-
-            if (request != null)
-                return BuildConnectionString(request);
+                return BuildConnectionStringWithValidation(request);
 
             throw new InvalidOperationException("No connection string available");
+        }
+
+        private string BuildConnectionStringWithValidation(DatabaseConnectionRequest request)
+        {
+            var builder = new SqlConnectionStringBuilder
+            {
+                DataSource = request.ServerName,
+                InitialCatalog = request.DatabaseName,
+                UserID = request.Username,
+                Password = request.Password
+            };
+
+            return builder.ConnectionString;
         }
 
         private DatabaseConnectionResponse MapToResponse(DatabaseConnection connection, bool includeSensitiveData = false)
