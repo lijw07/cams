@@ -2,7 +2,7 @@ import React, { forwardRef } from 'react';
 import { ChevronDown } from 'lucide-react';
 
 export interface SelectOption {
-  value: string;
+  value: string | number;
   label: string;
   disabled?: boolean;
 }

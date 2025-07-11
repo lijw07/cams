@@ -77,9 +77,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await authService.login({ username, password });
+      const response = await authService.login({ Username: username, Password: password });
       
-      if (response.token) {
+      if (response.Token) {
         // Get user profile after successful login
         const userProfile = await authService.getUserProfile();
         setUser(userProfile);
@@ -150,7 +150,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     phoneNumber?: string;
   }) => {
     try {
-      const updatedProfile = await authService.updateProfile(data);
+      const updatedProfile = await authService.updateProfile({
+        FirstName: data.firstName,
+        LastName: data.lastName,
+        PhoneNumber: data.phoneNumber
+      });
       setUser(updatedProfile);
       addNotification({
         title: 'Profile Updated',
@@ -177,7 +181,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     confirmNewPassword: string;
   }) => {
     try {
-      await authService.changePassword(data);
+      await authService.changePassword({
+        CurrentPassword: data.currentPassword,
+        NewPassword: data.newPassword,
+        ConfirmNewPassword: data.confirmNewPassword
+      });
       addNotification({
         title: 'Password Changed',
         message: 'Password changed successfully',
@@ -202,7 +210,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     password: string;
   }) => {
     try {
-      await authService.changeEmail(data);
+      await authService.changeEmail({
+        NewEmail: data.newEmail,
+        CurrentPassword: data.password
+      });
       // Refresh profile to get updated email
       await refreshUserProfile();
       addNotification({

@@ -25,3 +25,9 @@ export type { CheckboxProps } from './Checkbox';
 
 export { default as Radio, RadioGroup } from './Radio';
 export type { RadioProps, RadioGroupProps, RadioOption } from './Radio';
+
+export { default as Switch } from './Switch';
+export type { SwitchProps } from './Switch';
+
+export { default as Tooltip } from './Tooltip';
+export type { TooltipProps } from './Tooltip';

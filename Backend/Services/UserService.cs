@@ -2,6 +2,7 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Mappers;
 using cams.Backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
 {
@@ -9,53 +10,56 @@ namespace cams.Backend.Services
     {
         private readonly ILogger<UserService> _logger;
         private readonly IUserMapper _userMapper;
-        
-        // Using shared repository for user data consistency across services
+        private readonly ApplicationDbContext _context;
 
-        // External data for counting (would be in database in real app)
-        private static readonly List<Application> _applications = new();
-        private static readonly List<DatabaseConnection> _connections = new();
-
-        public UserService(ILogger<UserService> logger, IUserMapper userMapper)
+        public UserService(ILogger<UserService> logger, IUserMapper userMapper, ApplicationDbContext context)
         {
             _logger = logger;
             _userMapper = userMapper;
+            _context = context;
         }
 
         public async Task<UserProfileResponse?> GetUserProfileAsync(int userId)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUserById(userId);
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+                
             if (user == null)
                 return null;
 
-            var applicationCount = _applications.Count(a => a.UserId == userId);
-            var connectionCount = _connections.Count(c => c.UserId == userId);
+            var applicationCount = await _context.Applications.CountAsync(a => a.UserId == userId);
+            var connectionCount = await _context.DatabaseConnections.CountAsync(c => c.UserId == userId);
 
             return _userMapper.MapToProfileResponse(user, applicationCount, connectionCount);
         }
 
         public async Task<UserProfileSummaryResponse?> GetUserProfileSummaryAsync(int userId)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUserById(userId);
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+                
             return user != null ? _userMapper.MapToProfileSummaryResponse(user) : null;
         }
 
         public async Task<User?> GetUserAsync(int userId)
         {
-            await Task.CompletedTask;
-            
-            return SharedUserRepository.GetUserById(userId);
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
         }
 
         public async Task<UserProfileResponse?> UpdateUserProfileAsync(int userId, UserProfileRequest request)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUserById(userId);
+            var user = await _context.Users
+                .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+                
             if (user == null)
                 return null;
 
@@ -65,19 +69,20 @@ namespace cams.Backend.Services
             user.PhoneNumber = request.PhoneNumber;
             user.UpdatedAt = DateTime.UtcNow;
 
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
             _logger.LogInformation("Updated profile for user {UserId}", userId);
 
-            var applicationCount = _applications.Count(a => a.UserId == userId);
-            var connectionCount = _connections.Count(c => c.UserId == userId);
+            var applicationCount = await _context.Applications.CountAsync(a => a.UserId == userId);
+            var connectionCount = await _context.DatabaseConnections.CountAsync(c => c.UserId == userId);
 
             return _userMapper.MapToProfileResponse(user, applicationCount, connectionCount);
         }
 
         public async Task<PasswordChangeResponse> ChangePasswordAsync(int userId, ChangePasswordRequest request)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUserById(userId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             if (user == null)
             {
                 return new PasswordChangeResponse
@@ -102,6 +107,9 @@ namespace cams.Backend.Services
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
 
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
             _logger.LogInformation("Password changed successfully for user {UserId}", userId);
 
             return new PasswordChangeResponse
@@ -114,9 +122,7 @@ namespace cams.Backend.Services
 
         public async Task<EmailChangeResponse> ChangeEmailAsync(int userId, ChangeEmailRequest request)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUserById(userId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             if (user == null)
             {
                 return new EmailChangeResponse
@@ -151,6 +157,9 @@ namespace cams.Backend.Services
             user.Email = request.NewEmail;
             user.UpdatedAt = DateTime.UtcNow;
 
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
             _logger.LogInformation("Email changed successfully for user {UserId} to {NewEmail}", userId, request.NewEmail);
 
             return new EmailChangeResponse
@@ -165,14 +174,15 @@ namespace cams.Backend.Services
 
         public async Task<bool> DeactivateUserAsync(int userId)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUsers().FirstOrDefault(u => u.Id == userId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             if (user == null)
                 return false;
 
             user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
 
             _logger.LogInformation("Deactivated user {UserId}", userId);
             
@@ -181,24 +191,18 @@ namespace cams.Backend.Services
 
         public async Task<bool> ValidateCurrentPasswordAsync(int userId, string password)
         {
-            await Task.CompletedTask;
-            
-            var user = SharedUserRepository.GetUserById(userId);
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             return user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
 
         public async Task<bool> IsEmailTakenAsync(string email, int excludeUserId = 0)
         {
-            await Task.CompletedTask;
-            
-            return SharedUserRepository.IsEmailTaken(email, excludeUserId);
+            return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower() && u.Id != excludeUserId && u.IsActive);
         }
 
         public async Task<bool> IsUsernameTakenAsync(string username, int excludeUserId = 0)
         {
-            await Task.CompletedTask;
-            
-            return SharedUserRepository.IsUsernameTaken(username, excludeUserId);
+            return await _context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower() && u.Id != excludeUserId && u.IsActive);
         }
     }
 }

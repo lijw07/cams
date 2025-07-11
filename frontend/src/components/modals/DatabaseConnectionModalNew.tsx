@@ -30,24 +30,24 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
     formState: { errors, isSubmitting }
   } = useForm<DatabaseConnectionRequest>({
     defaultValues: {
-      applicationId,
-      name: '',
-      description: '',
-      type: DatabaseType.SqlServer,
-      server: '',
-      port: undefined,
-      database: '',
-      username: '',
-      password: '',
-      connectionString: '',
-      apiBaseUrl: '',
-      apiKey: '',
-      additionalSettings: '',
-      isActive: true
+      ApplicationId: applicationId,
+      Name: '',
+      Description: '',
+      Type: DatabaseType.SqlServer,
+      Server: '',
+      Port: undefined,
+      Database: '',
+      Username: '',
+      Password: '',
+      ConnectionString: '',
+      ApiBaseUrl: '',
+      ApiKey: '',
+      AdditionalSettings: '',
+      IsActive: true
     }
   });
 
-  const watchedDbType = watch('type');
+  const watchedDbType = watch('Type');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -56,20 +56,20 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       reset({
-        applicationId,
-        name: '',
-        description: '',
-        type: DatabaseType.SqlServer,
-        server: '',
-        port: undefined,
-        database: '',
-        username: '',
-        password: '',
-        connectionString: '',
-        apiBaseUrl: '',
-        apiKey: '',
-        additionalSettings: '',
-        isActive: true
+        ApplicationId: applicationId,
+        Name: '',
+        Description: '',
+        Type: DatabaseType.SqlServer,
+        Server: '',
+        Port: undefined,
+        Database: '',
+        Username: '',
+        Password: '',
+        ConnectionString: '',
+        ApiBaseUrl: '',
+        ApiKey: '',
+        AdditionalSettings: '',
+        IsActive: true
       });
     }
   }, [isOpen, applicationId, reset]);
@@ -78,7 +78,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
     try {
       const submissionData = {
         ...data,
-        port: data.port ? parseInt(data.port.toString()) : undefined
+        Port: data.Port ? parseInt(data.Port.toString()) : undefined
       };
       await onSubmit(submissionData);
       reset();

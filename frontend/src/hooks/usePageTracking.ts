@@ -48,12 +48,12 @@ export const usePageTracking = (config: PageTrackingConfig = {}) => {
 const generatePageTitle = (pathname: string): string => {
   const path = pathname.replace(/^\//, '');
   
-  if (!path || path === 'dashboard') return 'Dashboard - CAMS';
+  if (!path || path === 'dashboard') return 'Dashboard - Centralized Application Management System';
   
   // Convert path segments to title case
   const segments = path.split('/').map(segment => 
     segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ')
   );
   
-  return `${segments.join(' - ')} - CAMS`;
+  return `${segments.join(' - ')} - Centralized Application Management System`;
 };

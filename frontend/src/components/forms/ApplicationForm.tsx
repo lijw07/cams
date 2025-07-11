@@ -1,12 +1,11 @@
 import React from 'react';
-import { UseFormRegister, FieldErrors } from 'react-hook-form';
+import { UseFormRegister, FieldErrors, FieldValues } from 'react-hook-form';
 import { Server } from 'lucide-react';
-import { ApplicationWithConnectionRequest } from '@/types';
 import { FormField, Input, Textarea, Select, Checkbox } from '../common';
 
-interface ApplicationFormProps {
-  register: UseFormRegister<ApplicationWithConnectionRequest>;
-  errors: FieldErrors<ApplicationWithConnectionRequest>;
+interface ApplicationFormProps<T extends FieldValues = any> {
+  register: UseFormRegister<T>;
+  errors: FieldErrors<T>;
 }
 
 const ApplicationForm: React.FC<ApplicationFormProps> = ({ register, errors }) => {
@@ -27,10 +26,10 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ register, errors }) =
       <FormField 
         label="Application Name" 
         required 
-        error={errors.applicationName?.message}
+        error={errors.Name?.message as string}
       >
         <Input
-          {...register('applicationName', {
+          {...register('Name', {
             required: 'Application name is required',
             minLength: {
               value: 3,
@@ -38,13 +37,13 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ register, errors }) =
             }
           })}
           placeholder="e.g., E-commerce API"
-          error={!!errors.applicationName}
+          error={!!errors.Name}
         />
       </FormField>
 
       <FormField label="Description">
         <Textarea
-          {...register('applicationDescription')}
+          {...register('Description')}
           placeholder="Brief description of the application"
         />
       </FormField>
@@ -52,14 +51,14 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ register, errors }) =
       <div className="grid grid-cols-2 gap-4">
         <FormField label="Version">
           <Input
-            {...register('version')}
+            {...register('Version')}
             placeholder="e.g., 1.0.0"
           />
         </FormField>
 
         <FormField label="Environment">
           <Select
-            {...register('environment')}
+            {...register('Environment')}
             options={environmentOptions}
           />
         </FormField>
@@ -70,14 +69,14 @@ const ApplicationForm: React.FC<ApplicationFormProps> = ({ register, errors }) =
         helpText="Separate multiple tags with commas"
       >
         <Input
-          {...register('tags')}
+          {...register('Tags')}
           placeholder="e.g., api, microservice, backend (comma-separated)"
         />
       </FormField>
 
       <div className="p-3 bg-secondary-50 dark:bg-secondary-700 rounded-lg border border-secondary-200 dark:border-secondary-600">
         <Checkbox
-          {...register('isApplicationActive')}
+          {...register('IsActive')}
           label="Active Application"
         />
         <p className="mt-1 text-xs text-secondary-500 dark:text-secondary-400">

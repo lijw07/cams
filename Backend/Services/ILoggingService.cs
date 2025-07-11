@@ -12,6 +12,12 @@ namespace cams.Backend.Services
 
         Task<IEnumerable<AuditLog>> GetAuditLogsAsync(int? userId = null, string? entityType = null, 
             DateTime? fromDate = null, DateTime? toDate = null, int pageSize = 100, int pageNumber = 1);
+        
+        Task<(IEnumerable<AuditLog> data, int totalCount)> GetAuditLogsWithCountAsync(int? userId = null, 
+            string? entityType = null, DateTime? fromDate = null, DateTime? toDate = null, 
+            int pageSize = 100, int pageNumber = 1);
+        
+        Task<AuditLog?> GetAuditLogByIdAsync(int id);
 
         // Security Log methods
         Task LogSecurityEventAsync(string eventType, string status, int? userId = null, 
@@ -22,6 +28,12 @@ namespace cams.Backend.Services
         Task<IEnumerable<SecurityLog>> GetSecurityLogsAsync(string? eventType = null, string? status = null, 
             int? userId = null, DateTime? fromDate = null, DateTime? toDate = null, 
             int pageSize = 100, int pageNumber = 1);
+
+        Task<(IEnumerable<SecurityLog> data, int totalCount)> GetSecurityLogsWithCountAsync(string? eventType = null, string? status = null,
+            int? userId = null, DateTime? fromDate = null, DateTime? toDate = null,
+            int pageSize = 100, int pageNumber = 1);
+
+        Task<SecurityLog?> GetSecurityLogByIdAsync(int id);
 
         Task<IEnumerable<SecurityLog>> GetFailedLoginAttemptsAsync(string? ipAddress = null, 
             DateTime? fromDate = null, int? threshold = 5);
@@ -35,6 +47,12 @@ namespace cams.Backend.Services
         Task<IEnumerable<SystemLog>> GetSystemLogsAsync(string? level = null, string? source = null, 
             DateTime? fromDate = null, DateTime? toDate = null, bool? isResolved = null, 
             int pageSize = 100, int pageNumber = 1);
+
+        Task<(IEnumerable<SystemLog> data, int totalCount)> GetSystemLogsWithCountAsync(string? level = null, string? source = null,
+            DateTime? fromDate = null, DateTime? toDate = null, bool? isResolved = null,
+            int pageSize = 100, int pageNumber = 1);
+
+        Task<SystemLog?> GetSystemLogByIdAsync(int id);
 
         Task MarkSystemLogResolvedAsync(int logId, string? resolutionNotes = null);
 
@@ -51,6 +69,12 @@ namespace cams.Backend.Services
             string? performanceLevel = null, DateTime? fromDate = null, DateTime? toDate = null, 
             bool? isSlowQuery = null, int pageSize = 100, int pageNumber = 1);
 
+        Task<(IEnumerable<PerformanceLog> data, int totalCount)> GetPerformanceLogsWithCountAsync(string? operation = null,
+            string? performanceLevel = null, DateTime? fromDate = null, DateTime? toDate = null,
+            bool? isSlowQuery = null, int pageSize = 100, int pageNumber = 1);
+
+        Task<PerformanceLog?> GetPerformanceLogByIdAsync(int id);
+
         Task<PerformanceMetrics> GetPerformanceMetricsAsync(DateTime? fromDate = null, 
             DateTime? toDate = null, string? operation = null);
 
@@ -60,20 +84,5 @@ namespace cams.Backend.Services
         Task CleanupSecurityLogsAsync(int retentionDays = 180);
         Task CleanupSystemLogsAsync(int retentionDays = 90);
         Task CleanupPerformanceLogsAsync(int retentionDays = 30);
-    }
-
-    public class PerformanceMetrics
-    {
-        public double AverageResponseTime { get; set; }
-        public double MedianResponseTime { get; set; }
-        public double P95ResponseTime { get; set; }
-        public double P99ResponseTime { get; set; }
-        public int TotalRequests { get; set; }
-        public int SlowRequests { get; set; }
-        public int ErrorRequests { get; set; }
-        public double ErrorRate { get; set; }
-        public double ThroughputPerMinute { get; set; }
-        public Dictionary<string, int> ResponseTimeDistribution { get; set; } = new();
-        public Dictionary<string, double> OperationAverages { get; set; } = new();
     }
 }

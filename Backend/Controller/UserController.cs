@@ -9,13 +9,12 @@ using cams.Backend.Enums;
 namespace cams.Backend.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("user")]
     [Authorize]
     public class UserController(
         IUserService userService,
         ILogger<UserController> logger,
-        ILoggingService loggingService,
-        IEmailService emailService)
+        ILoggingService loggingService)
         : ControllerBase
     {
         [HttpGet("profile")]
@@ -131,22 +130,7 @@ namespace cams.Backend.Controller
                     return HttpResponseHelper.CreateNotFoundResponse("User profile");
                 }
                 
-                // Send email notification if there were changes
-                if (changedFields.Count > 0)
-                {
-                    try
-                    {
-                        var updatedUser = await userService.GetUserAsync(userId);
-                        if (updatedUser != null)
-                        {
-                            await emailService.SendProfileUpdateEmailAsync(updatedUser, string.Join("\n", changedFields));
-                        }
-                    }
-                    catch (Exception emailEx)
-                    {
-                        logger.LogWarning(emailEx, "Failed to send profile update email to user {UserId}", userId);
-                    }
-                }
+                // Email notifications have been removed
                 
                 // Log audit event for profile update
                 await loggingService.LogAuditAsync(
@@ -178,6 +162,14 @@ namespace cams.Backend.Controller
         {
             try
             {
+                logger.LogInformation("Password change request received. ModelState.IsValid: {IsValid}", ModelState.IsValid);
+                if (!ModelState.IsValid)
+                {
+                    logger.LogWarning("Password change validation failed. Errors: {Errors}", 
+                        string.Join("; ", ModelState.Where(x => x.Value?.Errors.Count > 0)
+                            .SelectMany(x => x.Value!.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
+                }
+                
                 if (!ModelState.IsValid)
                 {
                     return HttpResponseHelper.CreateValidationErrorResponse(
@@ -219,19 +211,7 @@ namespace cams.Backend.Controller
                     severity: SecuritySeverity.Information.ToString()
                 );
                 
-                // Send password change email notification
-                try
-                {
-                    var user = await userService.GetUserAsync(userId);
-                    if (user != null)
-                    {
-                        await emailService.SendPasswordChangeEmailAsync(user);
-                    }
-                }
-                catch (Exception emailEx)
-                {
-                    logger.LogWarning(emailEx, "Failed to send password change email to user {UserId}", userId);
-                }
+                // Email notifications have been removed
                 
                 // Log audit event for password change
                 await loggingService.LogAuditAsync(
@@ -306,22 +286,7 @@ namespace cams.Backend.Controller
                     severity: SecuritySeverity.Information.ToString()
                 );
                 
-                // Send email change notification
-                if (result.Success && !string.IsNullOrEmpty(oldEmail))
-                {
-                    try
-                    {
-                        var updatedUser = await userService.GetUserAsync(userId);
-                        if (updatedUser != null)
-                        {
-                            await emailService.SendEmailChangeNotificationAsync(updatedUser, oldEmail, request.NewEmail);
-                        }
-                    }
-                    catch (Exception emailEx)
-                    {
-                        logger.LogWarning(emailEx, "Failed to send email change notification to user {UserId}", userId);
-                    }
-                }
+                // Email notifications have been removed
                 
                 // Log audit event for email change
                 await loggingService.LogAuditAsync(
@@ -444,19 +409,7 @@ namespace cams.Backend.Controller
                     severity: SecuritySeverity.Information.ToString()
                 );
                 
-                // Send account deactivation email notification
-                try
-                {
-                    var user = await userService.GetUserAsync(userId);
-                    if (user != null)
-                    {
-                        await emailService.SendAccountDeactivationEmailAsync(user);
-                    }
-                }
-                catch (Exception emailEx)
-                {
-                    logger.LogWarning(emailEx, "Failed to send account deactivation email to user {UserId}", userId);
-                }
+                // Email notifications have been removed
                 
                 // Log audit event for account deactivation
                 await loggingService.LogAuditAsync(

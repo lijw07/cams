@@ -1,3 +1,5 @@
+using cams.Backend.Enums;
+
 namespace cams.Backend.View
 {
     public class ApplicationResponse
@@ -39,5 +41,11 @@ namespace cams.Backend.View
         public bool IsActive { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public DateTime? LastTestedAt { get; set; }
+        
+        // Additional properties for new functionality
+        public DatabaseType Type { get; set; }
+        public ConnectionStatus Status { get; set; }
+        public int ApplicationId { get; set; }
+        public string ApplicationName { get; set; } = string.Empty;
     }
 }

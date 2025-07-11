@@ -241,12 +241,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               className="flex items-center space-x-2 p-2 rounded-md text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700"
             >
               <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-secondary-300 shadow-sm">
-                {user?.firstName?.[0] || user?.username?.[0] || 'U'}
+                {user?.FirstName?.[0] || user?.Username?.[0] || 'U'}
               </div>
               <span className="text-sm font-medium hidden md:block text-secondary-900 dark:text-white">
-                {user?.firstName && user?.lastName 
-                  ? `${user.firstName} ${user.lastName}`
-                  : user?.username || 'User'
+                {user?.FirstName && user?.LastName 
+                  ? `${user.FirstName} ${user.LastName}`
+                  : user?.Username || 'User'
                 }
               </span>
             </button>
@@ -256,12 +256,12 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-md shadow-lg border border-secondary-200 dark:border-secondary-700 py-1 z-50">
                 <div className="px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 border-b border-secondary-200 dark:border-secondary-700">
                   <div className="font-medium">
-                    {user?.firstName && user?.lastName 
-                      ? `${user.firstName} ${user.lastName}`
-                      : user?.username || 'User'
+                    {user?.FirstName && user?.LastName 
+                      ? `${user.FirstName} ${user.LastName}`
+                      : user?.Username || 'User'
                     }
                   </div>
-                  <div className="text-xs text-secondary-500 dark:text-secondary-400">{user?.email}</div>
+                  <div className="text-xs text-secondary-500 dark:text-secondary-400">{user?.Email}</div>
                 </div>
                 
                 <button

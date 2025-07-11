@@ -1,62 +1,62 @@
 // Auth Types
 export interface LoginRequest {
-  username: string;
-  password: string;
+  Username: string;
+  Password: string;
 }
 
 export interface LoginResponse {
-  token: string;
-  refreshToken: string;
-  expiration: string;
-  username: string;
-  email: string;
-  userId: number;
+  Token: string;
+  RefreshToken: string;
+  Expiration: string;
+  Username: string;
+  Email: string;
+  UserId: number;
   success?: boolean;
   message?: string;
 }
 
 export interface User {
-  id: number;
-  username: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  createdAt: string;
-  updatedAt: string;
-  lastLoginAt?: string;
-  isActive: boolean;
+  Id: number;
+  Username: string;
+  Email: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  LastLoginAt?: string;
+  IsActive: boolean;
 }
 
 export interface UserProfileResponse extends User {
-  applicationCount: number;
-  databaseConnectionCount: number;
-  roles: string[];
+  ApplicationCount: number;
+  DatabaseConnectionCount: number;
+  Roles: string[];
 }
 
 export interface RegisterRequest {
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  password: string;
-  confirmPassword: string;
+  Username: string;
+  Email: string;
+  FirstName: string;
+  LastName: string;
+  PhoneNumber?: string;
+  Password: string;
+  ConfirmPassword: string;
 }
 
 export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-  confirmNewPassword: string;
+  CurrentPassword: string;
+  NewPassword: string;
+  ConfirmNewPassword: string;
 }
 
 export interface ChangeEmailRequest {
-  newEmail: string;
-  password: string;
+  NewEmail: string;
+  CurrentPassword: string;
 }
 
 export interface UpdateProfileRequest {
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
 }

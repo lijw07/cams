@@ -43,30 +43,30 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     formState: { errors, isSubmitting }
   } = useForm<ApplicationWithConnectionRequest>({
     defaultValues: {
-      applicationName: '',
-      applicationDescription: '',
-      version: '',
-      environment: 'Development',
-      tags: '',
-      isApplicationActive: true,
-      connectionName: '',
-      connectionDescription: '',
-      databaseType: DatabaseType.SqlServer,
-      server: '',
-      port: undefined,
-      database: '',
-      username: '',
-      password: '',
-      connectionString: '',
-      apiBaseUrl: '',
-      apiKey: '',
-      additionalSettings: '',
-      isConnectionActive: true,
-      testConnectionOnCreate: false
+      ApplicationName: '',
+      ApplicationDescription: '',
+      Version: '',
+      Environment: 'Development',
+      Tags: '',
+      IsApplicationActive: true,
+      ConnectionName: '',
+      ConnectionDescription: '',
+      DatabaseType: DatabaseType.SqlServer,
+      Server: '',
+      Port: undefined,
+      Database: '',
+      Username: '',
+      Password: '',
+      ConnectionString: '',
+      ApiBaseUrl: '',
+      ApiKey: '',
+      AdditionalSettings: '',
+      IsConnectionActive: true,
+      TestConnectionOnCreate: false
     }
   });
 
-  const watchedDbType = watch('databaseType');
+  const watchedDbType = watch('DatabaseType');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -77,7 +77,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     if (currentStep === 2) {
       clearTestResult();
     }
-  }, [watch('server'), watch('port'), watch('database'), watch('username'), watch('password'), watch('connectionString'), watch('apiBaseUrl'), currentStep, clearTestResult]);
+  }, [watch('Server'), watch('Port'), watch('Database'), watch('Username'), watch('Password'), watch('ConnectionString'), watch('ApiBaseUrl'), currentStep, clearTestResult]);
 
   useEffect(() => {
     if (isOpen) {
@@ -91,7 +91,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     try {
       const submissionData = {
         ...data,
-        port: data.port ? parseInt(data.port.toString()) : undefined
+        Port: data.Port ? parseInt(data.Port.toString()) : undefined
       };
       
       await onSubmit(submissionData);
@@ -112,19 +112,19 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
   };
 
   const nextStep = async () => {
-    const isStep1Valid = await trigger(['applicationName']);
+    const isStep1Valid = await trigger(['ApplicationName']);
     
     if (isStep1Valid) {
       setCurrentStep(2);
       clearTestResult();
-      clearErrors(['connectionName', 'databaseType', 'server', 'database', 'username', 'password', 'connectionString', 'apiBaseUrl']);
+      clearErrors(['ConnectionName', 'DatabaseType', 'Server', 'Database', 'Username', 'Password', 'ConnectionString', 'ApiBaseUrl']);
     }
   };
 
   const prevStep = () => {
     setCurrentStep(1);
     clearTestResult();
-    clearErrors(['connectionName', 'databaseType', 'server', 'database', 'username', 'password', 'connectionString', 'apiBaseUrl']);
+    clearErrors(['ConnectionName', 'DatabaseType', 'Server', 'Database', 'Username', 'Password', 'ConnectionString', 'ApiBaseUrl']);
   };
 
   const handleTestConnection = async () => {
@@ -154,12 +154,12 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     }
 
     const testData = {
-      databaseType: formData.databaseType,
-      server: formData.server || '',
-      database: formData.database || '',
-      username: formData.username || '',
-      password: formData.password || '',
-      port: formData.port
+      DatabaseType: formData.DatabaseType,
+      Server: formData.Server || '',
+      Database: formData.Database || '',
+      Username: formData.Username || '',
+      Password: formData.Password || '',
+      Port: formData.Port
     };
 
     await testConnection(testData);

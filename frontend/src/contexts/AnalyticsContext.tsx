@@ -26,14 +26,14 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
     if (isAuthenticated && user) {
       // Set user ID and properties
       trackUser({
-        user_id: user.id.toString(),
-        user_role: user.roles?.[0] || 'user',
+        user_id: user.Id.toString(),
+        user_role: user.Roles?.[0] || 'user',
       });
 
       // Set custom dimensions
       setUserProperties({
-        [CUSTOM_DIMENSIONS.USER_ROLE]: user.roles?.[0] || 'user',
-        [CUSTOM_DIMENSIONS.USER_PERMISSIONS]: user.roles?.join(',') || '',
+        [CUSTOM_DIMENSIONS.USER_ROLE]: user.Roles?.[0] || 'user',
+        [CUSTOM_DIMENSIONS.USER_PERMISSIONS]: user.Roles?.join(',') || '',
         [CUSTOM_DIMENSIONS.ENVIRONMENT]: import.meta.env.MODE,
       });
     }

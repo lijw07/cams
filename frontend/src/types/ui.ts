@@ -1,3 +1,5 @@
+import React from 'react';
+
 // UI State Types
 export interface LoadingState {
   isLoading: boolean;
@@ -12,6 +14,24 @@ export interface PaginationParams {
 export interface SortParams {
   sortBy: string;
   sortDirection: 'asc' | 'desc';
+}
+
+export interface PaginationRequest extends Record<string, unknown> {
+  PageNumber?: number;
+  PageSize?: number;
+  SearchTerm?: string;
+  SortBy?: string;
+  SortDirection?: 'asc' | 'desc';
+}
+
+export interface PagedResult<T> {
+  Items: T[];
+  TotalCount: number;
+  PageNumber: number;
+  PageSize: number;
+  TotalPages: number;
+  HasPrevious: boolean;
+  HasNext: boolean;
 }
 
 // Form Types
@@ -50,6 +70,17 @@ export interface Notification {
   isRead: boolean;
   source?: string;
   actionUrl?: string;
+}
+
+export interface NotificationContextType {
+  notifications: Notification[];
+  unreadCount: number;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'isRead'>) => void;
+  removeNotification: (id: string) => void;
+  deleteNotification: (id: string) => void;
+  markAsRead: (id: string) => void;
+  markAllAsRead: () => void;
+  clearAllNotifications: () => void;
 }
 
 // Theme Types

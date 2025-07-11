@@ -11,22 +11,22 @@ const ProfileInfo: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: ''
+    FirstName: '',
+    LastName: '',
+    PhoneNumber: ''
   });
   const [originalData, setOriginalData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: ''
+    FirstName: '',
+    LastName: '',
+    PhoneNumber: ''
   });
 
   useEffect(() => {
     if (user) {
       const data = {
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phoneNumber: user.phoneNumber || ''
+        FirstName: user.FirstName || '',
+        LastName: user.LastName || '',
+        PhoneNumber: user.PhoneNumber || ''
       };
       setFormData(data);
       setOriginalData(data);
@@ -55,9 +55,9 @@ const ProfileInfo: React.FC = () => {
     try {
       setIsLoading(true);
       await profileService.updateProfile({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phoneNumber: formData.phoneNumber
+        FirstName: formData.FirstName,
+        LastName: formData.LastName,
+        PhoneNumber: formData.PhoneNumber
       });
 
       await refreshUserProfile();
@@ -109,7 +109,7 @@ const ProfileInfo: React.FC = () => {
       <CardContent className="space-y-4">
         <FormField label="Username">
           <Input
-            value={user.username}
+            value={user.Username}
             disabled
             className="bg-secondary-50 dark:bg-secondary-900"
           />
@@ -117,7 +117,7 @@ const ProfileInfo: React.FC = () => {
 
         <FormField label="Email">
           <Input
-            value={user.email}
+            value={user.Email}
             disabled
             className="bg-secondary-50 dark:bg-secondary-900"
           />
@@ -125,27 +125,27 @@ const ProfileInfo: React.FC = () => {
 
         <FormField label="First Name">
           <Input
-            value={formData.firstName}
+            value={formData.FirstName}
             disabled={!isEditing}
-            onChange={(e) => handleInputChange('firstName', e.target.value)}
+            onChange={(e) => handleInputChange('FirstName', e.target.value)}
             placeholder="Enter your first name"
           />
         </FormField>
 
         <FormField label="Last Name">
           <Input
-            value={formData.lastName}
+            value={formData.LastName}
             disabled={!isEditing}
-            onChange={(e) => handleInputChange('lastName', e.target.value)}
+            onChange={(e) => handleInputChange('LastName', e.target.value)}
             placeholder="Enter your last name"
           />
         </FormField>
 
         <FormField label="Phone Number">
           <Input
-            value={formData.phoneNumber}
+            value={formData.PhoneNumber}
             disabled={!isEditing}
-            onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+            onChange={(e) => handleInputChange('PhoneNumber', e.target.value)}
             placeholder="Enter your phone number"
           />
         </FormField>

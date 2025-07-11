@@ -36,6 +36,7 @@ namespace cams.Backend.View
         public string? ConnectionDescription { get; set; }
         
         [Required(ErrorMessage = "Database type is required")]
+        [Range(1, 99, ErrorMessage = "Invalid database type")]
         public DatabaseType DatabaseType { get; set; }
         
         [Required(ErrorMessage = "Server is required")]
@@ -58,7 +59,6 @@ namespace cams.Backend.View
         public string? ConnectionString { get; set; }
         
         [StringLength(500, ErrorMessage = "API base URL cannot exceed 500 characters")]
-        [Url(ErrorMessage = "Invalid API base URL format")]
         public string? ApiBaseUrl { get; set; }
         
         [StringLength(255, ErrorMessage = "API key cannot exceed 255 characters")]
@@ -70,6 +70,26 @@ namespace cams.Backend.View
         public bool IsConnectionActive { get; set; } = true;
         
         public bool TestConnectionOnCreate { get; set; } = true;
+
+        // Cloud-specific fields
+        public AuthenticationMethod? AuthenticationMethod { get; set; }
+        public string? Region { get; set; }
+        public string? AccountId { get; set; }
+        public string? ProjectId { get; set; }
+        public string? InstanceId { get; set; }
+        public string? AccessKeyId { get; set; }
+        public string? SecretAccessKey { get; set; }
+        public string? SessionToken { get; set; }
+        public string? ClientId { get; set; }
+        public string? ClientSecret { get; set; }
+        public string? TenantId { get; set; }
+        public string? SubscriptionId { get; set; }
+        public string? CertificatePath { get; set; }
+        public string? CertificatePassword { get; set; }
+        public string? Scope { get; set; }
+        public string? Audience { get; set; }
+        public string? GrantType { get; set; }
+        public string? TokenEndpoint { get; set; }
     }
 
     /// <summary>

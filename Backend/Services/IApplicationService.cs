@@ -5,6 +5,7 @@ namespace cams.Backend.Services
     public interface IApplicationService
     {
         Task<IEnumerable<ApplicationSummaryResponse>> GetUserApplicationsAsync(int userId);
+        Task<PagedResult<ApplicationSummaryResponse>> GetUserApplicationsPaginatedAsync(int userId, PaginationRequest request);
         Task<ApplicationResponse?> GetApplicationByIdAsync(int id, int userId);
         Task<ApplicationResponse> CreateApplicationAsync(ApplicationRequest request, int userId);
         Task<ApplicationResponse?> UpdateApplicationAsync(ApplicationUpdateRequest request, int userId);

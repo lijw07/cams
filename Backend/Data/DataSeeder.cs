@@ -6,7 +6,6 @@ namespace cams.Backend.Data
 {
     /// <summary>
     /// Data seeder that creates initial roles and users with proper role assignments.
-    /// Aligns with SharedUserRepository for consistent user data across the application.
     /// 
     /// Role Structure:
     /// - PlatformAdmin: Full system access (assigned to 'platformadmin' user)
@@ -48,14 +47,15 @@ namespace cams.Backend.Data
                 
                 // Seed roles
                 await SeedRolesAsync(context);
+                await context.SaveChangesAsync(); // Save roles to get IDs
                 
                 // Seed default users
                 await SeedDefaultUsersAsync(context);
+                await context.SaveChangesAsync(); // Save users to get IDs
                 
                 // Seed default user roles
                 await SeedDefaultUserRolesAsync(context);
-                
-                await context.SaveChangesAsync();
+                await context.SaveChangesAsync(); // Save user roles
                 Console.WriteLine("Data seeding completed successfully.");
             }
             catch (Exception ex)

@@ -3,7 +3,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { X, Database, Server, Key, Zap } from 'lucide-react';
 import { ApplicationWithConnectionRequest, DatabaseType } from '../../types';
 import { databaseConnectionService } from '../../services/databaseConnectionService';
-import { useNotifications } from '../contexts/NotificationContext';
+import { useNotifications } from '../../contexts/NotificationContext';
+import CloudConnectionForm from '../forms/CloudConnectionForm';
 
 interface ApplicationWithConnectionModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
   const [selectedDbType, setSelectedDbType] = useState<DatabaseType>(DatabaseType.SqlServer);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const { addNotification } = useNotifications();
 
   const {
     register,
@@ -32,30 +34,30 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     formState: { errors, isSubmitting }
   } = useForm<ApplicationWithConnectionRequest>({
     defaultValues: {
-      applicationName: '',
-      applicationDescription: '',
-      version: '',
-      environment: 'Development',
-      tags: '',
-      isApplicationActive: true,
-      connectionName: '',
-      connectionDescription: '',
-      databaseType: DatabaseType.SqlServer,
-      server: '',
-      port: undefined,
-      database: '',
-      username: '',
-      password: '',
-      connectionString: '',
-      apiBaseUrl: '',
-      apiKey: '',
-      additionalSettings: '',
-      isConnectionActive: true,
-      testConnectionOnCreate: false
+      ApplicationName: '',
+      ApplicationDescription: '',
+      Version: '',
+      Environment: 'Development',
+      Tags: '',
+      IsApplicationActive: true,
+      ConnectionName: '',
+      ConnectionDescription: '',
+      DatabaseType: DatabaseType.SqlServer,
+      Server: '',
+      Port: undefined,
+      Database: '',
+      Username: '',
+      Password: '',
+      ConnectionString: '',
+      ApiBaseUrl: '',
+      ApiKey: '',
+      AdditionalSettings: '',
+      IsConnectionActive: true,
+      TestConnectionOnCreate: false
     }
   });
 
-  const watchedDbType = watch('databaseType');
+  const watchedDbType = watch('DatabaseType');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -67,7 +69,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     if (currentStep === 2) {
       setTestResult(null);
     }
-  }, [watch('server'), watch('port'), watch('database'), watch('username'), watch('password'), watch('connectionString'), watch('apiBaseUrl'), currentStep]);
+  }, [watch('Server'), watch('Port'), watch('Database'), watch('Username'), watch('Password'), watch('ConnectionString'), watch('ApiBaseUrl'), currentStep]);
 
   // Clear errors when modal opens
   useEffect(() => {
@@ -83,23 +85,19 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
       // Convert port from string to number if provided
       const submissionData = {
         ...data,
-        port: data.port ? parseInt(data.port.toString()) : undefined
+        Port: data.Port ? parseInt(data.Port.toString()) : undefined,
+        // Workaround: Backend requires server field even for API connections
+        Server: data.Server || (isApiType() ? 'api' : data.Server)
       };
       
-      console.log('Form submission data before sending:', submissionData);
-      console.log('Required fields check:', {
-        applicationName: submissionData.applicationName,
-        connectionName: submissionData.connectionName,
-        databaseType: submissionData.databaseType,
-        server: submissionData.server
-      });
+      console.log('Submitting data:', submissionData);
       
       await onSubmit(submissionData);
       reset();
       setCurrentStep(1);
       onClose();
     } catch (error) {
-      console.error('Error submitting application with connection:', error);
+      // Error is handled by the parent component
     }
   };
 
@@ -113,13 +111,13 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
 
   const nextStep = async () => {
     // Validate step 1 fields before proceeding
-    const isStep1Valid = await trigger(['applicationName']);
+    const isStep1Valid = await trigger(['ApplicationName']);
     
     if (isStep1Valid) {
       setCurrentStep(2);
       setTestResult(null);
       // Only clear errors for step 2 fields, keep step 1 validation
-      clearErrors(['connectionName', 'databaseType', 'server', 'database', 'username', 'password', 'connectionString', 'apiBaseUrl']);
+      clearErrors(['ConnectionName', 'DatabaseType', 'Server', 'Database', 'Username', 'Password', 'ConnectionString', 'ApiBaseUrl']);
     }
   };
 
@@ -127,7 +125,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     setCurrentStep(1);
     setTestResult(null);
     // Clear only step 2 validation errors when going back to step 1
-    clearErrors(['connectionName', 'databaseType', 'server', 'database', 'username', 'password', 'connectionString', 'apiBaseUrl']);
+    clearErrors(['ConnectionName', 'DatabaseType', 'Server', 'Database', 'Username', 'Password', 'ConnectionString', 'ApiBaseUrl']);
   };
 
   const handleTestConnection = async () => {
@@ -141,23 +139,41 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
       
       if (isConnectionStringType()) {
         // For custom connection string types, we need a different approach
-        toast.error('Connection testing not available for custom connection strings');
+        addNotification({
+          title: 'Connection Test Unavailable',
+          message: 'Connection testing not available for custom connection strings',
+          type: 'error',
+          source: 'Database Connection'
+        });
         setIsTestingConnection(false);
         return;
+      } else if (isCloudPlatform()) {
+        // For cloud platforms, build test data based on the platform
+        testData = {
+          DatabaseType: formData.DatabaseType,
+          Server: formData.Server || formData.ApiBaseUrl || '',
+          Database: formData.Database || '',
+          Username: formData.Username || formData.ClientId || '',
+          Password: formData.Password || formData.ClientSecret || formData.ApiKey || ''
+        };
       } else if (isApiType()) {
-        // For API types, we could test the base URL
-        toast.error('Connection testing not available for API endpoints');
-        setIsTestingConnection(false);
-        return;
+        // For API types, test the base URL
+        testData = {
+          DatabaseType: formData.DatabaseType,
+          Server: formData.ApiBaseUrl || '',
+          ApiKey: formData.ApiKey || '',
+          Username: formData.Username || '',
+          Password: formData.Password || ''
+        };
       } else {
         // For database connections
         testData = {
-          databaseType: formData.databaseType,
-          server: formData.server || '',
-          database: formData.database || '',
-          username: formData.username || '',
-          password: formData.password || '',
-          port: formData.port
+          DatabaseType: formData.DatabaseType,
+          Server: formData.Server || '',
+          Database: formData.Database || '',
+          Username: formData.Username || '',
+          Password: formData.Password || '',
+          Port: formData.Port
         };
       }
 
@@ -165,21 +181,37 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
       
       if (result.isSuccessful) {
         setTestResult({ success: true, message: result.message || 'Connection successful!' });
-        toast.success('Database connection test passed!');
+        addNotification({
+          title: 'Connection Test Successful',
+          message: 'Database connection test passed!',
+          type: 'success',
+          source: 'Database Connection'
+        });
       } else {
         setTestResult({ success: false, message: result.message || 'Connection failed' });
-        toast.error(`Connection test failed: ${result.message}`);
+        addNotification({
+          title: 'Connection Test Failed',
+          message: `Connection test failed: ${result.message}`,
+          type: 'error',
+          source: 'Database Connection'
+        });
       }
     } catch (error: any) {
       const errorMessage = error?.message || 'Connection test failed';
       setTestResult({ success: false, message: errorMessage });
-      toast.error(`Connection test failed: ${errorMessage}`);
+      addNotification({
+        title: 'Connection Test Failed',
+        message: `Connection test failed: ${errorMessage}`,
+        type: 'error',
+        source: 'Database Connection'
+      });
     } finally {
       setIsTestingConnection(false);
     }
   };
 
   const getDatabaseTypeOptions = () => [
+    // Traditional Databases
     { value: DatabaseType.SqlServer, label: 'SQL Server' },
     { value: DatabaseType.MySQL, label: 'MySQL' },
     { value: DatabaseType.PostgreSQL, label: 'PostgreSQL' },
@@ -187,19 +219,49 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     { value: DatabaseType.SQLite, label: 'SQLite' },
     { value: DatabaseType.MongoDB, label: 'MongoDB' },
     { value: DatabaseType.Redis, label: 'Redis' },
+    // APIs
     { value: DatabaseType.RestApi, label: 'REST API' },
     { value: DatabaseType.GraphQL, label: 'GraphQL' },
     { value: DatabaseType.WebSocket, label: 'WebSocket' },
+    // AWS
+    { value: DatabaseType.AWS_RDS, label: 'AWS RDS' },
+    { value: DatabaseType.AWS_DynamoDB, label: 'AWS DynamoDB' },
+    { value: DatabaseType.AWS_S3, label: 'AWS S3' },
+    // Azure
+    { value: DatabaseType.Azure_SQL, label: 'Azure SQL' },
+    { value: DatabaseType.Azure_CosmosDB, label: 'Azure Cosmos DB' },
+    { value: DatabaseType.Azure_Storage, label: 'Azure Storage' },
+    // Google Cloud
+    { value: DatabaseType.Google_CloudSQL, label: 'Google Cloud SQL' },
+    { value: DatabaseType.Google_Firestore, label: 'Google Firestore' },
+    { value: DatabaseType.Google_BigQuery, label: 'Google BigQuery' },
+    // SaaS Platforms
+    { value: DatabaseType.Salesforce_API, label: 'Salesforce' },
+    { value: DatabaseType.ServiceNow_API, label: 'ServiceNow' },
+    { value: DatabaseType.Snowflake, label: 'Snowflake' },
+    { value: DatabaseType.Databricks, label: 'Databricks' },
+    // Other
     { value: DatabaseType.Custom, label: 'Custom' }
   ];
 
   const isApiType = () => {
-    return [DatabaseType.RestApi, DatabaseType.GraphQL, DatabaseType.WebSocket].includes(selectedDbType);
+    return [
+      DatabaseType.RestApi, 
+      DatabaseType.GraphQL, 
+      DatabaseType.WebSocket,
+      DatabaseType.Salesforce_API,
+      DatabaseType.ServiceNow_API
+    ].includes(selectedDbType);
   };
 
   const isConnectionStringType = () => {
     return [DatabaseType.Custom].includes(selectedDbType);
   };
+
+  const isCloudPlatform = () => {
+    return selectedDbType >= DatabaseType.AWS_RDS && selectedDbType <= DatabaseType.Databricks;
+  };
+
 
   if (!isOpen) return null;
 
@@ -262,7 +324,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     Application Name *
                   </label>
                   <input
-                    {...register('applicationName', {
+                    {...register('ApplicationName', {
                       required: 'Application name is required',
                       minLength: {
                         value: 3,
@@ -274,8 +336,8 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     className="input"
                     placeholder="e.g., E-commerce API"
                   />
-                  {errors.applicationName && (
-                    <p className="mt-1 text-sm text-error-600">{errors.applicationName.message}</p>
+                  {errors.ApplicationName && (
+                    <p className="mt-1 text-sm text-error-600">{errors.ApplicationName.message}</p>
                   )}
                 </div>
 
@@ -284,7 +346,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     Description
                   </label>
                   <textarea
-                    {...register('applicationDescription')}
+                    {...register('ApplicationDescription')}
                     id="applicationDescription"
                     rows={3}
                     className="input"
@@ -298,7 +360,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                       Version
                     </label>
                     <input
-                      {...register('version')}
+                      {...register('Version')}
                       type="text"
                       id="version"
                       className="input"
@@ -311,7 +373,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                       Environment
                     </label>
                     <select
-                      {...register('environment')}
+                      {...register('Environment')}
                       id="environment"
                       className="input"
                     >
@@ -328,7 +390,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     Tags
                   </label>
                   <input
-                    {...register('tags')}
+                    {...register('Tags')}
                     type="text"
                     id="tags"
                     className="input"
@@ -342,7 +404,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                 <div className="flex items-center space-x-3 p-3 bg-secondary-50 dark:bg-secondary-700 rounded-lg border border-secondary-200 dark:border-secondary-600">
                   <div className="flex items-center">
                     <input
-                      {...register('isApplicationActive')}
+                      {...register('IsApplicationActive')}
                       type="checkbox"
                       id="isApplicationActive"
                       className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 rounded"
@@ -370,7 +432,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     Connection Name *
                   </label>
                   <input
-                    {...register('connectionName', {
+                    {...register('ConnectionName', {
                       required: 'Connection name is required',
                       minLength: {
                         value: 3,
@@ -382,8 +444,8 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     className="input"
                     placeholder="e.g., Production Database"
                   />
-                  {errors.connectionName && (
-                    <p className="mt-1 text-sm text-error-600">{errors.connectionName.message}</p>
+                  {errors.ConnectionName && (
+                    <p className="mt-1 text-sm text-error-600">{errors.ConnectionName.message}</p>
                   )}
                 </div>
 
@@ -392,7 +454,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     Description
                   </label>
                   <textarea
-                    {...register('connectionDescription')}
+                    {...register('ConnectionDescription')}
                     id="connectionDescription"
                     rows={2}
                     className="input"
@@ -405,7 +467,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                     Database Type *
                   </label>
                   <Controller
-                    name="databaseType"
+                    name="DatabaseType"
                     control={control}
                     rules={{ required: 'Database type is required' }}
                     render={({ field }) => (
@@ -427,8 +489,8 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                       </select>
                     )}
                   />
-                  {errors.databaseType && (
-                    <p className="mt-1 text-sm text-error-600">{errors.databaseType.message}</p>
+                  {errors.DatabaseType && (
+                    <p className="mt-1 text-sm text-error-600">{errors.DatabaseType.message}</p>
                   )}
                 </div>
 
@@ -438,7 +500,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                       Connection String *
                     </label>
                     <textarea
-                      {...register('connectionString', {
+                      {...register('ConnectionString', {
                         required: selectedDbType === DatabaseType.Custom ? 'Connection string is required' : false
                       })}
                       id="connectionString"
@@ -446,8 +508,8 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                       className="input"
                       placeholder="Enter your custom connection string"
                     />
-                    {errors.connectionString && (
-                      <p className="mt-1 text-sm text-error-600">{errors.connectionString.message}</p>
+                    {errors.ConnectionString && (
+                      <p className="mt-1 text-sm text-error-600">{errors.ConnectionString.message}</p>
                     )}
                   </div>
                 ) : isApiType() ? (
@@ -457,7 +519,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                         API Base URL *
                       </label>
                       <input
-                        {...register('apiBaseUrl', {
+                        {...register('ApiBaseUrl', {
                           required: isApiType() ? 'API Base URL is required' : false
                         })}
                         type="url"
@@ -465,8 +527,8 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                         className="input"
                         placeholder="https://api.example.com"
                       />
-                      {errors.apiBaseUrl && (
-                        <p className="mt-1 text-sm text-error-600">{errors.apiBaseUrl.message}</p>
+                      {errors.ApiBaseUrl && (
+                        <p className="mt-1 text-sm text-error-600">{errors.ApiBaseUrl.message}</p>
                       )}
                     </div>
 
@@ -476,7 +538,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                         API Key
                       </label>
                       <input
-                        {...register('apiKey')}
+                        {...register('ApiKey')}
                         type="password"
                         id="apiKey"
                         className="input"
@@ -484,6 +546,14 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                       />
                     </div>
                   </div>
+                ) : isCloudPlatform() ? (
+                  <CloudConnectionForm
+                    register={register}
+                    control={control}
+                    errors={errors}
+                    databaseType={selectedDbType}
+                    watch={watch}
+                  />
                 ) : (
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
@@ -492,16 +562,16 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                           Server *
                         </label>
                         <input
-                          {...register('server', {
-                            required: !isApiType() && !isConnectionStringType() ? 'Server is required' : false
+                          {...register('Server', {
+                            required: !isApiType() && !isConnectionStringType() && !isCloudPlatform() ? 'Server is required' : false
                           })}
                           type="text"
                           id="server"
                           className="input"
                           placeholder="localhost or server IP"
                         />
-                        {errors.server && (
-                          <p className="mt-1 text-sm text-error-600">{errors.server.message}</p>
+                        {errors.Server && (
+                          <p className="mt-1 text-sm text-error-600">{errors.Server.message}</p>
                         )}
                       </div>
 
@@ -510,7 +580,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                           Port
                         </label>
                         <input
-                          {...register('port', {
+                          {...register('Port', {
                             validate: (value: number | undefined) => {
                               if (!value) return true; // Optional field
                               const port = Number(value);
@@ -525,8 +595,8 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                           className="input"
                           placeholder="1433"
                         />
-                        {errors.port && (
-                          <p className="mt-1 text-sm text-error-600">{errors.port.message}</p>
+                        {errors.Port && (
+                          <p className="mt-1 text-sm text-error-600">{errors.Port.message}</p>
                         )}
                       </div>
                     </div>
@@ -536,7 +606,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                         Database Name
                       </label>
                       <input
-                        {...register('database')}
+                        {...register('Database')}
                         type="text"
                         id="database"
                         className="input"
@@ -550,7 +620,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                           Username
                         </label>
                         <input
-                          {...register('username')}
+                          {...register('Username')}
                           type="text"
                           id="username"
                           className="input"
@@ -563,7 +633,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
                           Password
                         </label>
                         <input
-                          {...register('password')}
+                          {...register('Password')}
                           type="password"
                           id="password"
                           className="input"

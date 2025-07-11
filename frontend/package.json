@@ -1,7 +1,7 @@
 {
   "name": "cams-frontend",
   "version": "1.0.0",
-  "description": "CAMS - Connection & Application Management System Frontend",
+  "description": "CAMS - Centralized Application Management System Frontend",
   "private": true,
   "type": "module",
   "scripts": {

@@ -8,14 +8,13 @@ namespace cams.Backend.Data
         public DbSet<Application> Applications { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<DatabaseConnection> DatabaseConnections { get; set; }
-        public DbSet<EmailAttachment> EmailAttachments { get; set; }
-        public DbSet<EmailMessage> EmailMessages { get; set; }
         public DbSet<PerformanceLog> PerformanceLogs { get; set; }
         public DbSet<SecurityLog> SecurityLogs { get; set; }
         public DbSet<SystemLog> SystemLogs { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<ConnectionTestSchedule> ConnectionTestSchedules { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -218,44 +217,24 @@ namespace cams.Backend.Data
                     .OnDelete(DeleteBehavior.SetNull);
             });
 
-            // EmailMessage entity configuration
-            modelBuilder.Entity<EmailMessage>(entity =>
+            // ConnectionTestSchedule entity configuration
+            modelBuilder.Entity<ConnectionTestSchedule>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.FromEmail).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.FromName).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.ToEmail).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.ToName).HasMaxLength(255);
-                entity.Property(e => e.CcEmails).HasMaxLength(1000);
-                entity.Property(e => e.BccEmails).HasMaxLength(1000);
-                entity.Property(e => e.Subject).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.Body).IsRequired();
-                entity.Property(e => e.PlainTextBody);
-                entity.Property(e => e.ErrorMessage).HasMaxLength(2000);
+                entity.Property(e => e.CronExpression).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.LastRunStatus).HasMaxLength(20);
+                entity.Property(e => e.LastRunMessage).HasMaxLength(1000);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
                 
-                // Configure relationship with User (Sender)
-                entity.HasOne(e => e.Sender)
+                // Configure relationship with Application
+                entity.HasOne(e => e.Application)
                     .WithMany()
-                    .HasForeignKey(e => e.SenderId)
-                    .OnDelete(DeleteBehavior.Restrict);
-            });
-
-            // EmailAttachment entity configuration
-            modelBuilder.Entity<EmailAttachment>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.FileName).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.ContentType).IsRequired().HasMaxLength(255);
-                entity.Property(e => e.FileData).IsRequired();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                
-                // Configure relationship with EmailMessage
-                entity.HasOne(e => e.EmailMessage)
-                    .WithMany(em => em.Attachments)
-                    .HasForeignKey(e => e.EmailMessageId)
+                    .HasForeignKey(e => e.ApplicationId)
                     .OnDelete(DeleteBehavior.Cascade);
+                
+                // Ensure one schedule per application
+                entity.HasIndex(e => e.ApplicationId).IsUnique();
             });
         }
     }

@@ -16,9 +16,20 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        // Use PascalCase for consistency between frontend and backend
+        options.JsonSerializerOptions.PropertyNamingPolicy = null; // null = use property names as-is (PascalCase)
         options.JsonSerializerOptions.Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping;
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+        // Allow numbers to be read as strings for more flexible enum parsing
+        options.JsonSerializerOptions.NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString;
     });
+
+// Configure API behavior to suppress automatic 400 responses
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options =>
+{
+    options.SuppressModelStateInvalidFilter = true;
+});
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Entity Framework
@@ -61,6 +72,9 @@ builder.Services.AddSwaggerGen(c =>
 // Add health checks
 builder.Services.AddHealthChecks();
 
+// Development-specific configuration is handled by appsettings.Development.json
+
+
 // Add SignalR
 builder.Services.AddSignalR();
 
@@ -68,8 +82,6 @@ builder.Services.AddSignalR();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 builder.Services.Configure<JwtSettings>(jwtSettings);
 
-// Configure Email settings
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
 
 // Add authentication
 var key = Encoding.ASCII.GetBytes(jwtSettings.Get<JwtSettings>()?.Secret ?? throw new InvalidOperationException("JWT Secret is not configured"));
@@ -113,14 +125,19 @@ builder.Services.AddAuthentication(options =>
 
 // Register services
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+
+// Register services
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
 builder.Services.AddScoped<IDatabaseConnectionService, DatabaseConnectionService>();
 builder.Services.AddScoped<IUserService, UserService>();
+
 builder.Services.AddScoped<ILoggingService, LoggingService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-builder.Services.AddScoped<IEmailMessagingService, EmailMessagingService>();
 builder.Services.AddScoped<IMigrationService, MigrationService>();
+builder.Services.AddScoped<IConnectionTestScheduleService, ConnectionTestScheduleService>();
+
+// Register background services
+builder.Services.AddHostedService<ConnectionTestSchedulerService>();
 
 // Register mappers
 builder.Services.AddScoped<IUserMapper, UserMapper>();
@@ -172,9 +189,14 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    
+    // Disable HTTPS redirection in development to avoid port warnings
+    // app.UseHttpsRedirection(); // Commented out for development
 }
-
-app.UseHttpsRedirection();
+else
+{
+    app.UseHttpsRedirection();
+}
 
 // Use environment-specific CORS policy
 if (app.Environment.IsDevelopment())

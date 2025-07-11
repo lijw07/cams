@@ -75,9 +75,9 @@ const PasswordChange: React.FC = () => {
     try {
       setIsLoading(true);
       await profileService.changePassword({
-        currentPassword: formData.currentPassword,
-        newPassword: formData.newPassword,
-        confirmNewPassword: formData.confirmNewPassword
+        CurrentPassword: formData.currentPassword,
+        NewPassword: formData.newPassword,
+        ConfirmNewPassword: formData.confirmNewPassword
       });
 
       // Reset form

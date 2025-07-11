@@ -51,10 +51,10 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
       <FormField 
         label="Connection Name" 
         required 
-        error={errors.connectionName?.message}
+        error={errors.ConnectionName?.message}
       >
         <Input
-          {...register('connectionName', {
+          {...register('ConnectionName', {
             required: 'Connection name is required',
             minLength: {
               value: 3,
@@ -62,13 +62,13 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
             }
           })}
           placeholder="e.g., Production Database"
-          error={!!errors.connectionName}
+          error={!!errors.ConnectionName}
         />
       </FormField>
 
       <FormField label="Description">
         <Textarea
-          {...register('connectionDescription')}
+          {...register('ConnectionDescription')}
           placeholder="Brief description of the database connection"
           resize="vertical"
         />
@@ -77,10 +77,10 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
       <FormField 
         label="Database Type" 
         required 
-        error={errors.databaseType?.message}
+        error={errors.DatabaseType?.message}
       >
         <Controller
-          name="databaseType"
+          name="DatabaseType"
           control={control}
           rules={{ required: 'Database type is required' }}
           render={({ field }) => (
@@ -92,7 +92,7 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
                 field.onChange(value);
                 onDbTypeChange(value);
               }}
-              error={!!errors.databaseType}
+              error={!!errors.DatabaseType}
             />
           )}
         />
@@ -102,14 +102,14 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
         <FormField 
           label="Connection String" 
           required 
-          error={errors.connectionString?.message}
+          error={errors.ConnectionString?.message}
         >
           <Textarea
-            {...register('connectionString', {
+            {...register('ConnectionString', {
               required: selectedDbType === DatabaseType.Custom ? 'Connection string is required' : false
             })}
             placeholder="Enter your custom connection string"
-            error={!!errors.connectionString}
+            error={!!errors.ConnectionString}
           />
         </FormField>
       )}
@@ -119,15 +119,15 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
           <FormField 
             label="API Base URL" 
             required 
-            error={errors.apiBaseUrl?.message}
+            error={errors.ApiBaseUrl?.message}
           >
             <Input
-              {...register('apiBaseUrl', {
+              {...register('ApiBaseUrl', {
                 required: isApiType() ? 'API Base URL is required' : false
               })}
               type="url"
               placeholder="https://api.example.com"
-              error={!!errors.apiBaseUrl}
+              error={!!errors.ApiBaseUrl}
             />
           </FormField>
 
@@ -135,7 +135,7 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
             <div className="relative">
               <Key className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-secondary-400" />
               <Input
-                {...register('apiKey')}
+                {...register('ApiKey')}
                 type="password"
                 placeholder="Enter API key if required"
                 className="pl-10"
@@ -151,23 +151,23 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
             <FormField 
               label="Server" 
               required 
-              error={errors.server?.message}
+              error={errors.Server?.message}
             >
               <Input
-                {...register('server', {
+                {...register('Server', {
                   required: !isApiType() && !isConnectionStringType() ? 'Server is required' : false
                 })}
                 placeholder="localhost or server IP"
-                error={!!errors.server}
+                error={!!errors.Server}
               />
             </FormField>
 
             <FormField 
               label="Port" 
-              error={errors.port?.message}
+              error={errors.Port?.message}
             >
               <Input
-                {...register('port', {
+                {...register('Port', {
                   validate: (value: number | undefined) => {
                     if (!value) return true;
                     const port = Number(value);
@@ -178,14 +178,14 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
                   }
                 })}
                 placeholder="1433"
-                error={!!errors.port}
+                error={!!errors.Port}
               />
             </FormField>
           </div>
 
           <FormField label="Database Name">
             <Input
-              {...register('database')}
+              {...register('Database')}
               placeholder="database name"
             />
           </FormField>
@@ -193,14 +193,14 @@ const DatabaseConnectionForm: React.FC<DatabaseConnectionFormProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <FormField label="Username">
               <Input
-                {...register('username')}
+                {...register('Username')}
                 placeholder="database username"
               />
             </FormField>
 
             <FormField label="Password">
               <Input
-                {...register('password')}
+                {...register('Password')}
                 type="password"
                 placeholder="database password"
               />

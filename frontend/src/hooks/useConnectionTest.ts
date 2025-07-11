@@ -4,12 +4,15 @@ import { databaseConnectionService } from '../services/databaseConnectionService
 import { useNotifications } from '../contexts/NotificationContext';
 
 export interface ConnectionTestData {
-  databaseType: DatabaseType;
-  server: string;
-  database: string;
-  username: string;
-  password: string;
-  port?: number;
+  DatabaseType: DatabaseType;
+  Server: string;
+  Database: string;
+  Username: string;
+  Password: string;
+  Port?: number;
+  ConnectionString?: string;
+  ApiBaseUrl?: string;
+  ApiKey?: string;
 }
 
 export interface UseConnectionTestReturn {

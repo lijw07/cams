@@ -1,91 +1,94 @@
 // Migration Types
 export interface MigrationRequest {
-  migrationType: 'Users' | 'Roles' | 'Applications';
-  data: string;
-  dataFormat: 'JSON' | 'CSV';
-  validateOnly: boolean;
-  overwriteExisting: boolean;
-  sendNotifications: boolean;
+  MigrationType: 'Users' | 'Roles' | 'Applications';
+  Data: string;
+  DataFormat: 'JSON' | 'CSV';
+  ValidateOnly: boolean;
+  OverwriteExisting: boolean;
+  SendNotifications: boolean;
 }
 
 export interface UserImportDto {
-  username: string;
-  email: string;
-  password?: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  isActive: boolean;
-  roles: string[];
+  Username: string;
+  Email: string;
+  Password?: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
+  IsActive: boolean;
+  Roles: string[];
 }
 
 export interface RoleImportDto {
-  name: string;
-  description?: string;
-  isActive: boolean;
-  permissions: string[];
+  Name: string;
+  Description?: string;
+  IsActive: boolean;
+  Permissions: string[];
 }
 
 export interface ApplicationImportDto {
-  name: string;
-  description?: string;
-  version?: string;
-  environment?: string;
-  tags?: string;
-  isActive: boolean;
+  Name: string;
+  Description?: string;
+  Version?: string;
+  Environment?: string;
+  Tags?: string;
+  IsActive: boolean;
 }
 
 export interface BulkUserImportRequest {
-  users: UserImportDto[];
-  overwriteExisting: boolean;
-  sendWelcomeEmails: boolean;
+  Users: UserImportDto[];
+  OverwriteExisting: boolean;
+  SendWelcomeEmails: boolean;
 }
 
 export interface BulkRoleImportRequest {
-  roles: RoleImportDto[];
-  overwriteExisting: boolean;
+  Roles: RoleImportDto[];
+  OverwriteExisting: boolean;
 }
 
 export interface BulkApplicationImportRequest {
-  applications: ApplicationImportDto[];
-  overwriteExisting: boolean;
+  Applications: ApplicationImportDto[];
+  OverwriteExisting: boolean;
 }
 
 export interface MigrationResult {
-  success: boolean;
-  message: string;
-  totalRecords: number;
-  successfulRecords: number;
-  failedRecords: number;
-  errors: string[];
-  warnings: string[];
-  validationSummary?: string;
-  startTime: string;
-  endTime: string;
-  duration: string;
-  progressId?: string;
-  progressPercentage?: number;
-  currentOperation?: string;
+  Success: boolean;
+  Message: string;
+  TotalRecords: number;
+  SuccessfulRecords: number;
+  FailedRecords: number;
+  Errors: string[];
+  Warnings: string[];
+  ValidationSummary?: string;
+  StartTime: string;
+  EndTime: string;
+  Duration: string;
+  ProgressId?: string;
+  ProgressPercentage?: number;
+  CurrentOperation?: string;
 }
 
 export interface MigrationProgress {
-  progressId: string;
-  percentage: number;
-  processedRecords: number;
-  totalRecords: number;
-  currentOperation: string;
-  recentErrors: string[];
-  recentWarnings: string[];
-  isCompleted: boolean;
-  isSuccessful: boolean;
-  lastUpdated: string;
-  estimatedTimeRemaining?: string;
+  ProgressId: string;
+  Percentage: number;
+  ProcessedRecords: number;
+  TotalRecords: number;
+  CurrentOperation: string;
+  RecentErrors: string[];
+  RecentWarnings: string[];
+  IsCompleted: boolean;
+  IsSuccessful: boolean;
+  LastUpdated: string;
+  EstimatedTimeRemaining?: string;
 }
 
 export interface MigrationValidationResult {
-  isValid: boolean;
-  totalRecords: number;
-  errors: string[];
-  warnings: string[];
-  recordCounts: { [key: string]: number };
+  IsValid: boolean;
+  TotalRecords: number;
+  Errors: string[];
+  Warnings: string[];
+  RecordCounts: { [key: string]: number };
 }
+
+// Legacy alias for backwards compatibility
+export type BulkMigrationRequest = MigrationRequest;

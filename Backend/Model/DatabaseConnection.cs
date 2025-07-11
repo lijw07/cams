@@ -59,6 +59,8 @@ namespace cams.Backend.Model
         
         public DateTime? LastTestedAt { get; set; }
         
+        public DateTime? LastAccessedAt { get; set; }
+        
         public ConnectionStatus Status { get; set; } = ConnectionStatus.Untested;
         
         public string? LastTestResult { get; set; }

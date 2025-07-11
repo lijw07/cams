@@ -2,123 +2,123 @@ import { User } from './auth';
 
 // Role Management Types
 export interface Role {
-  id: number;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  userCount: number;
-  permissions: string[];
+  Id: number;
+  Name: string;
+  Description?: string;
+  IsActive: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  UserCount: number;
+  Permissions: string[];
 }
 
 export interface RoleRequest {
-  name: string;
-  description?: string;
-  isActive: boolean;
-  permissions: string[];
+  Name: string;
+  Description?: string;
+  IsActive: boolean;
+  Permissions: string[];
 }
 
 export interface Permission {
-  id: string;
-  name: string;
-  description?: string;
-  category: string;
-  isSystemPermission: boolean;
+  Id: string;
+  Name: string;
+  Description?: string;
+  Category: string;
+  IsSystemPermission: boolean;
 }
 
 // User Management Types
 export interface UserManagementDto extends User {
-  roleNames: string[];
-  lastLoginFormatted?: string;
+  RoleNames: string[];
+  LastLoginFormatted?: string;
 }
 
 export interface UserCreateRequest {
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  password: string;
-  roleIds: number[];
-  isActive: boolean;
-  sendWelcomeEmail: boolean;
+  Username: string;
+  Email: string;
+  FirstName: string;
+  LastName: string;
+  PhoneNumber?: string;
+  Password: string;
+  RoleIds: number[];
+  IsActive: boolean;
+  SendWelcomeEmail: boolean;
 }
 
 export interface UserUpdateRequest {
-  id: number;
-  username: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phoneNumber?: string;
-  roleIds: number[];
-  isActive: boolean;
+  Id: number;
+  Username: string;
+  Email: string;
+  FirstName: string;
+  LastName: string;
+  PhoneNumber?: string;
+  RoleIds: number[];
+  IsActive: boolean;
 }
 
 export interface AssignRoleRequest {
-  userId: number;
-  roleIds: number[];
+  UserId: number;
+  RoleIds: number[];
 }
 
 // Email Management Types
 export interface EmailTemplate {
-  id: number;
-  name: string;
-  subject: string;
-  body: string;
-  isHtml: boolean;
-  isActive: boolean;
-  category: string;
-  description?: string;
-  variables: string[];
-  createdAt: string;
-  updatedAt: string;
+  Id: number;
+  Name: string;
+  Subject: string;
+  Body: string;
+  IsHtml: boolean;
+  IsActive: boolean;
+  Category: string;
+  Description?: string;
+  Variables: string[];
+  CreatedAt: string;
+  UpdatedAt: string;
 }
 
 export interface EmailTemplateRequest {
-  name: string;
-  subject: string;
-  body: string;
-  isHtml: boolean;
-  isActive: boolean;
-  category: string;
-  description?: string;
+  Name: string;
+  Subject: string;
+  Body: string;
+  IsHtml: boolean;
+  IsActive: boolean;
+  Category: string;
+  Description?: string;
 }
 
 export interface EmailLog {
-  id: number;
-  to: string;
-  cc?: string;
-  bcc?: string;
-  subject: string;
-  body?: string;
-  templateId?: number;
-  templateName?: string;
-  status: string;
-  sentAt?: string;
-  deliveredAt?: string;
-  openedAt?: string;
-  errorMessage?: string;
-  retryCount: number;
-  createdAt: string;
-  userId?: number;
-  userEmail?: string;
+  Id: number;
+  To: string;
+  Cc?: string;
+  Bcc?: string;
+  Subject: string;
+  Body?: string;
+  TemplateId?: number;
+  TemplateName?: string;
+  Status: string;
+  SentAt?: string;
+  DeliveredAt?: string;
+  OpenedAt?: string;
+  ErrorMessage?: string;
+  RetryCount: number;
+  CreatedAt: string;
+  UserId?: number;
+  UserEmail?: string;
 }
 
 export interface SendEmailRequest {
-  to: string[];
-  cc?: string[];
-  bcc?: string[];
-  subject: string;
-  body: string;
-  isHtml: boolean;
-  templateId?: number;
-  templateVariables?: { [key: string]: string };
+  To: string[];
+  Cc?: string[];
+  Bcc?: string[];
+  Subject: string;
+  Body: string;
+  IsHtml: boolean;
+  TemplateId?: number;
+  TemplateVariables?: { [key: string]: string };
 }
 
 export interface EmailTestRequest {
-  templateId: number;
-  recipientEmail: string;
-  testVariables?: { [key: string]: string };
+  TemplateId: number;
+  RecipientEmail: string;
+  TestVariables?: { [key: string]: string };
 }
