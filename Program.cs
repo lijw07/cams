@@ -164,12 +164,17 @@ builder.Services.AddCors(options =>
             .SetIsOriginAllowed(_ => true); // Allow SignalR connections
     });
 
-    // Fallback policy for development
+    // Development policy with specific origins (required when using credentials)
     options.AddPolicy("Development", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.WithOrigins(
+                "http://localhost:3000",           // Local development frontend
+                "http://127.0.0.1:3000",          // Alternative local
+                "http://frontend:3000"             // Docker frontend service
+            )
+            .AllowAnyMethod()
+            .AllowAnyHeader()
+            .AllowCredentials();
     });
 });
 

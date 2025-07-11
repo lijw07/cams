@@ -1,5 +1,5 @@
 # Multi-stage build for React frontend
-FROM node:18-alpine AS build
+FROM node:22.16.0-alpine AS build
 
 # Set working directory
 WORKDIR /app
@@ -35,7 +35,7 @@ EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
 
 # Development stage
-FROM node:18-alpine AS development
+FROM node:22.16.0-alpine AS development
 
 # Install curl for health checks
 RUN apk add --no-cache curl

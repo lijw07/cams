@@ -99,6 +99,11 @@ export function addRetryInterceptor(
     async error => {
       const config = error.config as AxiosRequestConfig & { _retry?: number };
       
+      // Skip retry if config is undefined (can happen in some error scenarios)
+      if (!config) {
+        return Promise.reject(error);
+      }
+      
       // Initialize retry count
       if (!config._retry) {
         config._retry = 0;

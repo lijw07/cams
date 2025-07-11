@@ -3,7 +3,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore
+COPY ["../cams.sln", "./"]
 COPY ["../cams.csproj", "./"]
+COPY ["../Cams.Tests/Cams.Tests.csproj", "Cams.Tests/"]
 RUN dotnet restore
 
 # Copy source code
@@ -18,7 +20,9 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS dev
 WORKDIR /src
 
 # Copy csproj and restore as distinct layers for better caching
+COPY ["../cams.sln", "./"]
 COPY ["../cams.csproj", "./"]
+COPY ["../Cams.Tests/Cams.Tests.csproj", "Cams.Tests/"]
 RUN dotnet restore
 
 # Copy everything else

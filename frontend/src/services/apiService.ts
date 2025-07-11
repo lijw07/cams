@@ -113,7 +113,11 @@ class ApiService {
     
     // Handle authentication errors
     if (error.response?.status === 401) {
-      this.handleUnauthorized();
+      // Don't trigger unauthorized handling for logout requests (prevents infinite loop)
+      const isLogoutRequest = error.config?.url?.includes('/auth/logout');
+      if (!isLogoutRequest) {
+        this.handleUnauthorized();
+      }
     }
     
     // Handle server errors (5xx)

@@ -73,7 +73,14 @@ export const authService = {
    */
   async logout(): Promise<void> {
     try {
-      await apiService.post('/auth/logout');
+      // Only call logout endpoint if we have a token
+      const token = secureStorage.getToken();
+      if (token) {
+        await apiService.post('/auth/logout');
+      }
+    } catch (error) {
+      // Log error but don't throw - we still want to clear local storage
+      console.warn('Logout API call failed:', error);
     } finally {
       secureStorage.clearAuthStorage();
       secureStorage.clearUserData();
