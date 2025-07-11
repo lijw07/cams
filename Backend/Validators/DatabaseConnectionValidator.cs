@@ -51,8 +51,8 @@ namespace cams.Backend.Validators
         {
             var errors = new List<string>();
 
-            if (request.Id <= 0)
-                errors.Add("Connection ID is required and must be greater than 0");
+            if (request.Id == Guid.Empty)
+                errors.Add("Connection ID is required");
 
             if (string.IsNullOrWhiteSpace(request.Name))
                 errors.Add("Connection name is required");

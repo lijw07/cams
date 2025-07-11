@@ -19,7 +19,7 @@ namespace cams.Backend.Controller
         : ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> GetConnections([FromQuery] int? applicationId = null)
+        public async Task<IActionResult> GetConnections([FromQuery] Guid? applicationId = null)
         {
             try
             {
@@ -57,7 +57,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetConnection(int id)
+        public async Task<IActionResult> GetConnection(Guid id)
         {
             try
             {
@@ -173,7 +173,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateConnection(int id, [FromBody] DatabaseConnectionUpdateRequest request)
+        public async Task<IActionResult> UpdateConnection(Guid id, [FromBody] DatabaseConnectionUpdateRequest request)
         {
             try
             {
@@ -231,7 +231,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteConnection(int id)
+        public async Task<IActionResult> DeleteConnection(Guid id)
         {
             try
             {
@@ -407,7 +407,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPatch("{id}/toggle")]
-        public async Task<IActionResult> ToggleConnectionStatus(int id, [FromBody] ToggleConnectionStatusRequest request)
+        public async Task<IActionResult> ToggleConnectionStatus(Guid id, [FromBody] ToggleConnectionStatusRequest request)
         {
             try
             {
@@ -515,7 +515,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}/summary")]
-        public async Task<IActionResult> GetConnectionSummary(int id)
+        public async Task<IActionResult> GetConnectionSummary(Guid id)
         {
             try
             {
@@ -541,7 +541,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("summary")]
-        public async Task<IActionResult> GetConnectionsSummary([FromQuery] int? applicationId = null)
+        public async Task<IActionResult> GetConnectionsSummary([FromQuery] Guid? applicationId = null)
         {
             try
             {
@@ -562,7 +562,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}/health")]
-        public async Task<IActionResult> GetConnectionHealth(int id)
+        public async Task<IActionResult> GetConnectionHealth(Guid id)
         {
             try
             {
@@ -588,7 +588,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPost("{id}/health/refresh")]
-        public async Task<IActionResult> RefreshConnectionHealth(int id)
+        public async Task<IActionResult> RefreshConnectionHealth(Guid id)
         {
             try
             {
@@ -676,7 +676,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}/usage-stats")]
-        public async Task<IActionResult> GetConnectionUsageStats(int id)
+        public async Task<IActionResult> GetConnectionUsageStats(Guid id)
         {
             try
             {
@@ -702,7 +702,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPost("{id}/test")]
-        public async Task<IActionResult> TestExistingConnection(int id)
+        public async Task<IActionResult> TestExistingConnection(Guid id)
         {
             try
             {
@@ -751,7 +751,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPost("{id}/access")]
-        public async Task<IActionResult> UpdateLastAccessed(int id)
+        public async Task<IActionResult> UpdateLastAccessed(Guid id)
         {
             try
             {

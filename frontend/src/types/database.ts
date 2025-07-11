@@ -47,8 +47,8 @@ export enum AuthenticationMethod {
 }
 
 export interface DatabaseConnection {
-  Id: number;
-  ApplicationId: number;
+  Id: string;
+  ApplicationId: string;
   ApplicationName: string;
   Name: string;
   Description?: string;
@@ -72,7 +72,7 @@ export interface DatabaseConnection {
 }
 
 export interface DatabaseConnectionSummary {
-  Id: number;
+  Id: string;
   Name: string;
   TypeName: string;
   IsActive: boolean;
@@ -81,7 +81,7 @@ export interface DatabaseConnectionSummary {
 }
 
 export interface DatabaseConnectionRequest {
-  ApplicationId: number;
+  ApplicationId: string;
   Name: string;
   Description?: string;
   Type: DatabaseType;
@@ -117,7 +117,7 @@ export interface DatabaseConnectionRequest {
 }
 
 export interface DatabaseConnectionUpdateRequest extends DatabaseConnectionRequest {
-  Id: number;
+  Id: string;
 }
 
 export interface DatabaseTestRequest {

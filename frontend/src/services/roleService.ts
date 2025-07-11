@@ -21,7 +21,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface Role {
-  Id: number;
+  Id: string;
   Name: string;
   Description?: string;
   IsSystem: boolean;
@@ -37,13 +37,13 @@ export interface CreateRoleRequest {
 }
 
 export interface UpdateRoleRequest {
-  Id: number;
+  Id: string;
   Name: string;
   Description?: string;
 }
 
 export interface UserRoleInfo {
-  UserId: number;
+  UserId: string;
   Username: string;
   Email: string;
   FirstName: string;
@@ -72,7 +72,7 @@ export const roleService = {
     return apiService.get('/management/roles/all');
   },
 
-  async getRole(id: number): Promise<Role> {
+  async getRole(id: string): Promise<Role> {
     return apiService.get(`/management/roles/${id}`);
   },
 
@@ -84,24 +84,24 @@ export const roleService = {
     return apiService.put(`/management/roles/${id}`, data);
   },
 
-  async deleteRole(id: number): Promise<{ message: string }> {
+  async deleteRole(id: string): Promise<{ message: string }> {
     return apiService.delete(`/management/roles/${id}`);
   },
 
-  async toggleRoleStatus(id: number): Promise<{ message: string }> {
+  async toggleRoleStatus(id: string): Promise<{ message: string }> {
     return apiService.patch(`/management/roles/${id}/toggle-status`);
   },
 
   // Role-User management
-  async getRoleUsers(id: number): Promise<UserRoleInfo[]> {
+  async getRoleUsers(id: string): Promise<UserRoleInfo[]> {
     return apiService.get(`/management/roles/${id}/users`);
   },
 
-  async assignUsersToRole(roleId: number, userIds: number[]): Promise<{ message: string }> {
+  async assignUsersToRole(roleId: string, userIds: string[]): Promise<{ message: string }> {
     return apiService.post(`/management/roles/${roleId}/assign-users`, { UserIds: userIds });
   },
 
-  async removeUsersFromRole(roleId: number, userIds: number[]): Promise<{ message: string }> {
+  async removeUsersFromRole(roleId: string, userIds: string[]): Promise<{ message: string }> {
     return apiService.post(`/management/roles/${roleId}/remove-users`, { UserIds: userIds });
   },
 
@@ -116,7 +116,7 @@ export const roleService = {
   },
 
   // Role statistics
-  async getRoleStats(id: number): Promise<{
+  async getRoleStats(id: string): Promise<{
     UserCount: number;
     RecentAssignments: Array<{
       Username: string;
@@ -133,9 +133,9 @@ export const roleService = {
   },
 
   // Bulk operations
-  async bulkDeleteRoles(roleIds: number[]): Promise<{
-    Successful: number[];
-    Failed: Array<{ Id: number; Error: string }>;
+  async bulkDeleteRoles(roleIds: string[]): Promise<{
+    Successful: string[];
+    Failed: Array<{ Id: string; Error: string }>;
     Message: string;
   }> {
     return apiService.post('/management/roles/bulk/delete', { RoleIds: roleIds });
@@ -144,11 +144,11 @@ export const roleService = {
   // Role hierarchy (if implemented)
   async getRoleHierarchy(): Promise<{
     Roles: Array<{
-      Id: number;
+      Id: string;
       Name: string;
       Level: number;
-      ParentId?: number;
-      Children?: number[];
+      ParentId?: string;
+      Children?: string[];
     }>;
   }> {
     return apiService.get('/management/roles/hierarchy');

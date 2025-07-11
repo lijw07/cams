@@ -6,7 +6,7 @@ namespace cams.Backend.View
     public class DatabaseConnectionRequest
     {
         [Required(ErrorMessage = "Application ID is required")]
-        public int ApplicationId { get; set; }
+        public Guid ApplicationId { get; set; }
         
         [Required(ErrorMessage = "Name is required")]
         [StringLength(100, ErrorMessage = "Name cannot exceed 100 characters")]
@@ -47,11 +47,5 @@ namespace cams.Backend.View
         public string? AdditionalSettings { get; set; }
         
         public bool IsActive { get; set; } = true;
-    }
-    
-    public class DatabaseConnectionUpdateRequest : DatabaseConnectionRequest
-    {
-        [Required(ErrorMessage = "Connection ID is required")]
-        public int Id { get; set; }
     }
 }

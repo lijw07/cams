@@ -4,7 +4,7 @@ namespace cams.Backend.Model
 {
     public class User
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         
         [Required]
         [StringLength(50, MinimumLength = 3)]

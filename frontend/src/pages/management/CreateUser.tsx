@@ -14,7 +14,7 @@ interface CreateUserFormData {
   FirstName: string;
   LastName: string;
   PhoneNumber?: string;
-  RoleIds: number[];
+  RoleIds: string[];
   IsActive: boolean;
 }
 
@@ -22,8 +22,8 @@ const CreateUserPage: React.FC = () => {
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
-  const [roles, setRoles] = useState<Array<{ Id: number; Name: string; IsSystem: boolean }>>([]);
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [roles, setRoles] = useState<Array<{ Id: string; Name: string; IsSystem: boolean }>>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const {
     register,
@@ -89,7 +89,7 @@ const CreateUserPage: React.FC = () => {
     }
   };
 
-  const handleRoleToggle = (roleId: number) => {
+  const handleRoleToggle = (roleId: string) => {
     setSelectedRoles(prev =>
       prev.includes(roleId)
         ? prev.filter(id => id !== roleId)

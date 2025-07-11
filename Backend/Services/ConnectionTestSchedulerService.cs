@@ -9,23 +9,16 @@ namespace cams.Backend.Services
     /// <summary>
     /// Background service that executes scheduled connection tests
     /// </summary>
-    public class ConnectionTestSchedulerService : BackgroundService
+    public class ConnectionTestSchedulerService(
+        IServiceProvider serviceProvider,
+        ILogger<ConnectionTestSchedulerService> logger)
+        : BackgroundService
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<ConnectionTestSchedulerService> _logger;
         private readonly TimeSpan _pollingInterval = TimeSpan.FromMinutes(1); // Check every minute
-
-        public ConnectionTestSchedulerService(
-            IServiceProvider serviceProvider,
-            ILogger<ConnectionTestSchedulerService> logger)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-        }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Connection Test Scheduler Service started");
+            logger.LogInformation("Connection Test Scheduler Service started");
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -35,18 +28,18 @@ namespace cams.Backend.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error occurred while processing scheduled connection tests");
+                    logger.LogError(ex, "Error occurred while processing scheduled connection tests");
                 }
 
                 await Task.Delay(_pollingInterval, stoppingToken);
             }
 
-            _logger.LogInformation("Connection Test Scheduler Service stopped");
+            logger.LogInformation("Connection Test Scheduler Service stopped");
         }
 
         private async Task ProcessScheduledTestsAsync()
         {
-            using var scope = _serviceProvider.CreateScope();
+            using var scope = serviceProvider.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var databaseConnectionService = scope.ServiceProvider.GetRequiredService<IDatabaseConnectionService>();
             var connectionTestScheduleService = scope.ServiceProvider.GetRequiredService<IConnectionTestScheduleService>();
@@ -60,7 +53,7 @@ namespace cams.Backend.Services
                 .Where(s => s.IsEnabled && s.NextRunTime <= currentTime)
                 .ToListAsync();
 
-            _logger.LogDebug("Found {Count} schedules due for execution", dueSchedules.Count);
+            logger.LogDebug("Found {Count} schedules due for execution", dueSchedules.Count);
 
             foreach (var schedule in dueSchedules)
             {
@@ -78,7 +71,7 @@ namespace cams.Backend.Services
 
             try
             {
-                _logger.LogInformation("Executing scheduled connection test for application {ApplicationId} (Schedule: {ScheduleId})", 
+                logger.LogInformation("Executing scheduled connection test for application {ApplicationId} (Schedule: {ScheduleId})", 
                     schedule.ApplicationId, schedule.Id);
 
                 // Get all active database connections for this application
@@ -96,7 +89,7 @@ namespace cams.Backend.Services
                         "No active database connections found",
                         stopwatch.Elapsed);
 
-                    _logger.LogWarning("No active connections found for application {ApplicationId}", schedule.ApplicationId);
+                    logger.LogWarning("No active connections found for application {ApplicationId}", schedule.ApplicationId);
                     return;
                 }
 
@@ -123,20 +116,20 @@ namespace cams.Backend.Services
                         if (testResult.IsSuccessful)
                         {
                             successCount++;
-                            _logger.LogDebug("Connection test successful for connection {ConnectionId} ({ConnectionName})", 
+                            logger.LogDebug("Connection test successful for connection {ConnectionId} ({ConnectionName})", 
                                 connection.Id, connection.Name);
                         }
                         else
                         {
                             failCount++;
-                            _logger.LogWarning("Connection test failed for connection {ConnectionId} ({ConnectionName}): {Error}", 
+                            logger.LogWarning("Connection test failed for connection {ConnectionId} ({ConnectionName}): {Error}", 
                                 connection.Id, connection.Name, testResult.Message);
                         }
                     }
                     catch (Exception ex)
                     {
                         failCount++;
-                        _logger.LogError(ex, "Error testing connection {ConnectionId} ({ConnectionName})", 
+                        logger.LogError(ex, "Error testing connection {ConnectionId} ({ConnectionName})", 
                             connection.Id, connection.Name);
                     }
                 }
@@ -153,14 +146,14 @@ namespace cams.Backend.Services
                     message,
                     stopwatch.Elapsed);
 
-                _logger.LogInformation("Completed scheduled connection test for application {ApplicationId}. " +
+                logger.LogInformation("Completed scheduled connection test for application {ApplicationId}. " +
                     "Status: {Status}, Duration: {Duration}ms", 
                     schedule.ApplicationId, status, stopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                _logger.LogError(ex, "Error executing scheduled connection test for application {ApplicationId}", 
+                logger.LogError(ex, "Error executing scheduled connection test for application {ApplicationId}", 
                     schedule.ApplicationId);
 
                 try
@@ -173,14 +166,14 @@ namespace cams.Backend.Services
                 }
                 catch (Exception updateEx)
                 {
-                    _logger.LogError(updateEx, "Failed to update schedule status after error for schedule {ScheduleId}", schedule.Id);
+                    logger.LogError(updateEx, "Failed to update schedule status after error for schedule {ScheduleId}", schedule.Id);
                 }
             }
         }
 
         public override async Task StopAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("Connection Test Scheduler Service is stopping");
+            logger.LogInformation("Connection Test Scheduler Service is stopping");
             await base.StopAsync(stoppingToken);
         }
     }

@@ -136,7 +136,7 @@ namespace cams.Backend.Controller
 
         [HttpGet("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> GetUserById(int id)
+        public async Task<IActionResult> GetUserById(Guid id)
         {
             try
             {
@@ -292,7 +292,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPut("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
         {
             try
             {
@@ -367,7 +367,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpDelete("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
             try
             {
@@ -432,7 +432,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPatch("{id}/toggle")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> ToggleUserStatus(int id, [FromBody] ToggleUserStatusRequest request)
+        public async Task<IActionResult> ToggleUserStatus(Guid id, [FromBody] ToggleUserStatusRequest request)
         {
             try
             {
@@ -573,7 +573,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/stats")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> GetUserStats(int id)
+        public async Task<IActionResult> GetUserStats(Guid id)
         {
             try
             {
@@ -615,7 +615,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{id}/reset-password")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> ResetUserPassword(int id, [FromBody] ResetPasswordRequest request)
+        public async Task<IActionResult> ResetUserPassword(Guid id, [FromBody] ResetPasswordRequest request)
         {
             try
             {
@@ -654,7 +654,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{id}/force-password-change")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> ForcePasswordChange(int id)
+        public async Task<IActionResult> ForcePasswordChange(Guid id)
         {
             try
             {
@@ -702,7 +702,7 @@ namespace cams.Backend.Controller
                     .Where(u => request.UserIds.Contains(u.Id))
                     .ToListAsync();
 
-                var successful = new List<int>();
+                var successful = new List<Guid>();
                 var failed = new List<object>();
 
                 foreach (var user in users)
@@ -762,7 +762,7 @@ namespace cams.Backend.Controller
                     .Where(u => request.UserIds.Contains(u.Id))
                     .ToListAsync();
 
-                var successful = new List<int>();
+                var successful = new List<Guid>();
                 var failed = new List<object>();
 
                 foreach (var user in users)
@@ -921,7 +921,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/roles")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> GetUserRoles(int id)
+        public async Task<IActionResult> GetUserRoles(Guid id)
         {
             try
             {

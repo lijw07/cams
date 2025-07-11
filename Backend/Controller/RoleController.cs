@@ -75,7 +75,7 @@ namespace cams.Backend.Controller
 
         [HttpGet("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetRoleById(int id)
+        public async Task<IActionResult> GetRoleById(Guid id)
         {
             try
             {
@@ -167,7 +167,7 @@ namespace cams.Backend.Controller
 
         [HttpPut("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> UpdateRole(int id, [FromBody] RoleRequest request)
+        public async Task<IActionResult> UpdateRole(Guid id, [FromBody] RoleRequest request)
         {
             try
             {
@@ -212,7 +212,7 @@ namespace cams.Backend.Controller
 
         [HttpPatch("{id}/toggle-status")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> ToggleRoleStatus(int id)
+        public async Task<IActionResult> ToggleRoleStatus(Guid id)
         {
             try
             {
@@ -246,7 +246,7 @@ namespace cams.Backend.Controller
 
         [HttpDelete("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> DeleteRole(int id)
+        public async Task<IActionResult> DeleteRole(Guid id)
         {
             try
             {
@@ -298,7 +298,7 @@ namespace cams.Backend.Controller
 
         [HttpPost("{roleId}/assign/{userId}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> AssignRoleToUser(int roleId, int userId)
+        public async Task<IActionResult> AssignRoleToUser(Guid roleId, Guid userId)
         {
             try
             {
@@ -335,7 +335,7 @@ namespace cams.Backend.Controller
 
         [HttpDelete("{roleId}/remove/{userId}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> RemoveRoleFromUser(int roleId, int userId)
+        public async Task<IActionResult> RemoveRoleFromUser(Guid roleId, Guid userId)
         {
             try
             {
@@ -368,7 +368,7 @@ namespace cams.Backend.Controller
 
         [HttpGet("user/{userId}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetUserRoles(int userId)
+        public async Task<IActionResult> GetUserRoles(Guid userId)
         {
             try
             {
@@ -397,7 +397,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("check-name")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> CheckRoleNameAvailability([FromQuery] string name, [FromQuery] int? excludeId = null)
+        public async Task<IActionResult> CheckRoleNameAvailability([FromQuery] string name, [FromQuery] Guid? excludeId = null)
         {
             try
             {
@@ -495,7 +495,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/stats")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetRoleStats(int id)
+        public async Task<IActionResult> GetRoleStats(Guid id)
         {
             try
             {
@@ -518,7 +518,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{roleId}/assign-users")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> AssignUsersToRole(int roleId, [FromBody] AssignUsersToRoleRequest request)
+        public async Task<IActionResult> AssignUsersToRole(Guid roleId, [FromBody] AssignUsersToRoleRequest request)
         {
             try
             {
@@ -551,7 +551,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{roleId}/remove-users")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> RemoveUsersFromRole(int roleId, [FromBody] RemoveUsersFromRoleRequest request)
+        public async Task<IActionResult> RemoveUsersFromRole(Guid roleId, [FromBody] RemoveUsersFromRoleRequest request)
         {
             try
             {
@@ -584,7 +584,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/users")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetRoleUsers(int id)
+        public async Task<IActionResult> GetRoleUsers(Guid id)
         {
             try
             {

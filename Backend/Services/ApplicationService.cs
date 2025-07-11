@@ -6,20 +6,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
 {
-    public class ApplicationService : IApplicationService
+    public class ApplicationService(ILogger<ApplicationService> logger, ApplicationDbContext context)
+        : IApplicationService
     {
-        private readonly ILogger<ApplicationService> _logger;
-        private readonly ApplicationDbContext _context;
-
-        public ApplicationService(ILogger<ApplicationService> logger, ApplicationDbContext context)
+        public async Task<IEnumerable<ApplicationSummaryResponse>> GetUserApplicationsAsync(Guid userId)
         {
-            _logger = logger;
-            _context = context;
-        }
-
-        public async Task<IEnumerable<ApplicationSummaryResponse>> GetUserApplicationsAsync(int userId)
-        {
-            var applications = await _context.Applications
+            var applications = await context.Applications
                 .Include(a => a.DatabaseConnections)
                 .Where(a => a.UserId == userId)
                 .OrderBy(a => a.Name)
@@ -28,9 +20,9 @@ namespace cams.Backend.Services
             return applications.Select(a => MapToSummaryResponse(a));
         }
 
-        public async Task<PagedResult<ApplicationSummaryResponse>> GetUserApplicationsPaginatedAsync(int userId, PaginationRequest request)
+        public async Task<PagedResult<ApplicationSummaryResponse>> GetUserApplicationsPaginatedAsync(Guid userId, PaginationRequest request)
         {
-            var query = _context.Applications
+            var query = context.Applications
                 .Include(a => a.DatabaseConnections)
                 .Where(a => a.UserId == userId);
 
@@ -83,15 +75,15 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<ApplicationResponse?> GetApplicationByIdAsync(int id, int userId)
+        public async Task<ApplicationResponse?> GetApplicationByIdAsync(Guid id, Guid userId)
         {
-            var application = await _context.Applications
+            var application = await context.Applications
                 .Include(a => a.DatabaseConnections)
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             return application != null ? MapToResponse(application) : null;
         }
 
-        public async Task<ApplicationResponse> CreateApplicationAsync(ApplicationRequest request, int userId)
+        public async Task<ApplicationResponse> CreateApplicationAsync(ApplicationRequest request, Guid userId)
         {
             var application = new Application
             {
@@ -106,17 +98,17 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Applications.Add(application);
-            await _context.SaveChangesAsync();
+            context.Applications.Add(application);
+            await context.SaveChangesAsync();
             
-            _logger.LogInformation("Created application {ApplicationName} for user {UserId}", request.Name, userId);
+            logger.LogInformation("Created application {ApplicationName} for user {UserId}", request.Name, userId);
             
             return MapToResponse(application);
         }
 
-        public async Task<ApplicationResponse?> UpdateApplicationAsync(ApplicationUpdateRequest request, int userId)
+        public async Task<ApplicationResponse?> UpdateApplicationAsync(ApplicationUpdateRequest request, Guid userId)
         {
-            var application = await _context.Applications
+            var application = await context.Applications
                 .Include(a => a.DatabaseConnections)
                 .FirstOrDefaultAsync(a => a.Id == request.Id && a.UserId == userId);
             if (application == null)
@@ -130,69 +122,69 @@ namespace cams.Backend.Services
             application.IsActive = request.IsActive;
             application.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Updated application {ApplicationName} for user {UserId}", request.Name, userId);
+            await context.SaveChangesAsync();
+            logger.LogInformation("Updated application {ApplicationName} for user {UserId}", request.Name, userId);
             
             return MapToResponse(application);
         }
 
-        public async Task<bool> DeleteApplicationAsync(int id, int userId)
+        public async Task<bool> DeleteApplicationAsync(Guid id, Guid userId)
         {
-            var application = await _context.Applications
+            var application = await context.Applications
                 .Include(a => a.DatabaseConnections)
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (application == null)
                 return false;
 
             var connectionCount = application.DatabaseConnections.Count;
-            _context.Applications.Remove(application); // Cascade delete will handle connections
-            await _context.SaveChangesAsync();
+            context.Applications.Remove(application); // Cascade delete will handle connections
+            await context.SaveChangesAsync();
             
-            _logger.LogInformation("Deleted application {ApplicationId} and {ConnectionCount} connections for user {UserId}", 
+            logger.LogInformation("Deleted application {ApplicationId} and {ConnectionCount} connections for user {UserId}", 
                 id, connectionCount, userId);
             
             return true;
         }
 
-        public async Task<bool> ToggleApplicationStatusAsync(int id, int userId, bool isActive)
+        public async Task<bool> ToggleApplicationStatusAsync(Guid id, Guid userId, bool isActive)
         {
-            var application = await _context.Applications
+            var application = await context.Applications
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (application == null)
                 return false;
 
             application.IsActive = isActive;
             application.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             
-            _logger.LogInformation("Toggled application {ApplicationId} status to {IsActive} for user {UserId}", 
+            logger.LogInformation("Toggled application {ApplicationId} status to {IsActive} for user {UserId}", 
                 id, isActive, userId);
             
             return true;
         }
 
-        public async Task<bool> UpdateLastAccessedAsync(int id, int userId)
+        public async Task<bool> UpdateLastAccessedAsync(Guid id, Guid userId)
         {
-            var application = await _context.Applications
+            var application = await context.Applications
                 .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (application == null)
                 return false;
 
             application.LastAccessedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             
             return true;
         }
 
-        public async Task<IEnumerable<DatabaseConnectionSummary>> GetApplicationConnectionsAsync(int applicationId, int userId)
+        public async Task<IEnumerable<DatabaseConnectionSummary>> GetApplicationConnectionsAsync(Guid applicationId, Guid userId)
         {
             // Verify user has access to this application
-            var application = await _context.Applications
+            var application = await context.Applications
                 .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
             if (application == null)
                 return Enumerable.Empty<DatabaseConnectionSummary>();
 
-            var connections = await _context.DatabaseConnections
+            var connections = await context.DatabaseConnections
                 .Where(c => c.ApplicationId == applicationId)
                 .OrderBy(c => c.Name)
                 .ToListAsync();
@@ -208,9 +200,9 @@ namespace cams.Backend.Services
             });
         }
 
-        public async Task<bool> ValidateApplicationAccessAsync(int applicationId, int userId)
+        public async Task<bool> ValidateApplicationAccessAsync(Guid applicationId, Guid userId)
         {
-            return await _context.Applications
+            return await context.Applications
                 .AnyAsync(a => a.Id == applicationId && a.UserId == userId);
         }
 
@@ -264,7 +256,7 @@ namespace cams.Backend.Services
         }
 
         // Combined application and database connection operations
-        public async Task<ApplicationWithConnectionResponse> CreateApplicationWithConnectionAsync(ApplicationWithConnectionRequest request, int userId)
+        public async Task<ApplicationWithConnectionResponse> CreateApplicationWithConnectionAsync(ApplicationWithConnectionRequest request, Guid userId)
         {
             // Create application
             var application = new Application
@@ -280,8 +272,8 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.Applications.Add(application);
-            await _context.SaveChangesAsync(); // Save to get the application ID
+            context.Applications.Add(application);
+            await context.SaveChangesAsync(); // Save to get the application ID
 
             // Create database connection
             var connection = new DatabaseConnection
@@ -306,10 +298,10 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
             
-            _context.DatabaseConnections.Add(connection);
-            await _context.SaveChangesAsync();
+            context.DatabaseConnections.Add(connection);
+            await context.SaveChangesAsync();
             
-            _logger.LogInformation("Created application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
+            logger.LogInformation("Created application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
                 application.Name, connection.Name, userId);
             
             // Simple connection test simulation if requested
@@ -335,7 +327,7 @@ namespace cams.Backend.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error testing connection during application creation");
+                    logger.LogError(ex, "Error testing connection during application creation");
                     testResult = false;
                     testMessage = $"Connection test failed: {ex.Message}";
                     connection.Status = ConnectionStatus.Failed;
@@ -347,12 +339,12 @@ namespace cams.Backend.Services
             return MapToApplicationWithConnectionResponse(application, connection, testResult, testMessage, testDuration);
         }
 
-        public async Task<ApplicationWithConnectionResponse?> UpdateApplicationWithConnectionAsync(ApplicationWithConnectionUpdateRequest request, int userId)
+        public async Task<ApplicationWithConnectionResponse?> UpdateApplicationWithConnectionAsync(ApplicationWithConnectionUpdateRequest request, Guid userId)
         {
             // Find existing application and connection
-            var existingApp = await _context.Applications
+            var existingApp = await context.Applications
                 .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && a.UserId == userId);
-            var existingConnection = await _context.DatabaseConnections
+            var existingConnection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == request.ConnectionId && c.UserId == userId);
             
             if (existingApp == null || existingConnection == null)
@@ -393,8 +385,8 @@ namespace cams.Backend.Services
             existingConnection.IsActive = request.IsConnectionActive;
             existingConnection.UpdatedAt = DateTime.UtcNow;
             
-            await _context.SaveChangesAsync();
-            _logger.LogInformation("Updated application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
+            await context.SaveChangesAsync();
+            logger.LogInformation("Updated application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
                 existingApp.Name, existingConnection.Name, userId);
             
             // Test connection if requested
@@ -420,7 +412,7 @@ namespace cams.Backend.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error testing connection during application update");
+                    logger.LogError(ex, "Error testing connection during application update");
                     testResult = false;
                     testMessage = $"Connection test failed: {ex.Message}";
                     existingConnection.Status = ConnectionStatus.Failed;
@@ -432,16 +424,16 @@ namespace cams.Backend.Services
             return MapToApplicationWithConnectionResponse(existingApp, existingConnection, testResult, testMessage, testDuration);
         }
 
-        public async Task<ApplicationWithConnectionResponse?> GetApplicationWithPrimaryConnectionAsync(int applicationId, int userId)
+        public async Task<ApplicationWithConnectionResponse?> GetApplicationWithPrimaryConnectionAsync(Guid applicationId, Guid userId)
         {
             // Find application
-            var application = await _context.Applications
+            var application = await context.Applications
                 .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
             if (application == null)
                 return null;
             
             // Get the first (primary) connection for this application
-            var primaryConnection = await _context.DatabaseConnections
+            var primaryConnection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.ApplicationId == applicationId);
             if (primaryConnection == null)
                 return null;

@@ -28,7 +28,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("audit")]
         public async Task<IActionResult> GetAuditLogs(
-            [FromQuery(Name = "user-id")] int? userId = null,
+            [FromQuery(Name = "user-id")] Guid? userId = null,
             [FromQuery(Name = "entity-type")] string? entityType = null,
             [FromQuery(Name = "from-date")] DateTime? fromDate = null,
             [FromQuery(Name = "to-date")] DateTime? toDate = null,
@@ -139,7 +139,7 @@ namespace cams.Backend.Controller
         public async Task<IActionResult> GetSecurityLogs(
             [FromQuery(Name = "event-type")] string? eventType = null,
             [FromQuery] string? status = null,
-            [FromQuery(Name = "user-id")] int? userId = null,
+            [FromQuery(Name = "user-id")] Guid? userId = null,
             [FromQuery(Name = "from-date")] DateTime? fromDate = null,
             [FromQuery(Name = "to-date")] DateTime? toDate = null,
             [FromQuery] string? severity = null,
@@ -247,7 +247,7 @@ namespace cams.Backend.Controller
         /// Mark system log as resolved - PlatformAdmin only
         /// </summary>
         [HttpPut("system/{logId}/resolve")]
-        public async Task<IActionResult> MarkSystemLogResolved(int logId, [FromBody] string? resolutionNotes = null)
+        public async Task<IActionResult> MarkSystemLogResolved(Guid logId, [FromBody] string? resolutionNotes = null)
         {
             try
             {
@@ -284,7 +284,7 @@ namespace cams.Backend.Controller
         /// Get specific audit log details - PlatformAdmin only
         /// </summary>
         [HttpGet("audit/{id}")]
-        public async Task<IActionResult> GetAuditLogById(int id)
+        public async Task<IActionResult> GetAuditLogById(Guid id)
         {
             try
             {
@@ -319,7 +319,7 @@ namespace cams.Backend.Controller
         /// Get specific system log details - PlatformAdmin only
         /// </summary>
         [HttpGet("system/{id}")]
-        public async Task<IActionResult> GetSystemLogById(int id)
+        public async Task<IActionResult> GetSystemLogById(Guid id)
         {
             try
             {
@@ -354,7 +354,7 @@ namespace cams.Backend.Controller
         /// Get specific security log details - PlatformAdmin only
         /// </summary>
         [HttpGet("security/{id}")]
-        public async Task<IActionResult> GetSecurityLogById(int id)
+        public async Task<IActionResult> GetSecurityLogById(Guid id)
         {
             try
             {
@@ -389,7 +389,7 @@ namespace cams.Backend.Controller
         /// Get specific performance log details - PlatformAdmin only
         /// </summary>
         [HttpGet("performance/{id}")]
-        public async Task<IActionResult> GetPerformanceLogById(int id)
+        public async Task<IActionResult> GetPerformanceLogById(Guid id)
         {
             try
             {

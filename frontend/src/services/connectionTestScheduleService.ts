@@ -8,7 +8,7 @@ export const connectionTestScheduleService = {
   },
 
   // Get schedule by application ID
-  async getScheduleByApplicationId(applicationId: number): Promise<ConnectionTestSchedule | null> {
+  async getScheduleByApplicationId(applicationId: string): Promise<ConnectionTestSchedule | null> {
     try {
       return await apiService.get(`/connection-test-schedules/application/${applicationId}`);
     } catch (error: any) {
@@ -25,17 +25,17 @@ export const connectionTestScheduleService = {
   },
 
   // Update schedule
-  async updateSchedule(id: number, data: Partial<ConnectionTestScheduleRequest>): Promise<ConnectionTestSchedule> {
+  async updateSchedule(id: string, data: Partial<ConnectionTestScheduleRequest>): Promise<ConnectionTestSchedule> {
     return apiService.put(`/connection-test-schedules/${id}`, data);
   },
 
   // Delete schedule
-  async deleteSchedule(id: number): Promise<void> {
+  async deleteSchedule(id: string): Promise<void> {
     return apiService.delete(`/connection-test-schedules/${id}`);
   },
 
   // Toggle schedule enable/disable
-  async toggleSchedule(id: number, isEnabled: boolean): Promise<ConnectionTestSchedule> {
+  async toggleSchedule(id: string, isEnabled: boolean): Promise<ConnectionTestSchedule> {
     return apiService.patch(`/connection-test-schedules/${id}/toggle`, { IsEnabled: isEnabled });
   },
 
@@ -45,7 +45,7 @@ export const connectionTestScheduleService = {
   },
 
   // Run schedule now (manual trigger)
-  async runScheduleNow(id: number): Promise<{
+  async runScheduleNow(id: string): Promise<{
     status: string;
     message: string;
     duration: string;
@@ -53,7 +53,7 @@ export const connectionTestScheduleService = {
     successfulTests: number;
     failedTests: number;
     testResults: Array<{
-      connectionId: number;
+      connectionId: string;
       connectionName: string;
       isSuccessful: boolean;
       message: string;

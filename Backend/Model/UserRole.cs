@@ -6,17 +6,17 @@ namespace cams.Backend.Model
     public class UserRole
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         
         [Required]
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         
         [Required]
-        public int RoleId { get; set; }
+        public Guid RoleId { get; set; }
         
         public DateTime AssignedAt { get; set; } = DateTime.UtcNow;
         
-        public int? AssignedBy { get; set; }
+        public Guid? AssignedBy { get; set; }
         
         public bool IsActive { get; set; } = true;
         

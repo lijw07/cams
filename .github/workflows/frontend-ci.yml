@@ -80,7 +80,7 @@ jobs:
         echo "Bundle size check completed"
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: matrix.node-version == '18.x'
       with:
         name: frontend-dist

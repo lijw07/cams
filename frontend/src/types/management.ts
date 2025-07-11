@@ -2,21 +2,20 @@ import { User } from './auth';
 
 // Role Management Types
 export interface Role {
-  Id: number;
+  Id: string;
   Name: string;
   Description?: string;
   IsActive: boolean;
+  IsSystem: boolean;
+  UserCount: number;
   CreatedAt: string;
   UpdatedAt: string;
-  UserCount: number;
-  Permissions: string[];
 }
 
 export interface RoleRequest {
   Name: string;
   Description?: string;
   IsActive: boolean;
-  Permissions: string[];
 }
 
 export interface Permission {
@@ -40,30 +39,30 @@ export interface UserCreateRequest {
   LastName: string;
   PhoneNumber?: string;
   Password: string;
-  RoleIds: number[];
+  RoleIds: string[];
   IsActive: boolean;
   SendWelcomeEmail: boolean;
 }
 
 export interface UserUpdateRequest {
-  Id: number;
+  Id: string;
   Username: string;
   Email: string;
   FirstName: string;
   LastName: string;
   PhoneNumber?: string;
-  RoleIds: number[];
+  RoleIds: string[];
   IsActive: boolean;
 }
 
 export interface AssignRoleRequest {
-  UserId: number;
-  RoleIds: number[];
+  UserId: string;
+  RoleIds: string[];
 }
 
 // Email Management Types
 export interface EmailTemplate {
-  Id: number;
+  Id: string;
   Name: string;
   Subject: string;
   Body: string;
@@ -87,13 +86,13 @@ export interface EmailTemplateRequest {
 }
 
 export interface EmailLog {
-  Id: number;
+  Id: string;
   To: string;
   Cc?: string;
   Bcc?: string;
   Subject: string;
   Body?: string;
-  TemplateId?: number;
+  TemplateId?: string;
   TemplateName?: string;
   Status: string;
   SentAt?: string;
@@ -102,7 +101,7 @@ export interface EmailLog {
   ErrorMessage?: string;
   RetryCount: number;
   CreatedAt: string;
-  UserId?: number;
+  UserId?: string;
   UserEmail?: string;
 }
 
@@ -113,12 +112,12 @@ export interface SendEmailRequest {
   Subject: string;
   Body: string;
   IsHtml: boolean;
-  TemplateId?: number;
+  TemplateId?: string;
   TemplateVariables?: { [key: string]: string };
 }
 
 export interface EmailTestRequest {
-  TemplateId: number;
+  TemplateId: string;
   RecipientEmail: string;
   TestVariables?: { [key: string]: string };
 }

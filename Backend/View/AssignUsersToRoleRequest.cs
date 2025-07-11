@@ -5,6 +5,6 @@ namespace cams.Backend.View
     public class AssignUsersToRoleRequest
     {
         [Required]
-        public List<int> UserIds { get; set; } = new();
+        public List<Guid> UserIds { get; set; } = new();
     }
 }

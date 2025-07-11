@@ -11,7 +11,6 @@ namespace cams.Backend.Attributes
             
             if (string.IsNullOrEmpty(password))
             {
-                // Let [Required] handle empty passwords
                 return ValidationResult.Success;
             }
 

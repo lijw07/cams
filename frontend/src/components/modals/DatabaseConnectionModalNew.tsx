@@ -8,7 +8,7 @@ interface DatabaseConnectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: DatabaseConnectionRequest) => Promise<void>;
-  applicationId: number;
+  applicationId: string;
   applicationName: string;
 }
 
@@ -103,7 +103,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
         <SimpleConnectionForm
           register={register}
-          control={control}
+          control={control as any}
           errors={errors}
           selectedDbType={selectedDbType}
           onDbTypeChange={setSelectedDbType}

@@ -9,10 +9,10 @@ namespace cams.Backend.Model
     public class ConnectionTestSchedule
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         
         [Required]
-        public int ApplicationId { get; set; }
+        public Guid ApplicationId { get; set; }
         
         [Required]
         [StringLength(100, ErrorMessage = "Cron expression cannot exceed 100 characters")]

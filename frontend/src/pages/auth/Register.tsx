@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Database, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
 import { useNotifications } from '../../contexts/NotificationContext';
+import SEOHead from '../../components/SEO/SEOHead';
 
 interface RegisterFormData {
   username: string;
@@ -99,6 +100,13 @@ const Register: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
+      <SEOHead
+        title="Register - Join CAMS Database Management Platform"
+        description="Create your CAMS account to start managing database connections, monitoring performance, and collaborating with your team. Free registration."
+        keywords="CAMS register, sign up, create account, database management registration"
+        canonical="/register"
+        noIndex={true}
+      />
       <div className="max-w-md w-full space-y-8">
         <div>
           <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-primary">

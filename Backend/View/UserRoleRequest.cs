@@ -5,9 +5,9 @@ namespace cams.Backend.View
     public class UserRoleRequest
     {
         [Required]
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         
         [Required]
-        public int RoleId { get; set; }
+        public Guid RoleId { get; set; }
     }
 }

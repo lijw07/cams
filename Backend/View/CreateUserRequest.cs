@@ -28,6 +28,6 @@ namespace cams.Backend.View
         public bool IsActive { get; set; } = true;
         
         [Required]
-        public List<int> RoleIds { get; set; } = new List<int>();
+        public List<Guid> RoleIds { get; set; } = new List<Guid>();
     }
 }

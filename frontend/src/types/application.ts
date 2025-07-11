@@ -2,7 +2,7 @@ import { DatabaseConnectionSummary } from './database';
 
 // Application Types
 export interface Application {
-  Id: number;
+  Id: string;
   Name: string;
   Description?: string;
   Version?: string;
@@ -79,8 +79,8 @@ export interface ApplicationWithConnectionResponse {
 }
 
 export interface ConnectionTestSchedule {
-  Id?: number;
-  ApplicationId: number;
+  Id?: string;
+  ApplicationId: string;
   ApplicationName?: string;
   CronExpression: string;
   IsEnabled: boolean;
@@ -92,7 +92,7 @@ export interface ConnectionTestSchedule {
 }
 
 export interface ConnectionTestScheduleRequest {
-  ApplicationId: number;
+  ApplicationId: string;
   CronExpression: string;
   IsEnabled: boolean;
 }

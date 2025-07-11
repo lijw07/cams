@@ -27,7 +27,7 @@ export const applicationService = {
     return apiService.get(url);
   },
 
-  async getApplication(id: number): Promise<Application> {
+  async getApplication(id: string): Promise<Application> {
     return apiService.get(`/applications/${id}`);
   },
 
@@ -35,23 +35,23 @@ export const applicationService = {
     return apiService.post('/applications', data);
   },
 
-  async updateApplication(id: number, data: ApplicationRequest & { Id: number }): Promise<Application> {
+  async updateApplication(id: string, data: ApplicationRequest & { Id: string }): Promise<Application> {
     return apiService.put(`/applications/${id}`, data);
   },
 
-  async deleteApplication(id: number): Promise<void> {
+  async deleteApplication(id: string): Promise<void> {
     return apiService.delete(`/applications/${id}`);
   },
 
-  async toggleApplicationStatus(id: number, isActive: boolean): Promise<{ message: string }> {
+  async toggleApplicationStatus(id: string, isActive: boolean): Promise<{ message: string }> {
     return apiService.patch(`/applications/${id}/toggle`, { IsActive: isActive });
   },
 
-  async updateLastAccessed(id: number): Promise<{ message: string }> {
+  async updateLastAccessed(id: string): Promise<{ message: string }> {
     return apiService.post(`/applications/${id}/access`);
   },
 
-  async getApplicationConnections(id: number): Promise<DatabaseConnectionSummary[]> {
+  async getApplicationConnections(id: string): Promise<DatabaseConnectionSummary[]> {
     return apiService.get(`/applications/${id}/connections`);
   },
 
@@ -62,13 +62,13 @@ export const applicationService = {
   },
 
   async updateApplicationWithConnection(
-    id: number,
-    data: ApplicationWithConnectionRequest & { ApplicationId: number; ConnectionId: number }
+    id: string,
+    data: ApplicationWithConnectionRequest & { ApplicationId: string; ConnectionId: string }
   ): Promise<ApplicationWithConnectionResponse> {
     return apiService.put(`/applications/${id}/with-connection`, data);
   },
 
-  async getApplicationWithPrimaryConnection(id: number): Promise<ApplicationWithConnectionResponse> {
+  async getApplicationWithPrimaryConnection(id: string): Promise<ApplicationWithConnectionResponse> {
     return apiService.get(`/applications/${id}/with-primary-connection`);
   }
 };

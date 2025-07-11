@@ -5,7 +5,7 @@ namespace cams.Backend.Mappers
 {
     public interface IDatabaseConnectionMapper
     {
-        DatabaseConnection MapToEntity(DatabaseConnectionRequest request, int userId);
+        DatabaseConnection MapToEntity(DatabaseConnectionRequest request, Guid userId);
         DatabaseConnectionResponse MapToResponse(DatabaseConnection entity);
         void MapUpdateToEntity(DatabaseConnectionUpdateRequest request, DatabaseConnection entity);
         IEnumerable<DatabaseConnectionResponse> MapToResponseList(IEnumerable<DatabaseConnection> entities);
@@ -13,7 +13,7 @@ namespace cams.Backend.Mappers
 
     public class DatabaseConnectionMapper : IDatabaseConnectionMapper
     {
-        public DatabaseConnection MapToEntity(DatabaseConnectionRequest request, int userId)
+        public DatabaseConnection MapToEntity(DatabaseConnectionRequest request, Guid userId)
         {
             return new DatabaseConnection
             {

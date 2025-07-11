@@ -5,6 +5,6 @@ namespace cams.Backend.View
     public class BulkDeleteRolesRequest
     {
         [Required]
-        public List<int> RoleIds { get; set; } = new();
+        public List<Guid> RoleIds { get; set; } = new();
     }
 }

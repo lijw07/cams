@@ -6,13 +6,13 @@ namespace cams.Backend.Model
 {
     public class DatabaseConnection
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         
         [Required]
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         
         [Required]
-        public int ApplicationId { get; set; }
+        public Guid ApplicationId { get; set; }
         
         [Required]
         [StringLength(100)]

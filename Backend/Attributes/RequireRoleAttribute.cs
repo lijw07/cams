@@ -19,7 +19,7 @@ namespace cams.Backend.Attributes
             }
 
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
             {
                 context.Result = new UnauthorizedResult();
                 return;

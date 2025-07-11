@@ -5,10 +5,10 @@ namespace cams.Backend.Model
     public class AuditLog
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
 
         [Required]
         [MaxLength(50)]
@@ -18,7 +18,7 @@ namespace cams.Backend.Model
         [MaxLength(100)]
         public string EntityType { get; set; } = string.Empty;
 
-        public int? EntityId { get; set; }
+        public string? EntityId { get; set; }
 
         [MaxLength(100)]
         public string EntityName { get; set; } = string.Empty;

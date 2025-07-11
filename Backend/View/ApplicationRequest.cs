@@ -22,10 +22,4 @@ namespace cams.Backend.View
         
         public bool IsActive { get; set; } = true;
     }
-    
-    public class ApplicationUpdateRequest : ApplicationRequest
-    {
-        [Required(ErrorMessage = "Application ID is required")]
-        public int Id { get; set; }
-    }
 }

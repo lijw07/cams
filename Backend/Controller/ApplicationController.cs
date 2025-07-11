@@ -73,7 +73,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetApplication(int id)
+        public async Task<IActionResult> GetApplication(Guid id)
         {
             try
             {
@@ -174,7 +174,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateApplication(int id, [FromBody] ApplicationUpdateRequest request)
+        public async Task<IActionResult> UpdateApplication(Guid id, [FromBody] ApplicationUpdateRequest request)
         {
             try
             {
@@ -230,7 +230,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteApplication(int id)
+        public async Task<IActionResult> DeleteApplication(Guid id)
         {
             try
             {
@@ -282,7 +282,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPatch("{id}/toggle")]
-        public async Task<IActionResult> ToggleApplicationStatus(int id, [FromBody] ToggleApplicationStatusRequest request)
+        public async Task<IActionResult> ToggleApplicationStatus(Guid id, [FromBody] ToggleApplicationStatusRequest request)
         {
             try
             {
@@ -323,7 +323,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}/connections")]
-        public async Task<IActionResult> GetApplicationConnections(int id)
+        public async Task<IActionResult> GetApplicationConnections(Guid id)
         {
             try
             {
@@ -367,7 +367,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPost("{id}/access")]
-        public async Task<IActionResult> UpdateLastAccessed(int id)
+        public async Task<IActionResult> UpdateLastAccessed(Guid id)
         {
             try
             {
@@ -458,7 +458,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPut("{id}/with-connection")]
-        public async Task<IActionResult> UpdateApplicationWithConnection(int id, [FromBody] ApplicationWithConnectionUpdateRequest request)
+        public async Task<IActionResult> UpdateApplicationWithConnection(Guid id, [FromBody] ApplicationWithConnectionUpdateRequest request)
         {
             try
             {
@@ -516,7 +516,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}/with-primary-connection")]
-        public async Task<IActionResult> GetApplicationWithPrimaryConnection(int id)
+        public async Task<IActionResult> GetApplicationWithPrimaryConnection(Guid id)
         {
             try
             {

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { usePageTracking } from './hooks/usePageTracking';
+import { logSEOStatus } from './utils/seoValidation';
+import { PerformanceMonitor } from './utils/webVitals';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
@@ -54,8 +56,14 @@ const App: React.FC = () => {
   // Enable automatic page tracking
   usePageTracking();
 
+  // SEO validation in development
+  useEffect(() => {
+    logSEOStatus();
+  }, []);
+
   return (
     <div className="min-h-screen">
+      <PerformanceMonitor />
       <Routes>
         {/* Home page - accessible to all */}
         <Route path="/" element={<HomePage />} />

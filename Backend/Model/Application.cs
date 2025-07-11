@@ -5,10 +5,10 @@ namespace cams.Backend.Model
 {
     public class Application
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
         
         [Required]
-        public int UserId { get; set; }
+        public Guid UserId { get; set; }
         
         [Required]
         [StringLength(100)]

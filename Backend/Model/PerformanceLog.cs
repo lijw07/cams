@@ -5,7 +5,7 @@ namespace cams.Backend.Model
     public class PerformanceLog
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
         [MaxLength(100)]
@@ -23,7 +23,7 @@ namespace cams.Backend.Model
         [MaxLength(10)]
         public string? HttpMethod { get; set; }
 
-        public int? UserId { get; set; }
+        public Guid? UserId { get; set; }
 
         [Required]
         public TimeSpan Duration { get; set; }

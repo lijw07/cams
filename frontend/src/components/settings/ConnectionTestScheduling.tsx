@@ -9,13 +9,13 @@ import { Switch, Tooltip } from '../common';
 
 const ConnectionTestScheduling: React.FC = () => {
   const [applications, setApplications] = useState<Application[]>([]);
-  const [schedules, setSchedules] = useState<Map<number, ConnectionTestSchedule>>(new Map());
+  const [schedules, setSchedules] = useState<Map<string, ConnectionTestSchedule>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
-  const [editingAppId, setEditingAppId] = useState<number | null>(null);
+  const [editingAppId, setEditingAppId] = useState<string | null>(null);
   const [cronExpression, setCronExpression] = useState('');
   const [cronValidation, setCronValidation] = useState<{ isValid: boolean; description?: string; nextRunTime?: string } | null>(null);
   const [selectedPreset, setSelectedPreset] = useState('');
-  const [runningTests, setRunningTests] = useState<Set<number>>(new Set());
+  const [runningTests, setRunningTests] = useState<Set<string>>(new Set());
   const { addNotification } = useNotifications();
 
   const cronPresets = connectionTestScheduleService.getCronPresets();
@@ -32,11 +32,11 @@ const ConnectionTestScheduling: React.FC = () => {
         connectionTestScheduleService.getSchedules()
       ]);
 
-      setApplications(appsData.filter(app => app.isActive && app.databaseConnectionCount > 0));
+      setApplications(appsData.filter(app => app.IsActive && app.DatabaseConnectionCount > 0));
       
-      const schedulesMap = new Map<number, ConnectionTestSchedule>();
+      const schedulesMap = new Map<string, ConnectionTestSchedule>();
       schedulesData.forEach(schedule => {
-        schedulesMap.set(schedule.applicationId, schedule);
+        schedulesMap.set(schedule.ApplicationId, schedule);
       });
       setSchedules(schedulesMap);
     } catch (error) {
@@ -73,7 +73,7 @@ const ConnectionTestScheduling: React.FC = () => {
     }
   };
 
-  const handleSaveSchedule = async (applicationId: number) => {
+  const handleSaveSchedule = async (applicationId: string) => {
     if (!cronExpression.trim() || !cronValidation?.isValid) {
       addNotification({
         title: 'Invalid Expression',
@@ -86,9 +86,9 @@ const ConnectionTestScheduling: React.FC = () => {
 
     try {
       const data: ConnectionTestScheduleRequest = {
-        applicationId,
-        cronExpression,
-        isEnabled: true
+        ApplicationId: applicationId,
+        CronExpression: cronExpression,
+        IsEnabled: true
       };
 
       const result = await connectionTestScheduleService.upsertSchedule(data);
@@ -101,7 +101,7 @@ const ConnectionTestScheduling: React.FC = () => {
 
       addNotification({
         title: 'Schedule Saved',
-        message: `Connection test schedule saved for ${applications.find(app => app.id === applicationId)?.name}`,
+        message: `Connection test schedule saved for ${applications.find(app => app.Id === applicationId)?.Name}`,
         type: 'success',
         source: 'Settings'
       });
@@ -117,12 +117,12 @@ const ConnectionTestScheduling: React.FC = () => {
 
   const handleToggleSchedule = async (schedule: ConnectionTestSchedule) => {
     try {
-      const updated = await connectionTestScheduleService.toggleSchedule(schedule.id!, !schedule.isEnabled);
-      setSchedules(prev => new Map(prev).set(schedule.applicationId, updated));
+      const updated = await connectionTestScheduleService.toggleSchedule(schedule.Id!, !schedule.IsEnabled);
+      setSchedules(prev => new Map(prev).set(schedule.ApplicationId, updated));
 
       addNotification({
         title: 'Schedule Updated',
-        message: `Schedule ${updated.isEnabled ? 'enabled' : 'disabled'} for ${schedule.applicationName}`,
+        message: `Schedule ${updated.IsEnabled ? 'enabled' : 'disabled'} for ${schedule.ApplicationName}`,
         type: 'success',
         source: 'Settings'
       });
@@ -140,16 +140,16 @@ const ConnectionTestScheduling: React.FC = () => {
     if (!confirm('Are you sure you want to delete this schedule?')) return;
 
     try {
-      await connectionTestScheduleService.deleteSchedule(schedule.id!);
+      await connectionTestScheduleService.deleteSchedule(schedule.Id!);
       setSchedules(prev => {
         const newMap = new Map(prev);
-        newMap.delete(schedule.applicationId);
+        newMap.delete(schedule.ApplicationId);
         return newMap;
       });
 
       addNotification({
         title: 'Schedule Deleted',
-        message: `Schedule deleted for ${schedule.applicationName}`,
+        message: `Schedule deleted for ${schedule.ApplicationName}`,
         type: 'success',
         source: 'Settings'
       });
@@ -165,19 +165,19 @@ const ConnectionTestScheduling: React.FC = () => {
 
   const handleRunNow = async (schedule: ConnectionTestSchedule) => {
     try {
-      setRunningTests(prev => new Set(prev).add(schedule.id!));
+      setRunningTests(prev => new Set(prev).add(schedule.Id!));
       
-      const result = await connectionTestScheduleService.runScheduleNow(schedule.id!);
+      const result = await connectionTestScheduleService.runScheduleNow(schedule.Id!);
       
       // Refresh the schedule to get updated status
       await loadData();
       
-      const statusColor = result.status === 'success' ? 'success' : 
-                         result.status === 'failed' ? 'error' : 'warning';
+      const statusColor = result.Status === 'success' ? 'success' : 
+                         result.Status === 'failed' ? 'error' : 'warning';
       
       addNotification({
         title: 'Test Completed',
-        message: `${result.message} (${result.duration})`,
+        message: `${result.Message} (${result.Duration})`,
         type: statusColor,
         source: 'Settings'
       });
@@ -191,7 +191,7 @@ const ConnectionTestScheduling: React.FC = () => {
     } finally {
       setRunningTests(prev => {
         const newSet = new Set(prev);
-        newSet.delete(schedule.id!);
+        newSet.delete(schedule.Id!);
         return newSet;
       });
     }
@@ -248,23 +248,23 @@ const ConnectionTestScheduling: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {applications.map(app => {
-                const schedule = schedules.get(app.id);
-                const isEditing = editingAppId === app.id;
+                const schedule = schedules.get(app.Id);
+                const isEditing = editingAppId === app.Id;
 
                 return (
-                  <div key={app.id} className="border border-secondary-200 dark:border-secondary-700 rounded-lg p-4">
+                  <div key={app.Id} className="border border-secondary-200 dark:border-secondary-700 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h4 className="font-medium text-secondary-900 dark:text-white">{app.name}</h4>
+                        <h4 className="font-medium text-secondary-900 dark:text-white">{app.Name}</h4>
                         <p className="text-sm text-secondary-600 dark:text-secondary-400">
-                          {app.databaseConnectionCount} connection{app.databaseConnectionCount > 1 ? 's' : ''}
+                          {app.DatabaseConnectionCount} connection{app.DatabaseConnectionCount > 1 ? 's' : ''}
                         </p>
                       </div>
                       {schedule && (
                         <Switch
-                          checked={schedule.isEnabled}
+                          checked={schedule.IsEnabled}
                           onChange={() => handleToggleSchedule(schedule)}
-                          label={schedule.isEnabled ? 'Enabled' : 'Disabled'}
+                          label={schedule.IsEnabled ? 'Enabled' : 'Disabled'}
                         />
                       )}
                     </div>
@@ -274,31 +274,31 @@ const ConnectionTestScheduling: React.FC = () => {
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-secondary-600 dark:text-secondary-400">Schedule:</span>
                           <code className="bg-secondary-100 dark:bg-secondary-700 px-2 py-1 rounded">
-                            {schedule.cronExpression}
+                            {schedule.CronExpression}
                           </code>
                         </div>
                         
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-secondary-600 dark:text-secondary-400">Next Run:</span>
-                          <span>{formatDateTime(schedule.nextRunTime)}</span>
+                          <span>{formatDateTime(schedule.NextRunTime)}</span>
                         </div>
 
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-secondary-600 dark:text-secondary-400">Last Run:</span>
                           <div className="flex items-center space-x-2">
-                            {getStatusIcon(schedule.lastRunStatus)}
-                            <span>{formatDateTime(schedule.lastRunTime)}</span>
+                            {getStatusIcon(schedule.LastRunStatus)}
+                            <span>{formatDateTime(schedule.LastRunTime)}</span>
                           </div>
                         </div>
 
                         <div className="flex justify-end space-x-2 mt-3">
                           <button
                             onClick={() => handleRunNow(schedule)}
-                            disabled={runningTests.has(schedule.id!) || !schedule.isEnabled}
+                            disabled={runningTests.has(schedule.Id!) || !schedule.IsEnabled}
                             className="btn btn-sm btn-primary"
-                            title={!schedule.isEnabled ? 'Enable schedule to run tests' : 'Run connection test now'}
+                            title={!schedule.IsEnabled ? 'Enable schedule to run tests' : 'Run connection test now'}
                           >
-                            {runningTests.has(schedule.id!) ? (
+                            {runningTests.has(schedule.Id!) ? (
                               <>
                                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-1"></div>
                                 Running...
@@ -312,9 +312,9 @@ const ConnectionTestScheduling: React.FC = () => {
                           </button>
                           <button
                             onClick={() => {
-                              setEditingAppId(app.id);
-                              setCronExpression(schedule.cronExpression);
-                              validateCron(schedule.cronExpression);
+                              setEditingAppId(app.Id);
+                              setCronExpression(schedule.CronExpression);
+                              validateCron(schedule.CronExpression);
                             }}
                             className="btn btn-sm btn-secondary"
                           >
@@ -400,7 +400,7 @@ const ConnectionTestScheduling: React.FC = () => {
                             Cancel
                           </button>
                           <button
-                            onClick={() => handleSaveSchedule(app.id)}
+                            onClick={() => handleSaveSchedule(app.Id)}
                             disabled={!cronExpression.trim() || !cronValidation?.isValid}
                             className="btn btn-sm btn-primary"
                           >

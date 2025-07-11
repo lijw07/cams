@@ -91,28 +91,4 @@ namespace cams.Backend.View
         public string? GrantType { get; set; }
         public string? TokenEndpoint { get; set; }
     }
-
-    /// <summary>
-    /// Response model for application created with its database connection
-    /// </summary>
-    public class ApplicationWithConnectionResponse
-    {
-        public ApplicationResponse Application { get; set; } = null!;
-        public DatabaseConnectionResponse DatabaseConnection { get; set; } = null!;
-        public bool ConnectionTestResult { get; set; }
-        public string? ConnectionTestMessage { get; set; }
-        public TimeSpan? ConnectionTestDuration { get; set; }
-    }
-
-    /// <summary>
-    /// Request model for updating an application with its primary connection
-    /// </summary>
-    public class ApplicationWithConnectionUpdateRequest : ApplicationWithConnectionRequest
-    {
-        [Required(ErrorMessage = "Application ID is required")]
-        public int ApplicationId { get; set; }
-        
-        [Required(ErrorMessage = "Connection ID is required")]
-        public int ConnectionId { get; set; }
-    }
 }

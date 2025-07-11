@@ -54,7 +54,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("application/{applicationId}")]
-        public async Task<IActionResult> GetScheduleByApplicationId(int applicationId)
+        public async Task<IActionResult> GetScheduleByApplicationId(Guid applicationId)
         {
             try
             {
@@ -155,7 +155,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateSchedule(int id, [FromBody] ConnectionTestScheduleRequest request)
+        public async Task<IActionResult> UpdateSchedule(Guid id, [FromBody] ConnectionTestScheduleRequest request)
         {
             try
             {
@@ -217,7 +217,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSchedule(int id)
+        public async Task<IActionResult> DeleteSchedule(Guid id)
         {
             try
             {
@@ -256,7 +256,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPatch("{id}/toggle")]
-        public async Task<IActionResult> ToggleSchedule(int id, [FromBody] ToggleScheduleRequest request)
+        public async Task<IActionResult> ToggleSchedule(Guid id, [FromBody] ToggleScheduleRequest request)
         {
             try
             {
@@ -328,7 +328,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPost("{id}/run-now")]
-        public async Task<IActionResult> RunScheduleNow(int id, [FromServices] IDatabaseConnectionService databaseConnectionService)
+        public async Task<IActionResult> RunScheduleNow(Guid id, [FromServices] IDatabaseConnectionService databaseConnectionService)
         {
             try
             {

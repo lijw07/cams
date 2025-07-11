@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { Database, Eye, EyeOff, Loader2, Shield, Zap, Sparkles } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEventTracking } from '../../hooks/useEventTracking';
+import SEOHead from '../../components/SEO/SEOHead';
 
 interface LoginFormData {
   username: string;
@@ -71,6 +72,13 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      <SEOHead
+        title="Login - CAMS Database Management Platform"
+        description="Sign in to CAMS to manage your database connections, monitor performance, and access your centralized application management dashboard."
+        keywords="CAMS login, database management login, sign in, user authentication"
+        canonical="/login"
+        noIndex={true}
+      />
       {/* Dynamic Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         {/* Animated gradient overlay */}

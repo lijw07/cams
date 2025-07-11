@@ -4,8 +4,8 @@ namespace cams.Backend.View
 {
     public class DatabaseConnectionResponse
     {
-        public int Id { get; set; }
-        public int ApplicationId { get; set; }
+        public Guid Id { get; set; }
+        public Guid ApplicationId { get; set; }
         public string ApplicationName { get; set; } = string.Empty;
         public string Name { get; set; } = string.Empty;
         public string? Description { get; set; }
