@@ -34,10 +34,11 @@ jobs:
         ports:
           - 1433:1433
         options: >-
-          --health-cmd="/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -Q 'SELECT 1'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -Q 'SELECT 1' -C"
+          --health-interval=30s
+          --health-timeout=10s
+          --health-retries=5
+          --health-start-period=60s
 
     steps:
     - name: Checkout code
@@ -58,19 +59,15 @@ jobs:
 
     - name: Restore dependencies
       run: dotnet restore
-      working-directory: ./Backend
 
     - name: Check code formatting
       run: dotnet format --verify-no-changes --verbosity diagnostic
-      working-directory: ./Backend
 
     - name: Build Debug
       run: dotnet build --no-restore --configuration Debug
-      working-directory: ./Backend
 
     - name: Build Release
       run: dotnet build --no-restore --configuration Release
-      working-directory: ./Backend
 
     - name: Run unit tests
       run: |
@@ -79,21 +76,20 @@ jobs:
           --collect:"XPlat Code Coverage" \
           --results-directory ./TestResults/ \
           --verbosity normal
-      working-directory: ./Backend
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-test-results-${{ matrix.dotnet-version }}
-        path: Backend/TestResults/
+        path: TestResults/
 
     - name: Generate coverage report
       run: |
         dotnet tool install -g dotnet-reportgenerator-globaltool
         reportgenerator \
-          -reports:"Backend/TestResults/*/coverage.cobertura.xml" \
-          -targetdir:"Backend/TestResults/CoverageReport" \
+          -reports:"TestResults/*/coverage.cobertura.xml" \
+          -targetdir:"TestResults/CoverageReport" \
           -reporttypes:"Html;JsonSummary"
       if: matrix.dotnet-version == '8.0.x'
 
@@ -101,7 +97,7 @@ jobs:
       uses: codecov/codecov-action@v3
       if: matrix.dotnet-version == '8.0.x'
       with:
-        file: Backend/TestResults/*/coverage.cobertura.xml
+        file: TestResults/*/coverage.cobertura.xml
         flags: backend
         name: backend-coverage
 
@@ -110,7 +106,7 @@ jobs:
       if: matrix.dotnet-version == '8.0.x'
       with:
         name: coverage-report
-        path: Backend/TestResults/CoverageReport/
+        path: TestResults/CoverageReport/
 
   security-analysis:
     name: Security Analysis
@@ -133,11 +129,9 @@ jobs:
 
     - name: Restore dependencies
       run: dotnet restore
-      working-directory: ./Backend
 
     - name: Check for vulnerable packages
       run: |
-        cd Backend
         echo "Checking for vulnerable NuGet packages..."
         dotnet list package --vulnerable --include-transitive 2>&1 | tee vulnerable-packages.txt
         
@@ -157,7 +151,6 @@ jobs:
 
     - name: Build for CodeQL
       run: dotnet build --configuration Release
-      working-directory: ./Backend
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
@@ -176,6 +169,12 @@ jobs:
           MSSQL_PID: Express
         ports:
           - 1433:1433
+        options: >-
+          --health-cmd="/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -Q 'SELECT 1' -C"
+          --health-interval=30s
+          --health-timeout=10s
+          --health-retries=5
+          --health-start-period=60s
 
     steps:
     - name: Checkout code
@@ -190,11 +189,9 @@ jobs:
       run: |
         dotnet restore
         dotnet build --configuration Release
-      working-directory: ./Backend
 
     - name: Start API for testing
       run: |
-        cd Backend
         dotnet run --configuration Release &
         sleep 30
       env:
@@ -285,11 +282,10 @@ jobs:
 
     - name: Create NuGet packages
       run: |
-        cd Backend
         dotnet pack --configuration Release --output ./packages
         
     - name: Upload package artifacts
       uses: actions/upload-artifact@v4
       with:
         name: nuget-packages
-        path: Backend/packages/*.nupkg
+        path: packages/*.nupkg
