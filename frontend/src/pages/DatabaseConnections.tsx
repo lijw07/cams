@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
 import { 
   Plus, 
   Search, 
@@ -18,12 +20,12 @@ import {
   Activity
 } from 'lucide-react';
 
-import { DatabaseConnection, DatabaseType, ConnectionStatus } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
-import { useNotifications } from '../contexts/NotificationContext';
 import Button from '../components/common/Button';
 import LoadingSpinner from '../components/common/LoadingSpinner';
 import Pagination from '../components/common/Pagination';
+import { useNotifications } from '../contexts/NotificationContext';
+import { databaseConnectionService } from '../services/databaseConnectionService';
+import { DatabaseConnection, DatabaseType, ConnectionStatus } from '../types';
 
 const DatabaseConnections: React.FC = () => {
   const navigate = useNavigate();

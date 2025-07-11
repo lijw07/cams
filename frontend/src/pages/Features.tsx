@@ -17,8 +17,8 @@ import {
   Settings
 } from 'lucide-react';
 
-import Footer from '../components/layout/Footer';
 import NavigationHeader from '../components/home/NavigationHeader';
+import Footer from '../components/layout/Footer';
 import SEOHead from '../components/SEO/SEOHead';
 
 const Features: React.FC = () => {

@@ -2,9 +2,9 @@
 // Legacy implementation (deprecated - will be removed)
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
-export { apiService as default, apiService } from './apiService';
-
 import { env } from '../config/environment';
+
+export { apiService as default, apiService } from './apiService';
 
 const API_BASE_URL = env.api.baseUrl;
 

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 
-import { Database, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+import { Database, ArrowLeft } from 'lucide-react';
 
 import LoginBackground from '../../components/auth/LoginBackground';
 import LoginBranding from '../../components/auth/LoginBranding';

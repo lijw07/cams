@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 
+import { PaginationRequest } from '../services/usersService';
+
 import { 
   useUsersQuery, 
   useCreateUserMutation, 
@@ -7,7 +9,6 @@ import {
   useDeleteUserMutation,
   useBulkUserMutation 
 } from './queries';
-import { PaginationRequest } from '../services/usersService';
 
 /**
  * Refactored User Management Hook using React Query

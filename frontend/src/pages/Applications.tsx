@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
 import { Link } from 'react-router-dom';
+
 import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug, TestTube } from 'lucide-react';
+
 import Pagination from '../components/common/Pagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
@@ -9,8 +12,8 @@ import { applicationService } from '../services/applicationService';
 import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
 
 // Import components for database connections and connection testing
-import DatabaseConnections from './DatabaseConnections';
 import ConnectionTestDemo from './ConnectionTestDemo';
+import DatabaseConnections from './DatabaseConnections';
 
 type TabType = 'applications' | 'connections' | 'testing';
 

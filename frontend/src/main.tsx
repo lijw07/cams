@@ -1,14 +1,14 @@
 import React from 'react'
 
 import { HelmetProvider } from 'react-helmet-async'
-import { QueryClient, QueryClientProvider } from 'react-query'
+import { QueryClientProvider } from 'react-query'
 import { BrowserRouter } from 'react-router-dom'
 
 import ReactDOM from 'react-dom/client'
 
 import App from './App'
-import { queryClient } from './config/queryClient'
 import { validateEnvironment } from './config/environment'
+import { queryClient } from './config/queryClient'
 import { AnalyticsProvider } from './contexts/AnalyticsContext'
 import { AuthProvider } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'

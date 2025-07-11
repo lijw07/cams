@@ -5,7 +5,6 @@ import { applicationService } from '../../services/applicationService';
 import { 
   Application, 
   ApplicationRequest, 
-  ApplicationResponse,
   ApplicationWithConnectionRequest 
 } from '../../types';
 

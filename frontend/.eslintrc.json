@@ -6,7 +6,8 @@
   },
   "globals": {
     "gtag": "readonly",
-    "process": "readonly"
+    "process": "readonly",
+    "ImportMetaEnv": "readonly"
   },
   "extends": [
     "eslint:recommended"

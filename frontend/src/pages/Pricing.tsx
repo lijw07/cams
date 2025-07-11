@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import Footer from '../components/layout/Footer';
 import NavigationHeader from '../components/home/NavigationHeader';
+import Footer from '../components/layout/Footer';
 import SEOHead from '../components/SEO/SEOHead';
 
 const Pricing: React.FC = () => {

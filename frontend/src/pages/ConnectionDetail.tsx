@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useParams, useNavigate } from 'react-router-dom';
+
 import { 
   ArrowLeft, 
   Database, 
@@ -20,6 +22,11 @@ import {
   Trash2
 } from 'lucide-react';
 
+import Button from '../components/common/Button';
+import LoadingSpinner from '../components/common/LoadingSpinner';
+import { useNotifications } from '../contexts/NotificationContext';
+import { applicationService } from '../services/applicationService';
+import { databaseConnectionService } from '../services/databaseConnectionService';
 import { 
   DatabaseConnection,
   DatabaseConnectionUpdateRequest, 
@@ -27,11 +34,6 @@ import {
   ConnectionStatus,
   DatabaseTestResponse
 } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
-import { applicationService } from '../services/applicationService';
-import { useNotifications } from '../contexts/NotificationContext';
-import Button from '../components/common/Button';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 
 interface Application {
   Id: string;
@@ -60,6 +62,7 @@ const ConnectionDetail: React.FC = () => {
 
   // Watch form values
   const selectedType = watch('Type');
+  console.log('Selected type:', selectedType); // TODO: Use selectedType for conditional rendering
 
   // Load connection data
   useEffect(() => {

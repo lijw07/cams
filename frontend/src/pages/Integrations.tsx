@@ -6,10 +6,10 @@ import {
   Database, 
   Cloud, 
   Server,
-  Layers,
+  // Layers, // TODO: Use for integration layers visualization
   Code,
   Globe,
-  Shield,
+  // Shield, // TODO: Use for security features
   Zap,
   Activity,
   Settings,
@@ -17,8 +17,8 @@ import {
   Users
 } from 'lucide-react';
 
-import Footer from '../components/layout/Footer';
 import NavigationHeader from '../components/home/NavigationHeader';
+import Footer from '../components/layout/Footer';
 import SEOHead from '../components/SEO/SEOHead';
 
 const Integrations: React.FC = () => {

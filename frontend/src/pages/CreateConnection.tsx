@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
 import { 
   ArrowLeft, 
   Database, 
@@ -13,6 +15,11 @@ import {
   Loader
 } from 'lucide-react';
 
+import Button from '../components/common/Button';
+// import LoadingSpinner from '../components/common/LoadingSpinner'; // TODO: Use for loading states
+import { useNotifications } from '../contexts/NotificationContext';
+import { applicationService } from '../services/applicationService';
+import { databaseConnectionService } from '../services/databaseConnectionService';
 import { 
   DatabaseConnectionRequest, 
   DatabaseType, 
@@ -20,11 +27,6 @@ import {
   DatabaseTestRequest,
   DatabaseTestResponse
 } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
-import { applicationService } from '../services/applicationService';
-import { useNotifications } from '../contexts/NotificationContext';
-import Button from '../components/common/Button';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 
 interface Application {
   Id: string;
@@ -200,6 +202,7 @@ const CreateConnection: React.FC = () => {
     DatabaseType.Google_Firestore,
     DatabaseType.Google_BigQuery
   ].includes(selectedType);
+  console.log('Is cloud connection:', isCloudConnection); // TODO: Use for conditional rendering
 
   return (
     <div className="space-y-6">

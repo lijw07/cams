@@ -417,8 +417,8 @@ namespace cams.Backend.Services
         {
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = request.ServerName,
-                InitialCatalog = request.DatabaseName,
+                DataSource = request.Server,
+                InitialCatalog = request.Database,
                 UserID = request.Username,
                 Password = request.Password
             };

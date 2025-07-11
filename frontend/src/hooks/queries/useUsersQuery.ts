@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { 
   usersService, 
-  UserManagement, 
   CreateUserRequest, 
   UpdateUserRequest, 
   PaginationRequest 

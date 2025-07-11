@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 
-import { Link } from 'react-router-dom';
+// import { Link } from 'react-router-dom'; // TODO: Add navigation links
 
-import Footer from '../components/layout/Footer';
 import NavigationHeader from '../components/home/NavigationHeader';
+import Footer from '../components/layout/Footer';
 import SEOHead from '../components/SEO/SEOHead';
 
 const Documentation: React.FC = () => {

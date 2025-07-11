@@ -1,3 +1,5 @@
+import { env } from '../config/environment';
+
 export const ANALYTICS_EVENTS = {
   // Page Views
   PAGE_VIEW: 'page_view',
@@ -69,8 +71,6 @@ export const CUSTOM_DIMENSIONS = {
   ENVIRONMENT: 'environment',
   USER_PERMISSIONS: 'user_permissions',
 } as const;
-
-import { env } from '../config/environment';
 
 export const DEFAULT_CONFIG = {
   ENABLED: env.analytics.enabled,
