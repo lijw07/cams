@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Database, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
-import { useNotifications } from '../contexts/NotificationContext';
+import toast from 'react-hot-toast';
 
 interface RegisterFormData {
   username: string;

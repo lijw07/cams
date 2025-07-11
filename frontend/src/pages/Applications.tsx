@@ -4,7 +4,7 @@ import { Application, ApplicationRequest, ApplicationWithConnectionRequest } fro
 import { applicationService } from '../services/applicationService';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
-import { useNotifications } from '../contexts/NotificationContext';
+import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
 const Applications: React.FC = () => {

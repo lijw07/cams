@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
+import toast from 'react-hot-toast';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -61,12 +62,12 @@ class ApiService {
     }
 
     if (error.response?.status === 403) {
-      console.error('Permission denied: You do not have permission to perform this action');
+      toast.error('You do not have permission to perform this action');
       return;
     }
 
     if (error.response?.status && error.response.status >= 500) {
-      console.error('Server error occurred. Please try again later.');
+      toast.error('Server error occurred. Please try again later.');
       return;
     }
 

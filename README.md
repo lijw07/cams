@@ -1,21 +1,16 @@
-# 🚀 CAMS - Connection & Application Management System
+# 🔧 CAMS - Centralized Application Management System
 
 <div align="center">
 
-[![Build Status](https://github.com/jaili/cams/workflows/CI/badge.svg)](https://github.com/jaili/cams/actions)
-[![Frontend Build](https://github.com/jaili/cams/workflows/Frontend%20CI/badge.svg)](https://github.com/jaili/cams/actions)
-[![Backend Build](https://github.com/jaili/cams/workflows/Backend%20CI/badge.svg)](https://github.com/jaili/cams/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-Latest-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
-[![SQL Server](https://img.shields.io/badge/SQL_Server-2022-CC2927?style=for-the-badge&logo=microsoftsqlserver)](https://www.microsoft.com/en-us/sql-server)
+[![Entity Framework](https://img.shields.io/badge/Entity_Framework-Core_8.0-512BD4?style=for-the-badge&logo=dotnet)](https://docs.microsoft.com/en-us/ef/)
+[![JWT](https://img.shields.io/badge/JWT-Authentication-000000?style=for-the-badge&logo=jsonwebtokens)](https://jwt.io/)
+[![SQL Server](https://img.shields.io/badge/SQL_Server-Database-CC2927?style=for-the-badge&logo=microsoftsqlserver)](https://www.microsoft.com/en-us/sql-server)
 
-*A modern, full-stack application for centralized management of applications and database connections with comprehensive security, real-time updates, and analytics.*
+*A robust, enterprise-grade API for managing database connections and applications with comprehensive security, logging, and monitoring.*
 
-[🚀 Quick Start](#-quick-start) • [📱 Frontend Features](#-frontend-features) • [📖 API Documentation](#-api-documentation) • [🏗️ Architecture](#️-architecture) • [🔐 Security](#-security-features) • [🐳 Docker](#-docker-configuration)
+[🚀 Quick Start](#-quick-start) • [📖 API Documentation](#-api-documentation) • [🏗️ Architecture](#️-architecture) • [🔐 Security](#-security-features) • [🐳 Docker](#-docker-configuration)
 
 </div>
 

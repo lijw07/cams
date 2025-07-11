@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { usePageTracking } from './hooks/usePageTracking';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
@@ -48,9 +47,6 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App: React.FC = () => {
-  // Enable automatic page tracking
-  usePageTracking();
-
   return (
     <div className="min-h-screen">
       <Routes>

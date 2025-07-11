@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
@@ -64,9 +65,6 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
 
-                logger.LogInformation("User {UserId} sent email {EmailId} to {ToEmail}",
-                    userId, result.EmailId, request.ToEmail);
-
                 return Ok(result);
             }
             catch (Exception ex)
@@ -96,9 +94,6 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-
-                logger.LogInformation("User {UserId} retrieved {EmailCount} emails on page {Page}",
-                    userId, emails.Emails.Count, request.Page);
 
                 return Ok(emails);
             }
@@ -581,5 +576,12 @@ namespace cams.Backend.Controller
                 return HttpResponseHelper.CreateErrorResponse("Error validating email address");
             }
         }
+    }
+
+    public class ValidateEmailRequest
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
     }
 }

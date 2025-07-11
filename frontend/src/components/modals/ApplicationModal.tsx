@@ -4,7 +4,7 @@ import { X, Database, Server, Plus, Trash2, ToggleLeft, ToggleRight } from 'luci
 import { ApplicationRequest, DatabaseConnectionRequest, DatabaseConnection } from '../../types';
 import { databaseConnectionService } from '../../services/databaseConnectionService';
 import DatabaseConnectionModal from './DatabaseConnectionModal';
-import { useNotifications } from '../contexts/NotificationContext';
+import toast from 'react-hot-toast';
 
 interface ApplicationModalProps {
   isOpen: boolean;

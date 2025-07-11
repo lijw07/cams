@@ -11,7 +11,7 @@ import {
   Eye
 } from 'lucide-react';
 import { usersService, UserManagement, PaginationRequest } from '../../services/usersService';
-import { useNotifications } from '../contexts/NotificationContext';
+import toast from 'react-hot-toast';
 
 const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();

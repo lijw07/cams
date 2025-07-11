@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { X, Database, Server, Key, Zap } from 'lucide-react';
 import { ApplicationWithConnectionRequest, DatabaseType } from '../../types';
 import { databaseConnectionService } from '../../services/databaseConnectionService';
-import { useNotifications } from '../contexts/NotificationContext';
+import toast from 'react-hot-toast';
 
 interface ApplicationWithConnectionModalProps {
   isOpen: boolean;

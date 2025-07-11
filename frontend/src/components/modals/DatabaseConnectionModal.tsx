@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { X, Database, Key, Settings } from 'lucide-react';
 import { DatabaseConnectionRequest, DatabaseType } from '../../types';
-// import { useNotifications } from '../contexts/NotificationContext';
+// import toast from 'react-hot-toast';
 
 interface DatabaseConnectionModalProps {
   isOpen: boolean;

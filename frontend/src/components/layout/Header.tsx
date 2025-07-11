@@ -4,7 +4,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { useNavigate } from 'react-router-dom';
 import { Notification } from '../../types';
-import { useEventTracking } from '../../hooks/useEventTracking';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -18,21 +17,13 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const { trackAuthentication, trackNavigation } = useEventTracking();
 
   const handleLogout = async () => {
     try {
       await logout();
-      
-      // Track logout event
-      trackAuthentication('logout', true);
-      
       navigate('/login');
     } catch (error) {
       console.error('Logout failed:', error);
-      
-      // Track logout failure
-      trackAuthentication('logout', false);
     }
   };
 
@@ -266,7 +257,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 
                 <button
                   onClick={() => {
-                    trackNavigation('/profile', 'header_menu');
                     navigate('/profile');
                     setUserMenuOpen(false);
                   }}
@@ -278,7 +268,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 
                 <button
                   onClick={() => {
-                    trackNavigation('/settings', 'header_menu');
                     navigate('/settings');
                     setUserMenuOpen(false);
                   }}
