@@ -1,6 +1,7 @@
 using cams.Backend.Attributes;
 using cams.Backend.Constants;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Services;
 using cams.Backend.View;
 using Microsoft.AspNetCore.Authorization;
@@ -75,7 +76,7 @@ namespace cams.Backend.Controller
 
         [HttpGet("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetRoleById(int id)
+        public async Task<IActionResult> GetRoleById(Guid id)
         {
             try
             {
@@ -97,7 +98,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} retrieved role {RoleId} ({RoleName})",
-                    currentUserId, id, role.Name);
+                    currentUserId, id, LoggingHelper.Sanitize(role.Name));
 
                 return Ok(role);
             }
@@ -128,8 +129,8 @@ namespace cams.Backend.Controller
                     "Role",
                     entityId: role.Id,
                     entityName: role.Name,
-                    description: $"Created new role: {role.Name}",
-                    newValues: $"Name: {role.Name}, Description: {role.Description}"
+                    description: $"Created new role: {LoggingHelper.Sanitize(role.Name)}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(role.Name)}, Description: {LoggingHelper.Sanitize(role.Description)}"
                 );
 
                 // Log system event for role creation
@@ -137,8 +138,8 @@ namespace cams.Backend.Controller
                     "RoleCreated",
                     "Information",
                     "Authorization",
-                    $"New role created: {role.Name}",
-                    details: $"RoleId: {role.Id}, RoleName: {role.Name}, Description: {role.Description}, CreatedBy: {currentUserId}",
+                    $"New role created: {LoggingHelper.Sanitize(role.Name)}",
+                    details: $"RoleId: {role.Id}, RoleName: {LoggingHelper.Sanitize(role.Name)}, Description: {LoggingHelper.Sanitize(role.Description)}, CreatedBy: {currentUserId}",
                     userId: currentUserId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -147,7 +148,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} created role {RoleId} ({RoleName})",
-                    currentUserId, role.Id, role.Name);
+                    currentUserId, role.Id, LoggingHelper.Sanitize(role.Name));
 
                 return CreatedAtAction(
                     nameof(GetRoleById),
@@ -167,7 +168,7 @@ namespace cams.Backend.Controller
 
         [HttpPut("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> UpdateRole(int id, [FromBody] RoleRequest request)
+        public async Task<IActionResult> UpdateRole(Guid id, [FromBody] RoleRequest request)
         {
             try
             {
@@ -190,12 +191,12 @@ namespace cams.Backend.Controller
                     "Role",
                     entityId: id,
                     entityName: role.Name,
-                    description: $"Updated role: {role.Name}",
-                    newValues: $"Name: {role.Name}, Description: {role.Description}"
+                    description: $"Updated role: {LoggingHelper.Sanitize(role.Name)}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(role.Name)}, Description: {LoggingHelper.Sanitize(role.Description)}"
                 );
 
                 logger.LogInformation("User {UserId} updated role {RoleId} ({RoleName})",
-                    currentUserId, id, role.Name);
+                    currentUserId, id, LoggingHelper.Sanitize(role.Name));
 
                 return Ok(role);
             }
@@ -212,7 +213,7 @@ namespace cams.Backend.Controller
 
         [HttpPatch("{id}/toggle-status")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> ToggleRoleStatus(int id)
+        public async Task<IActionResult> ToggleRoleStatus(Guid id)
         {
             try
             {
@@ -246,7 +247,7 @@ namespace cams.Backend.Controller
 
         [HttpDelete("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> DeleteRole(int id)
+        public async Task<IActionResult> DeleteRole(Guid id)
         {
             try
             {
@@ -298,7 +299,7 @@ namespace cams.Backend.Controller
 
         [HttpPost("{roleId}/assign/{userId}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> AssignRoleToUser(int roleId, int userId)
+        public async Task<IActionResult> AssignRoleToUser(Guid roleId, Guid userId)
         {
             try
             {
@@ -335,7 +336,7 @@ namespace cams.Backend.Controller
 
         [HttpDelete("{roleId}/remove/{userId}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> RemoveRoleFromUser(int roleId, int userId)
+        public async Task<IActionResult> RemoveRoleFromUser(Guid roleId, Guid userId)
         {
             try
             {
@@ -368,7 +369,7 @@ namespace cams.Backend.Controller
 
         [HttpGet("user/{userId}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetUserRoles(int userId)
+        public async Task<IActionResult> GetUserRoles(Guid userId)
         {
             try
             {
@@ -397,7 +398,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("check-name")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> CheckRoleNameAvailability([FromQuery] string name, [FromQuery] int? excludeId = null)
+        public async Task<IActionResult> CheckRoleNameAvailability([FromQuery] string name, [FromQuery] Guid? excludeId = null)
         {
             try
             {
@@ -495,7 +496,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/stats")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetRoleStats(int id)
+        public async Task<IActionResult> GetRoleStats(Guid id)
         {
             try
             {
@@ -518,7 +519,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{roleId}/assign-users")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> AssignUsersToRole(int roleId, [FromBody] AssignUsersToRoleRequest request)
+        public async Task<IActionResult> AssignUsersToRole(Guid roleId, [FromBody] AssignUsersToRoleRequest request)
         {
             try
             {
@@ -551,7 +552,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{roleId}/remove-users")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> RemoveUsersFromRole(int roleId, [FromBody] RemoveUsersFromRoleRequest request)
+        public async Task<IActionResult> RemoveUsersFromRole(Guid roleId, [FromBody] RemoveUsersFromRoleRequest request)
         {
             try
             {
@@ -584,7 +585,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/users")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> GetRoleUsers(int id)
+        public async Task<IActionResult> GetRoleUsers(Guid id)
         {
             try
             {

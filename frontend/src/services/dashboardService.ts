@@ -1,6 +1,6 @@
-import { usersService } from './usersService';
 import { applicationService } from './applicationService';
 import { roleService } from './roleService';
+import { usersService } from './usersService';
 
 export interface DashboardStats {
   totalUsers: number;

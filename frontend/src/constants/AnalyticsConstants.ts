@@ -70,10 +70,12 @@ export const CUSTOM_DIMENSIONS = {
   USER_PERMISSIONS: 'user_permissions',
 } as const;
 
+import { env } from '../config/environment';
+
 export const DEFAULT_CONFIG = {
-  ENABLED: import.meta.env.MODE === 'production',
-  DEBUG: import.meta.env.MODE === 'development',
-  MEASUREMENT_ID: import.meta.env.VITE_GA_MEASUREMENT_ID || '',
+  ENABLED: env.analytics.enabled,
+  DEBUG: env.analytics.debug,
+  MEASUREMENT_ID: env.analytics.measurementId,
   COOKIE_DOMAIN: 'auto',
   COOKIE_EXPIRES: 63072000, // 2 years
   ANONYMIZE_IP: true,

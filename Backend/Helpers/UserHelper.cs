@@ -10,10 +10,10 @@ namespace cams.Backend.Helpers
         /// <param name="user">The claims principal from the controller context</param>
         /// <returns>The user ID</returns>
         /// <exception cref="UnauthorizedAccessException">Thrown when user ID is not found or invalid</exception>
-        public static int GetCurrentUserId(ClaimsPrincipal user)
+        public static Guid GetCurrentUserId(ClaimsPrincipal user)
         {
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
             {
                 throw new UnauthorizedAccessException("User ID not found in token");
             }

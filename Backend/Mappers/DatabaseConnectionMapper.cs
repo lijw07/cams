@@ -5,7 +5,7 @@ namespace cams.Backend.Mappers
 {
     public interface IDatabaseConnectionMapper
     {
-        DatabaseConnection MapToEntity(DatabaseConnectionRequest request, int userId);
+        DatabaseConnection MapToEntity(DatabaseConnectionRequest request, Guid userId);
         DatabaseConnectionResponse MapToResponse(DatabaseConnection entity);
         void MapUpdateToEntity(DatabaseConnectionUpdateRequest request, DatabaseConnection entity);
         IEnumerable<DatabaseConnectionResponse> MapToResponseList(IEnumerable<DatabaseConnection> entities);
@@ -13,7 +13,7 @@ namespace cams.Backend.Mappers
 
     public class DatabaseConnectionMapper : IDatabaseConnectionMapper
     {
-        public DatabaseConnection MapToEntity(DatabaseConnectionRequest request, int userId)
+        public DatabaseConnection MapToEntity(DatabaseConnectionRequest request, Guid userId)
         {
             return new DatabaseConnection
             {
@@ -71,13 +71,13 @@ namespace cams.Backend.Mappers
             entity.Port = request.Port;
             entity.Database = request.Database;
             entity.Username = request.Username;
-            
+
             // Only update password if provided
             if (!string.IsNullOrWhiteSpace(request.Password))
             {
                 entity.PasswordHash = request.Password; // Note: Should be encrypted in production
             }
-            
+
             entity.ConnectionString = request.ConnectionString;
             entity.ApiBaseUrl = request.ApiBaseUrl;
             entity.ApiKey = request.ApiKey;
@@ -104,15 +104,15 @@ namespace cams.Backend.Mappers
 
             // Simple masking - in production, you might want more sophisticated masking
             var masked = connectionString;
-            
+
             // Mask password in connection string
             if (masked.Contains("password", StringComparison.OrdinalIgnoreCase))
             {
                 var passwordPattern = @"(password\s*=\s*)[^;]+";
                 masked = System.Text.RegularExpressions.Regex.Replace(
-                    masked, 
-                    passwordPattern, 
-                    "$1***", 
+                    masked,
+                    passwordPattern,
+                    "$1***",
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             }
 

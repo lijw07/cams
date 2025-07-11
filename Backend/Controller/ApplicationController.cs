@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
 using cams.Backend.View;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 
@@ -24,15 +25,15 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested applications list", userId);
-                
+
                 if (pagination != null)
                 {
                     // Return paginated results
                     var paginatedApplications = await applicationService.GetUserApplicationsPaginatedAsync(userId, pagination);
-                    
-                    logger.LogInformation("Retrieved {ApplicationCount} of {TotalCount} applications for user {UserId} (page {PageNumber})", 
+
+                    logger.LogInformation("Retrieved {ApplicationCount} of {TotalCount} applications for user {UserId} (page {PageNumber})",
                         paginatedApplications.Items.Count(), paginatedApplications.TotalCount, userId, pagination.PageNumber);
-                    
+
                     // Log audit event for application list retrieval
                     await loggingService.LogAuditAsync(
                         userId,
@@ -42,16 +43,16 @@ namespace cams.Backend.Controller
                         ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                         userAgent: Request.Headers.UserAgent.ToString()
                     );
-                    
+
                     return Ok(paginatedApplications);
                 }
                 else
                 {
                     // Return all applications (backward compatibility)
                     var applications = await applicationService.GetUserApplicationsAsync(userId);
-                    
+
                     logger.LogInformation("Retrieved {ApplicationCount} applications for user {UserId}", applications.Count(), userId);
-                    
+
                     // Log audit event for application list retrieval
                     await loggingService.LogAuditAsync(
                         userId,
@@ -61,7 +62,7 @@ namespace cams.Backend.Controller
                         ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                         userAgent: Request.Headers.UserAgent.ToString()
                     );
-                    
+
                     return Ok(applications);
                 }
             }
@@ -73,15 +74,15 @@ namespace cams.Backend.Controller
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetApplication(int id)
+        public async Task<IActionResult> GetApplication(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested application {ApplicationId}", userId, id);
-                
+
                 var application = await applicationService.GetApplicationByIdAsync(id, userId);
-                
+
                 if (application == null)
                 {
                     logger.LogWarning("Application {ApplicationId} not found for user {UserId}", id, userId);
@@ -92,7 +93,7 @@ namespace cams.Backend.Controller
                 await applicationService.UpdateLastAccessedAsync(id, userId);
 
                 logger.LogInformation("Successfully retrieved application {ApplicationId} for user {UserId}", id, userId);
-                
+
                 // Log audit event for application retrieval
                 await loggingService.LogAuditAsync(
                     userId,
@@ -104,13 +105,13 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(application);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error retrieving application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error retrieving application");
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving application");
             }
         }
 
@@ -130,13 +131,13 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} creating new application: {ApplicationName}", userId, request.Name);
-                
+                logger.LogInformation("User {UserId} creating new application: {ApplicationName}", userId, LoggingHelper.Sanitize(request.Name));
+
                 var application = await applicationService.CreateApplicationAsync(request, userId);
-                
-                logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) for user {UserId}", 
-                    application.Id, application.Name, userId);
-                
+
+                logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) for user {UserId}",
+                    application.Id, LoggingHelper.Sanitize(application.Name), userId);
+
                 // Log audit event for application creation
                 await loggingService.LogAuditAsync(
                     userId,
@@ -144,7 +145,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: application.Id,
                     entityName: application.Name,
-                    newValues: $"Name: {application.Name}, Description: {request.Description}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(application.Name)}, Description: {LoggingHelper.Sanitize(request.Description)}",
                     description: "Created new application",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -155,26 +156,26 @@ namespace cams.Backend.Controller
                     "ApplicationCreated",
                     "Information",
                     "Application",
-                    $"New application created: {application.Name}",
-                    details: $"ApplicationId: {application.Id}, Name: {application.Name}, Environment: {request.Environment}, IsActive: {request.IsActive}, CreatedBy: {userId}",
+                    $"New application created: {LoggingHelper.Sanitize(application.Name)}",
+                    details: $"ApplicationId: {application.Id}, Name: {LoggingHelper.Sanitize(application.Name)}, Environment: {LoggingHelper.Sanitize(request.Environment)}, IsActive: {request.IsActive}, CreatedBy: {userId}",
                     userId: userId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
                     requestPath: HttpContext.Request.Path,
                     statusCode: 201
                 );
-                
+
                 return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, application);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating application {ApplicationName} for user {UserId}", request.Name, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error creating application");
+                logger.LogError(ex, "Error creating application {ApplicationName} for user {UserId}", LoggingHelper.Sanitize(request.Name), UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error creating application");
             }
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateApplication(int id, [FromBody] ApplicationUpdateRequest request)
+        public async Task<IActionResult> UpdateApplication(Guid id, [FromBody] ApplicationUpdateRequest request)
         {
             try
             {
@@ -194,18 +195,18 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} updating application {ApplicationId}: {ApplicationName}", userId, id, request.Name);
-                
+                logger.LogInformation("User {UserId} updating application {ApplicationId}: {ApplicationName}", userId, id, LoggingHelper.Sanitize(request.Name));
+
                 var application = await applicationService.UpdateApplicationAsync(request, userId);
-                
+
                 if (application == null)
                 {
                     logger.LogWarning("Application {ApplicationId} not found for update by user {UserId}", id, userId);
                     return HttpResponseHelper.CreateNotFoundResponse("Application");
                 }
 
-                logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) for user {UserId}", 
-                    application.Id, application.Name, userId);
+                logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) for user {UserId}",
+                    application.Id, LoggingHelper.Sanitize(application.Name), userId);
 
                 // Log audit event for application update
                 await loggingService.LogAuditAsync(
@@ -214,7 +215,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: application.Id,
                     entityName: application.Name,
-                    newValues: $"Name: {application.Name}, Description: {request.Description}",
+                    newValues: $"Name: {LoggingHelper.Sanitize(application.Name)}, Description: {LoggingHelper.Sanitize(request.Description)}",
                     description: "Updated application",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -225,20 +226,20 @@ namespace cams.Backend.Controller
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error updating application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error updating application");
+                return HttpResponseHelper.CreateErrorResponse("Error updating application");
             }
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteApplication(int id)
+        public async Task<IActionResult> DeleteApplication(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} deleting application {ApplicationId}", userId, id);
-                
+
                 var deleted = await applicationService.DeleteApplicationAsync(id, userId);
-                
+
                 if (!deleted)
                 {
                     logger.LogWarning("Application {ApplicationId} not found for deletion by user {UserId}", id, userId);
@@ -246,7 +247,7 @@ namespace cams.Backend.Controller
                 }
 
                 logger.LogInformation("Successfully deleted application {ApplicationId} for user {UserId}", id, userId);
-                
+
                 // Log audit event for application deletion
                 await loggingService.LogAuditAsync(
                     userId,
@@ -271,34 +272,34 @@ namespace cams.Backend.Controller
                     requestPath: HttpContext.Request.Path,
                     statusCode: 204
                 );
-                
+
                 return NoContent();
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error deleting application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error deleting application");
+                return HttpResponseHelper.CreateErrorResponse("Error deleting application");
             }
         }
 
         [HttpPatch("{id}/toggle")]
-        public async Task<IActionResult> ToggleApplicationStatus(int id, [FromBody] ToggleApplicationStatusRequest request)
+        public async Task<IActionResult> ToggleApplicationStatus(Guid id, [FromBody] ToggleApplicationStatusRequest request)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} toggling application {ApplicationId} status to {Status}", 
+                logger.LogInformation("User {UserId} toggling application {ApplicationId} status to {Status}",
                     userId, id, request.IsActive ? "active" : "inactive");
-                
+
                 var updated = await applicationService.ToggleApplicationStatusAsync(id, userId, request.IsActive);
-                
+
                 if (!updated)
                 {
                     logger.LogWarning("Application {ApplicationId} not found for status toggle by user {UserId}", id, userId);
                     return HttpResponseHelper.CreateNotFoundResponse("Application");
                 }
 
-                logger.LogInformation("Successfully toggled application {ApplicationId} status to {Status} for user {UserId}", 
+                logger.LogInformation("Successfully toggled application {ApplicationId} status to {Status} for user {UserId}",
                     id, request.IsActive ? "active" : "inactive", userId);
 
                 // Log audit event for application status toggle
@@ -318,20 +319,20 @@ namespace cams.Backend.Controller
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error toggling application status for {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error toggling application status");
+                return HttpResponseHelper.CreateErrorResponse("Error toggling application status");
             }
         }
 
         [HttpGet("{id}/connections")]
-        public async Task<IActionResult> GetApplicationConnections(int id)
+        public async Task<IActionResult> GetApplicationConnections(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested connections for application {ApplicationId}", userId, id);
-                
+
                 var connections = await applicationService.GetApplicationConnectionsAsync(id, userId);
-                
+
                 if (!connections.Any())
                 {
                     // Check if application exists
@@ -343,7 +344,7 @@ namespace cams.Backend.Controller
                     }
                 }
 
-                logger.LogInformation("Retrieved {ConnectionCount} connections for application {ApplicationId} for user {UserId}", 
+                logger.LogInformation("Retrieved {ConnectionCount} connections for application {ApplicationId} for user {UserId}",
                     connections.Count(), id, userId);
 
                 // Log audit event for application connections retrieval
@@ -362,20 +363,20 @@ namespace cams.Backend.Controller
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error retrieving connections for application {ApplicationId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error retrieving application connections");
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving application connections");
             }
         }
 
         [HttpPost("{id}/access")]
-        public async Task<IActionResult> UpdateLastAccessed(int id)
+        public async Task<IActionResult> UpdateLastAccessed(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} updating last accessed time for application {ApplicationId}", userId, id);
-                
+
                 var updated = await applicationService.UpdateLastAccessedAsync(id, userId);
-                
+
                 if (!updated)
                 {
                     logger.LogWarning("Application {ApplicationId} not found for last access update by user {UserId}", id, userId);
@@ -383,7 +384,7 @@ namespace cams.Backend.Controller
                 }
 
                 logger.LogInformation("Successfully updated last accessed time for application {ApplicationId} for user {UserId}", id, userId);
-                
+
                 // Log audit event for last accessed update
                 await loggingService.LogAuditAsync(
                     userId,
@@ -395,12 +396,12 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(new { message = "Last accessed time updated" });
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error updating last accessed time for application {ApplicationId} for user {UserId}", 
+                logger.LogError(ex, "Error updating last accessed time for application {ApplicationId} for user {UserId}",
                     id, UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse("Error updating last accessed time");
             }
@@ -418,23 +419,23 @@ namespace cams.Backend.Controller
                             kvp => kvp.Key,
                             kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? []
                         );
-                    
-                    logger.LogWarning("Invalid model state for CreateApplicationWithConnection. Errors: {Errors}", 
+
+                    logger.LogWarning("Invalid model state for CreateApplicationWithConnection. Errors: {Errors}",
                         System.Text.Json.JsonSerializer.Serialize(errors));
-                    
+
                     return HttpResponseHelper.CreateValidationErrorResponse(errors);
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, request.ApplicationName);
-                logger.LogInformation("Request data: ApplicationName={ApplicationName}, ConnectionName={ConnectionName}, DatabaseType={DatabaseType}, Server={Server}", 
-                    request.ApplicationName, request.ConnectionName, request.DatabaseType, request.Server);
-                
+                logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, LoggingHelper.Sanitize(request.ApplicationName));
+                logger.LogInformation("Request data: ApplicationName={ApplicationName}, ConnectionName={ConnectionName}, DatabaseType={DatabaseType}, Server={Server}",
+                    LoggingHelper.Sanitize(request.ApplicationName), LoggingHelper.Sanitize(request.ConnectionName), request.DatabaseType, LoggingHelper.Sanitize(request.Server));
+
                 var response = await applicationService.CreateApplicationWithConnectionAsync(request, userId);
-                
-                logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
-                    response.Application.Id, response.Application.Name, response.DatabaseConnection.Id, response.DatabaseConnection.Name, userId);
-                
+
+                logger.LogInformation("Successfully created application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}",
+                    response.Application.Id, LoggingHelper.Sanitize(response.Application.Name), response.DatabaseConnection.Id, LoggingHelper.Sanitize(response.DatabaseConnection.Name), userId);
+
                 // Log audit event for combined creation
                 await loggingService.LogAuditAsync(
                     userId,
@@ -442,23 +443,23 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: response.Application.Id,
                     entityName: response.Application.Name,
-                    newValues: $"Application: {response.Application.Name}, Connection: {response.DatabaseConnection.Name}",
+                    newValues: $"Application: {LoggingHelper.Sanitize(response.Application.Name)}, Connection: {LoggingHelper.Sanitize(response.DatabaseConnection.Name)}",
                     description: "Created application with database connection",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return CreatedAtAction(nameof(GetApplication), new { id = response.Application.Id }, response);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating application with connection {ApplicationName} for user {UserId}", request.ApplicationName, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error creating application with connection");
+                logger.LogError(ex, "Error creating application with connection {ApplicationName} for user {UserId}", LoggingHelper.Sanitize(request.ApplicationName), UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error creating application with connection");
             }
         }
 
         [HttpPut("{id}/with-connection")]
-        public async Task<IActionResult> UpdateApplicationWithConnection(int id, [FromBody] ApplicationWithConnectionUpdateRequest request)
+        public async Task<IActionResult> UpdateApplicationWithConnection(Guid id, [FromBody] ApplicationWithConnectionUpdateRequest request)
         {
             try
             {
@@ -478,20 +479,20 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} updating application {ApplicationId} with connection {ConnectionId}", 
+                logger.LogInformation("User {UserId} updating application {ApplicationId} with connection {ConnectionId}",
                     userId, request.ApplicationId, request.ConnectionId);
-                
+
                 var response = await applicationService.UpdateApplicationWithConnectionAsync(request, userId);
-                
+
                 if (response == null)
                 {
-                    logger.LogWarning("Application {ApplicationId} or connection {ConnectionId} not found for update by user {UserId}", 
+                    logger.LogWarning("Application {ApplicationId} or connection {ConnectionId} not found for update by user {UserId}",
                         request.ApplicationId, request.ConnectionId, userId);
                     return HttpResponseHelper.CreateNotFoundResponse("Application or connection");
                 }
 
-                logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
-                    response.Application.Id, response.Application.Name, response.DatabaseConnection.Id, response.DatabaseConnection.Name, userId);
+                logger.LogInformation("Successfully updated application {ApplicationId} ({ApplicationName}) with connection {ConnectionId} ({ConnectionName}) for user {UserId}",
+                    response.Application.Id, LoggingHelper.Sanitize(response.Application.Name), response.DatabaseConnection.Id, LoggingHelper.Sanitize(response.DatabaseConnection.Name), userId);
 
                 // Log audit event for combined update
                 await loggingService.LogAuditAsync(
@@ -500,7 +501,7 @@ namespace cams.Backend.Controller
                     AuditEntityTypes.APPLICATION,
                     entityId: response.Application.Id,
                     entityName: response.Application.Name,
-                    newValues: $"Application: {response.Application.Name}, Connection: {response.DatabaseConnection.Name}",
+                    newValues: $"Application: {LoggingHelper.Sanitize(response.Application.Name)}, Connection: {LoggingHelper.Sanitize(response.DatabaseConnection.Name)}",
                     description: "Updated application with database connection",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
@@ -511,20 +512,20 @@ namespace cams.Backend.Controller
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error updating application {ApplicationId} with connection for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error updating application with connection");
+                return HttpResponseHelper.CreateErrorResponse("Error updating application with connection");
             }
         }
 
         [HttpGet("{id}/with-primary-connection")]
-        public async Task<IActionResult> GetApplicationWithPrimaryConnection(int id)
+        public async Task<IActionResult> GetApplicationWithPrimaryConnection(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested application {ApplicationId} with primary connection", userId, id);
-                
+
                 var response = await applicationService.GetApplicationWithPrimaryConnectionAsync(id, userId);
-                
+
                 if (response == null)
                 {
                     logger.LogWarning("Application {ApplicationId} with primary connection not found for user {UserId}", id, userId);
@@ -532,7 +533,7 @@ namespace cams.Backend.Controller
                 }
 
                 logger.LogInformation("Successfully retrieved application {ApplicationId} with primary connection for user {UserId}", id, userId);
-                
+
                 // Log audit event for retrieval
                 await loggingService.LogAuditAsync(
                     userId,
@@ -544,13 +545,13 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(response);
             }
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error retrieving application {ApplicationId} with primary connection for user {UserId}", id, UserHelper.GetCurrentUserId(User));
-                return HttpResponseHelper.CreateErrorResponse( "Error retrieving application with connection");
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving application with connection");
             }
         }
 

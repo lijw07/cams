@@ -28,7 +28,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("audit")]
         public async Task<IActionResult> GetAuditLogs(
-            [FromQuery(Name = "user-id")] int? userId = null,
+            [FromQuery(Name = "user-id")] Guid? userId = null,
             [FromQuery(Name = "entity-type")] string? entityType = null,
             [FromQuery(Name = "from-date")] DateTime? fromDate = null,
             [FromQuery(Name = "to-date")] DateTime? toDate = null,
@@ -43,10 +43,10 @@ namespace cams.Backend.Controller
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("PlatformAdmin user {UserId} accessing audit logs with filters: userId={FilterUserId}, entityType={EntityType}, fromDate={FromDate}, toDate={ToDate}",
                     currentUserId, userId, entityType, fromDate, toDate);
-                
+
                 var (data, totalCount) = await loggingService.GetAuditLogsWithCountAsync(userId, entityType, fromDate, toDate, pageSize, page);
                 var logsList = data.ToList();
-                
+
                 var response = new LogsResponse<Model.AuditLog>
                 {
                     Data = logsList,
@@ -54,7 +54,7 @@ namespace cams.Backend.Controller
                     Page = page,
                     PageSize = pageSize
                 };
-                
+
                 await loggingService.LogAuditAsync(
                     currentUserId,
                     "ViewAuditLogs",
@@ -63,10 +63,10 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 logger.LogInformation("Successfully retrieved {LogCount} audit logs for PlatformAdmin user {UserId}",
                     logsList.Count, currentUserId);
-                
+
                 return Ok(response);
             }
             catch (Exception ex)
@@ -98,10 +98,10 @@ namespace cams.Backend.Controller
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("PlatformAdmin user {UserId} accessing system logs with filters: level={Level}, eventType={EventType}, fromDate={FromDate}, toDate={ToDate}, isResolved={IsResolved}",
                     userId, level, eventType, fromDate, toDate, isResolved);
-                
+
                 var (data, totalCount) = await loggingService.GetSystemLogsWithCountAsync(level, eventType, fromDate, toDate, isResolved, pageSize, page);
                 var logsList = data.ToList();
-                
+
                 var response = new LogsResponse<Model.SystemLog>
                 {
                     Data = logsList,
@@ -109,7 +109,7 @@ namespace cams.Backend.Controller
                     Page = page,
                     PageSize = pageSize
                 };
-                
+
                 await loggingService.LogAuditAsync(
                     userId,
                     "ViewSystemLogs",
@@ -118,10 +118,10 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 logger.LogInformation("Successfully retrieved {LogCount} system logs for PlatformAdmin user {UserId}",
                     logsList.Count, userId);
-                
+
                 return Ok(response);
             }
             catch (Exception ex)
@@ -139,7 +139,7 @@ namespace cams.Backend.Controller
         public async Task<IActionResult> GetSecurityLogs(
             [FromQuery(Name = "event-type")] string? eventType = null,
             [FromQuery] string? status = null,
-            [FromQuery(Name = "user-id")] int? userId = null,
+            [FromQuery(Name = "user-id")] Guid? userId = null,
             [FromQuery(Name = "from-date")] DateTime? fromDate = null,
             [FromQuery(Name = "to-date")] DateTime? toDate = null,
             [FromQuery] string? severity = null,
@@ -154,10 +154,10 @@ namespace cams.Backend.Controller
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("PlatformAdmin user {UserId} accessing security logs with filters: eventType={EventType}, status={Status}, userId={FilterUserId}, fromDate={FromDate}, toDate={ToDate}",
                     currentUserId, eventType, status, userId, fromDate, toDate);
-                
+
                 var (data, totalCount) = await loggingService.GetSecurityLogsWithCountAsync(eventType, status, userId, fromDate, toDate, pageSize, page);
                 var logsList = data.ToList();
-                
+
                 var response = new LogsResponse<Model.SecurityLog>
                 {
                     Data = logsList,
@@ -165,7 +165,7 @@ namespace cams.Backend.Controller
                     Page = page,
                     PageSize = pageSize
                 };
-                
+
                 await loggingService.LogAuditAsync(
                     currentUserId,
                     "ViewSecurityLogs",
@@ -174,10 +174,10 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 logger.LogInformation("Successfully retrieved {LogCount} security logs for PlatformAdmin user {UserId}",
                     logsList.Count, currentUserId);
-                
+
                 return Ok(response);
             }
             catch (Exception ex)
@@ -209,10 +209,10 @@ namespace cams.Backend.Controller
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("PlatformAdmin user {UserId} accessing performance logs with filters: operation={Operation}, performanceLevel={PerformanceLevel}, fromDate={FromDate}, toDate={ToDate}, isSlowQuery={IsSlowQuery}",
                     userId, operation, performanceLevel, fromDate, toDate, isSlowQuery);
-                
+
                 var (data, totalCount) = await loggingService.GetPerformanceLogsWithCountAsync(operation, performanceLevel, fromDate, toDate, isSlowQuery, pageSize, page);
                 var logsList = data.ToList();
-                
+
                 var response = new LogsResponse<Model.PerformanceLog>
                 {
                     Data = logsList,
@@ -220,7 +220,7 @@ namespace cams.Backend.Controller
                     Page = page,
                     PageSize = pageSize
                 };
-                
+
                 await loggingService.LogAuditAsync(
                     userId,
                     "ViewPerformanceLogs",
@@ -229,10 +229,10 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 logger.LogInformation("Successfully retrieved {LogCount} performance logs for PlatformAdmin user {UserId}",
                     logsList.Count, userId);
-                
+
                 return Ok(response);
             }
             catch (Exception ex)
@@ -247,15 +247,15 @@ namespace cams.Backend.Controller
         /// Mark system log as resolved - PlatformAdmin only
         /// </summary>
         [HttpPut("system/{logId}/resolve")]
-        public async Task<IActionResult> MarkSystemLogResolved(int logId, [FromBody] string? resolutionNotes = null)
+        public async Task<IActionResult> MarkSystemLogResolved(Guid logId, [FromBody] string? resolutionNotes = null)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("PlatformAdmin user {UserId} marking system log {LogId} as resolved", userId, logId);
-                
+
                 await loggingService.MarkSystemLogResolvedAsync(logId, resolutionNotes);
-                
+
                 await loggingService.LogAuditAsync(
                     userId,
                     "ResolveSystemLog",
@@ -266,10 +266,10 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 logger.LogInformation("Successfully marked system log {LogId} as resolved by PlatformAdmin user {UserId}",
                     logId, userId);
-                
+
                 return Ok(new { message = "System log marked as resolved successfully" });
             }
             catch (Exception ex)
@@ -284,13 +284,13 @@ namespace cams.Backend.Controller
         /// Get specific audit log details - PlatformAdmin only
         /// </summary>
         [HttpGet("audit/{id}")]
-        public async Task<IActionResult> GetAuditLogById(int id)
+        public async Task<IActionResult> GetAuditLogById(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var log = await loggingService.GetAuditLogByIdAsync(id);
-                
+
                 if (log == null)
                 {
                     return NotFound(new { message = "Audit log not found" });
@@ -305,7 +305,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(log);
             }
             catch (Exception ex)
@@ -319,13 +319,13 @@ namespace cams.Backend.Controller
         /// Get specific system log details - PlatformAdmin only
         /// </summary>
         [HttpGet("system/{id}")]
-        public async Task<IActionResult> GetSystemLogById(int id)
+        public async Task<IActionResult> GetSystemLogById(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var log = await loggingService.GetSystemLogByIdAsync(id);
-                
+
                 if (log == null)
                 {
                     return NotFound(new { message = "System log not found" });
@@ -340,7 +340,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(log);
             }
             catch (Exception ex)
@@ -354,13 +354,13 @@ namespace cams.Backend.Controller
         /// Get specific security log details - PlatformAdmin only
         /// </summary>
         [HttpGet("security/{id}")]
-        public async Task<IActionResult> GetSecurityLogById(int id)
+        public async Task<IActionResult> GetSecurityLogById(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var log = await loggingService.GetSecurityLogByIdAsync(id);
-                
+
                 if (log == null)
                 {
                     return NotFound(new { message = "Security log not found" });
@@ -375,7 +375,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(log);
             }
             catch (Exception ex)
@@ -389,13 +389,13 @@ namespace cams.Backend.Controller
         /// Get specific performance log details - PlatformAdmin only
         /// </summary>
         [HttpGet("performance/{id}")]
-        public async Task<IActionResult> GetPerformanceLogById(int id)
+        public async Task<IActionResult> GetPerformanceLogById(Guid id)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var log = await loggingService.GetPerformanceLogByIdAsync(id);
-                
+
                 if (log == null)
                 {
                     return NotFound(new { message = "Performance log not found" });
@@ -410,7 +410,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(log);
             }
             catch (Exception ex)
@@ -434,9 +434,9 @@ namespace cams.Backend.Controller
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("PlatformAdmin user {UserId} accessing performance metrics with filters: fromDate={FromDate}, toDate={ToDate}, operation={Operation}",
                     userId, fromDate, toDate, operation);
-                
+
                 var metrics = await loggingService.GetPerformanceMetricsAsync(fromDate, toDate, operation);
-                
+
                 await loggingService.LogAuditAsync(
                     userId,
                     "ViewPerformanceMetrics",
@@ -445,9 +445,9 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 logger.LogInformation("Successfully retrieved performance metrics for PlatformAdmin user {UserId}", userId);
-                
+
                 return Ok(metrics);
             }
             catch (Exception ex)

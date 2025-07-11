@@ -21,7 +21,7 @@ export interface PaginatedResponse<T> {
 }
 
 export interface UserManagement {
-  Id: number;
+  Id: string;
   Username: string;
   Email: string;
   FirstName?: string;
@@ -31,7 +31,7 @@ export interface UserManagement {
   CreatedAt: string;
   UpdatedAt: string;
   LastLoginAt?: string;
-  Roles: Array<{ Id: number; Name: string; Description: string; IsActive: boolean; CreatedAt: string; UpdatedAt: string }>;
+  Roles: Array<{ Id: string; Name: string; Description?: string; IsActive: boolean; IsSystem: boolean; UserCount: number; CreatedAt: string; UpdatedAt: string }>;
   ApplicationCount: number;
   DatabaseConnectionCount: number;
 }
@@ -45,11 +45,11 @@ export interface CreateUserRequest {
   PhoneNumber?: string;
   IsActive: boolean;
   SendWelcomeEmail?: boolean;
-  RoleIds?: number[];
+  RoleIds?: string[];
 }
 
 export interface UpdateUserRequest {
-  Id: number;
+  Id: string;
   Username: string;
   Email: string;
   FirstName?: string;
@@ -59,8 +59,8 @@ export interface UpdateUserRequest {
 }
 
 export interface UserRoleAssignment {
-  UserId: number;
-  RoleIds: number[];
+  UserId: string;
+  RoleIds: string[];
 }
 
 export const usersService = {
@@ -86,7 +86,7 @@ export const usersService = {
     return response.Data || [];
   },
 
-  async getUser(id: number): Promise<UserManagement> {
+  async getUser(id: string): Promise<UserManagement> {
     return apiService.get(`/management/users/${id}`);
   },
 
@@ -94,20 +94,20 @@ export const usersService = {
     return apiService.post('/management/users', data);
   },
 
-  async updateUser(id: number, data: UpdateUserRequest): Promise<UserManagement> {
+  async updateUser(id: string, data: UpdateUserRequest): Promise<UserManagement> {
     return apiService.put(`/management/users/${id}`, data);
   },
 
-  async deleteUser(id: number): Promise<{ message: string }> {
+  async deleteUser(id: string): Promise<{ message: string }> {
     return apiService.delete(`/management/users/${id}`);
   },
 
-  async toggleUserStatus(id: number, isActive: boolean): Promise<{ message: string }> {
+  async toggleUserStatus(id: string, isActive: boolean): Promise<{ message: string }> {
     return apiService.patch(`/management/users/${id}/toggle`, { IsActive: isActive });
   },
 
   // User role management
-  async getUserRoles(id: number): Promise<{ roles: string[] }> {
+  async getUserRoles(id: string): Promise<{ roles: string[] }> {
     return apiService.get(`/management/users/${id}/roles`);
   },
 
@@ -119,7 +119,7 @@ export const usersService = {
     return apiService.post('/management/users/remove-roles', data);
   },
 
-  async updateUserRoles(userId: number, roleIds: number[]): Promise<{ message: string }> {
+  async updateUserRoles(userId: string, roleIds: string[]): Promise<{ message: string }> {
     // Use the assign-roles endpoint to update user roles
     return apiService.post('/management/users/assign-roles', { 
       UserId: userId, 
@@ -128,7 +128,7 @@ export const usersService = {
   },
 
   // User statistics
-  async getUserStats(id: number): Promise<{
+  async getUserStats(id: string): Promise<{
     applicationCount: number;
     databaseConnectionCount: number;
     lastLoginAt?: string;
@@ -138,7 +138,7 @@ export const usersService = {
   },
 
   // Password management
-  async resetUserPassword(id: number, data: {
+  async resetUserPassword(id: string, data: {
     newPassword: string;
     sendEmailNotification: boolean;
   }): Promise<{ message: string }> {
@@ -148,14 +148,14 @@ export const usersService = {
     });
   },
 
-  async forcePasswordChange(id: number): Promise<{ message: string }> {
+  async forcePasswordChange(id: string): Promise<{ message: string }> {
     return apiService.post(`/management/users/${id}/force-password-change`);
   },
 
   // Bulk operations
-  async bulkToggleStatus(userIds: number[], isActive: boolean): Promise<{
-    successful: number[];
-    failed: Array<{ id: number; error: string }>;
+  async bulkToggleStatus(userIds: string[], isActive: boolean): Promise<{
+    successful: string[];
+    failed: Array<{ id: string; error: string }>;
     message: string;
   }> {
     return apiService.post('/management/users/bulk/toggle', {
@@ -164,9 +164,9 @@ export const usersService = {
     });
   },
 
-  async bulkDelete(userIds: number[]): Promise<{
-    successful: number[];
-    failed: Array<{ id: number; error: string }>;
+  async bulkDelete(userIds: string[]): Promise<{
+    successful: string[];
+    failed: Array<{ id: string; error: string }>;
     message: string;
   }> {
     return apiService.post('/management/users/bulk/delete', {

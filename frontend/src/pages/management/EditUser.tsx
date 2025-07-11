@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate, useParams } from 'react-router-dom';
+
 import { ArrowLeft, Save, User, Mail, Phone, Shield, Power, Trash2 } from 'lucide-react';
+
 import { useNotifications } from '../../contexts/NotificationContext';
-import { usersService } from '../../services/usersService';
 import { roleService } from '../../services/roleService';
+import { usersService } from '../../services/usersService';
 
 interface EditUserFormData {
   Username: string;
@@ -22,9 +25,9 @@ const EditUserPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [roles, setRoles] = useState<Array<{ Id: number; Name: string; IsSystem: boolean }>>([]);
-  const [userRoles, setUserRoles] = useState<number[]>([]);
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [roles, setRoles] = useState<Array<{ Id: string; Name: string; IsSystem: boolean }>>([]);
+  const [userRoles, setUserRoles] = useState<string[]>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const {
     register,
@@ -42,7 +45,7 @@ const EditUserPage: React.FC = () => {
 
   const loadUser = async () => {
     try {
-      const userData = await usersService.getUser(parseInt(id!));
+      const userData = await usersService.getUser(id!);
       setUser(userData);
       const roleIds = userData.Roles.map((r: any) => r.Id);
       setUserRoles(roleIds);
@@ -93,18 +96,18 @@ const EditUserPage: React.FC = () => {
       const updateData = {
         ...data,
         Username: user.Username, // Add the username from the user state
-        Id: parseInt(id!),
+        Id: id!,
         FirstName: data.FirstName?.trim() || null,
         LastName: data.LastName?.trim() || null,
         PhoneNumber: data.PhoneNumber?.trim() || null
       };
       
       console.log('Sending updateData:', updateData);
-      await usersService.updateUser(parseInt(id!), updateData as any);
+      await usersService.updateUser(id!, updateData as any);
       
       // Update roles if changed
       if (JSON.stringify(selectedRoles.sort()) !== JSON.stringify(userRoles.sort())) {
-        await usersService.updateUserRoles(parseInt(id!), selectedRoles);
+        await usersService.updateUserRoles(id!, selectedRoles);
       }
       
       addNotification({
@@ -144,7 +147,7 @@ const EditUserPage: React.FC = () => {
     }
   };
 
-  const handleRoleToggle = (roleId: number) => {
+  const handleRoleToggle = (roleId: string) => {
     setSelectedRoles(prev =>
       prev.includes(roleId)
         ? prev.filter(id => id !== roleId)
@@ -154,7 +157,7 @@ const EditUserPage: React.FC = () => {
 
   const handleToggleStatus = async () => {
     try {
-      await usersService.toggleUserStatus(parseInt(id!), !user.IsActive);
+      await usersService.toggleUserStatus(id!, !user.IsActive);
       addNotification({
         title: 'Success',
         message: `User ${user.IsActive ? 'deactivated' : 'activated'} successfully`,
@@ -180,7 +183,7 @@ const EditUserPage: React.FC = () => {
 
     try {
       setIsDeleting(true);
-      await usersService.deleteUser(parseInt(id!));
+      await usersService.deleteUser(id!);
       addNotification({
         title: 'Success',
         message: 'User deleted successfully',

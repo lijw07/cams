@@ -5,7 +5,7 @@ namespace cams.Backend.Mappers
 {
     public interface IApplicationMapper
     {
-        Application MapToEntity(ApplicationRequest request, int userId);
+        Application MapToEntity(ApplicationRequest request, Guid userId);
         ApplicationResponse MapToResponse(Application entity);
         ApplicationSummaryResponse MapToSummaryResponse(Application entity);
         void MapUpdateToEntity(ApplicationUpdateRequest request, Application entity);
@@ -15,7 +15,7 @@ namespace cams.Backend.Mappers
 
     public class ApplicationMapper : IApplicationMapper
     {
-        public Application MapToEntity(ApplicationRequest request, int userId)
+        public Application MapToEntity(ApplicationRequest request, Guid userId)
         {
             return new Application
             {

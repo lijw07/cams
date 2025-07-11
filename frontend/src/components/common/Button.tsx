@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { Loader2 } from 'lucide-react';
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -6,6 +7,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   children: React.ReactNode;
+  'aria-label'?: string;
 }
 
 const Button: React.FC<ButtonProps> = ({
@@ -40,9 +42,10 @@ const Button: React.FC<ButtonProps> = ({
     <button
       className={classes}
       disabled={disabled || loading}
+      aria-busy={loading}
       {...props}
     >
-      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />}
       {children}
     </button>
   );

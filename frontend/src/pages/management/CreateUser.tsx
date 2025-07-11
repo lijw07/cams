@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+
 import { ArrowLeft, Save, User, Mail, Lock, Phone, UserCheck } from 'lucide-react';
+
 import { useNotifications } from '../../contexts/NotificationContext';
-import { usersService } from '../../services/usersService';
 import { roleService } from '../../services/roleService';
+import { usersService } from '../../services/usersService';
 
 interface CreateUserFormData {
   Username: string;
@@ -14,7 +17,7 @@ interface CreateUserFormData {
   FirstName: string;
   LastName: string;
   PhoneNumber?: string;
-  RoleIds: number[];
+  RoleIds: string[];
   IsActive: boolean;
 }
 
@@ -22,8 +25,8 @@ const CreateUserPage: React.FC = () => {
   const navigate = useNavigate();
   const { addNotification } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
-  const [roles, setRoles] = useState<Array<{ Id: number; Name: string; IsSystem: boolean }>>([]);
-  const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [roles, setRoles] = useState<Array<{ Id: string; Name: string; IsSystem: boolean }>>([]);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
 
   const {
     register,
@@ -89,7 +92,7 @@ const CreateUserPage: React.FC = () => {
     }
   };
 
-  const handleRoleToggle = (roleId: number) => {
+  const handleRoleToggle = (roleId: string) => {
     setSelectedRoles(prev =>
       prev.includes(roleId)
         ? prev.filter(id => id !== roleId)

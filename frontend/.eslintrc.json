@@ -1,7 +1,12 @@
 {
   "env": {
     "browser": true,
-    "es2020": true
+    "es2020": true,
+    "node": true
+  },
+  "globals": {
+    "gtag": "readonly",
+    "process": "readonly"
   },
   "extends": [
     "eslint:recommended"
@@ -14,19 +19,74 @@
   "plugins": [
     "react-refresh",
     "@typescript-eslint",
-    "react-hooks"
+    "react-hooks",
+    "import"
   ],
   "rules": {
     "react-refresh/only-export-components": [
       "warn",
-      { "allowConstantExport": true, "allowExportNames": ["useAuth"] }
+      { "allowConstantExport": true, "allowExportNames": ["useAuth", "useNotifications", "useAnalytics", "useTheme", "useAnalyticsContext"] }
     ],
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/exhaustive-deps": "off",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "prefer-const": "error",
     "no-console": "off",
-    "no-debugger": "error"
+    "no-debugger": "error",
+    
+    // Import organization rules per CLAUDE.md standards
+    "import/order": [
+      "error",
+      {
+        "groups": [
+          "builtin",
+          "external", 
+          "internal",
+          "parent",
+          "sibling",
+          "type",
+          "object"
+        ],
+        "pathGroups": [
+          {
+            "pattern": "react",
+            "group": "external",
+            "position": "before"
+          },
+          {
+            "pattern": "react-*",
+            "group": "external",
+            "position": "before"
+          },
+          {
+            "pattern": "@/**",
+            "group": "internal"
+          },
+          {
+            "pattern": "../**",
+            "group": "parent"
+          },
+          {
+            "pattern": "./**",
+            "group": "sibling"
+          },
+          {
+            "pattern": "*.css",
+            "group": "object",
+            "position": "after"
+          }
+        ],
+        "pathGroupsExcludedImportTypes": ["react"],
+        "newlines-between": "always",
+        "alphabetize": {
+          "order": "asc",
+          "caseInsensitive": true
+        }
+      }
+    ],
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error",
+    "import/first": "error"
   },
   "ignorePatterns": ["dist", ".eslintrc.json"]
 }

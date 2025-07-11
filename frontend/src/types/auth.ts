@@ -10,13 +10,13 @@ export interface LoginResponse {
   Expiration: string;
   Username: string;
   Email: string;
-  UserId: number;
+  UserId: string;
   success?: boolean;
   message?: string;
 }
 
 export interface User {
-  Id: number;
+  Id: string;
   Username: string;
   Email: string;
   FirstName?: string;

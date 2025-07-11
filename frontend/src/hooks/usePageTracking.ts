@@ -1,7 +1,10 @@
 import { useEffect } from 'react';
+
 import { useLocation } from 'react-router-dom';
-import { useAnalytics } from './useAnalytics';
+
 import { createPageViewEvent } from '../utils/analyticsHelpers';
+
+import { useAnalytics } from './useAnalytics';
 
 interface PageTrackingConfig {
   enabled?: boolean;

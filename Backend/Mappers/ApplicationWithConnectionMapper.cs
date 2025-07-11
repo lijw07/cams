@@ -5,7 +5,7 @@ namespace cams.Backend.Mappers
 {
     public interface IApplicationWithConnectionMapper
     {
-        (Application application, DatabaseConnection connection) MapToEntities(ApplicationWithConnectionRequest request, int userId);
+        (Application application, DatabaseConnection connection) MapToEntities(ApplicationWithConnectionRequest request, Guid userId);
         ApplicationWithConnectionResponse MapToResponse(Application application, DatabaseConnection connection, bool testResult = false, string? testMessage = null, TimeSpan? testDuration = null);
         (Application application, DatabaseConnection connection) MapUpdateToEntities(ApplicationWithConnectionUpdateRequest request, Application existingApp, DatabaseConnection existingConnection);
     }
@@ -21,7 +21,7 @@ namespace cams.Backend.Mappers
             _connectionMapper = connectionMapper;
         }
 
-        public (Application application, DatabaseConnection connection) MapToEntities(ApplicationWithConnectionRequest request, int userId)
+        public (Application application, DatabaseConnection connection) MapToEntities(ApplicationWithConnectionRequest request, Guid userId)
         {
             // Create application
             var application = new Application
@@ -96,13 +96,13 @@ namespace cams.Backend.Mappers
             existingConnection.Port = request.Port;
             existingConnection.Database = request.Database;
             existingConnection.Username = request.Username;
-            
+
             // Only update password if provided
             if (!string.IsNullOrWhiteSpace(request.Password))
             {
                 existingConnection.PasswordHash = request.Password; // Should be encrypted in production
             }
-            
+
             existingConnection.ConnectionString = request.ConnectionString;
             existingConnection.ApiBaseUrl = request.ApiBaseUrl;
             existingConnection.ApiKey = request.ApiKey;

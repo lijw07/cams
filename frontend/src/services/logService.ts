@@ -1,4 +1,3 @@
-import { apiService as api } from './api';
 import {
   AuditLog,
   SystemLog,
@@ -14,6 +13,8 @@ import {
   LogTrends
 } from '../types';
 
+import { apiService as api } from './api';
+
 class LogService {
   // Audit Logs
   async getAuditLogs(filters: AuditLogFilters = {}): Promise<LogsResponse<AuditLog>> {
@@ -23,7 +24,7 @@ class LogService {
     if (filters.pageSize) params.append('page-size', filters.pageSize.toString());
     if (filters.startDate) params.append('from-date', filters.startDate);
     if (filters.endDate) params.append('to-date', filters.endDate);
-    if (filters.userId) params.append('user-id', filters.userId.toString());
+    if (filters.userId) params.append('user-id', filters.userId);
     if (filters.search) params.append('search', filters.search);
     if (filters.entityType) params.append('entity-type', filters.entityType);
     if (filters.sortBy) params.append('sort-by', filters.sortBy);
@@ -38,7 +39,7 @@ class LogService {
     }
   }
 
-  async getAuditLogById(id: number): Promise<AuditLog> {
+  async getAuditLogById(id: string): Promise<AuditLog> {
     const response = await api.get<AuditLog>(`/logs/audit/${id}`);
     return response;
   }
@@ -67,12 +68,12 @@ class LogService {
     }
   }
 
-  async getSystemLogById(id: number): Promise<SystemLog> {
+  async getSystemLogById(id: string): Promise<SystemLog> {
     const response = await api.get<SystemLog>(`/logs/system/${id}`);
     return response;
   }
 
-  async markSystemLogResolved(id: number, resolutionNotes: string): Promise<SystemLog> {
+  async markSystemLogResolved(id: string, resolutionNotes: string): Promise<SystemLog> {
     const response = await api.patch<SystemLog>(`/logs/system/${id}/resolve`, {
       resolutionNotes
     });
@@ -90,7 +91,7 @@ class LogService {
     if (filters.severity) params.append('severity', filters.severity);
     if (filters.eventType) params.append('event-type', filters.eventType);
     if (filters.status) params.append('status', filters.status);
-    if (filters.userId) params.append('user-id', filters.userId.toString());
+    if (filters.userId) params.append('user-id', filters.userId);
     if (filters.search) params.append('search', filters.search);
     if (filters.sortBy) params.append('sort-by', filters.sortBy);
     if (filters.sortDirection) params.append('sort-direction', filters.sortDirection);
@@ -104,7 +105,7 @@ class LogService {
     }
   }
 
-  async getSecurityLogById(id: number): Promise<SecurityLog> {
+  async getSecurityLogById(id: string): Promise<SecurityLog> {
     const response = await api.get<SecurityLog>(`/logs/security/${id}`);
     return response;
   }
@@ -132,7 +133,7 @@ class LogService {
     }
   }
 
-  async getPerformanceLogById(id: number): Promise<PerformanceLog> {
+  async getPerformanceLogById(id: string): Promise<PerformanceLog> {
     const response = await api.get<PerformanceLog>(`/logs/performance/${id}`);
     return response;
   }

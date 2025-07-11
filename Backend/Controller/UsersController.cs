@@ -2,6 +2,7 @@ using cams.Backend.Attributes;
 using cams.Backend.Constants;
 using cams.Backend.Data;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Services;
 using cams.Backend.View;
 using Microsoft.AspNetCore.Authorization;
@@ -27,7 +28,7 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check user's role to determine what users they can see
                 var isPlatformAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.PLATFORM_ADMIN);
                 var isAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.ADMIN);
@@ -46,7 +47,7 @@ namespace cams.Backend.Controller
                 // Admins can only see users with "User" role
                 if (!isPlatformAdmin && isAdmin)
                 {
-                    query = query.Where(u => u.UserRoles.Any(ur => 
+                    query = query.Where(u => u.UserRoles.Any(ur =>
                         ur.Role.Name == RoleConstants.USER && ur.IsActive));
                 }
 
@@ -54,7 +55,7 @@ namespace cams.Backend.Controller
                 if (!string.IsNullOrWhiteSpace(request.SearchTerm))
                 {
                     var searchTerm = request.SearchTerm.ToLower();
-                    query = query.Where(u => 
+                    query = query.Where(u =>
                         u.Username.ToLower().Contains(searchTerm) ||
                         u.Email.ToLower().Contains(searchTerm) ||
                         (u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm)) ||
@@ -63,7 +64,7 @@ namespace cams.Backend.Controller
 
                 // Get total count for pagination (before applying Skip/Take)
                 var totalCount = await query.CountAsync();
-                
+
                 // Calculate pagination metadata
                 var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
                 var offset = (request.PageNumber - 1) * request.PageSize;
@@ -136,12 +137,12 @@ namespace cams.Backend.Controller
 
         [HttpGet("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> GetUserById(int id)
+        public async Task<IActionResult> GetUserById(Guid id)
         {
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check user's role to determine what users they can see
                 var isPlatformAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.PLATFORM_ADMIN);
                 var isAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.ADMIN);
@@ -160,7 +161,7 @@ namespace cams.Backend.Controller
                 // Admins can only see users with "User" role
                 if (!isPlatformAdmin && isAdmin)
                 {
-                    query = query.Where(u => u.UserRoles.Any(ur => 
+                    query = query.Where(u => u.UserRoles.Any(ur =>
                         ur.Role.Name == RoleConstants.USER && ur.IsActive));
                 }
 
@@ -208,7 +209,7 @@ namespace cams.Backend.Controller
                 );
 
                 logger.LogInformation("User {UserId} retrieved details for user {TargetUserId} ({TargetUsername})",
-                    currentUserId, id, user.Username);
+                    currentUserId, id, LoggingHelper.Sanitize(user.Username));
 
                 return Ok(user);
             }
@@ -229,11 +230,11 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if username or email already exists
                 var existingUser = await context.Users
                     .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Email);
-                
+
                 if (existingUser != null)
                 {
                     return HttpResponseHelper.CreateBadRequestResponse("Username or email already exists");
@@ -261,7 +262,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: user.Id,
                     entityName: user.Username,
-                    description: $"Created user: {user.Username}"
+                    description: $"Created user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 // Log system event for user creation
@@ -269,8 +270,8 @@ namespace cams.Backend.Controller
                     "UserCreated",
                     "Information",
                     "Authentication",
-                    $"New user account created: {user.Username}",
-                    details: $"UserId: {user.Id}, Username: {user.Username}, Email: {user.Email}, IsActive: {user.IsActive}, CreatedBy: {currentUserId}",
+                    $"New user account created: {LoggingHelper.Sanitize(user.Username)}",
+                    details: $"UserId: {user.Id}, Username: {LoggingHelper.Sanitize(user.Username)}, Email: {LoggingHelper.Sanitize(user.Email)}, IsActive: {user.IsActive}, CreatedBy: {currentUserId}",
                     userId: currentUserId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -292,19 +293,19 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPut("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserRequest request)
+        public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
         {
             try
             {
-                logger.LogInformation("UpdateUser request received for ID {UserId}. Request data: {RequestData}", 
+                logger.LogInformation("UpdateUser request received for ID {UserId}. Request data: {RequestData}",
                     id, System.Text.Json.JsonSerializer.Serialize(request));
-                
+
                 if (!ModelState.IsValid)
                 {
-                    logger.LogWarning("User update validation failed. Errors: {Errors}", 
+                    logger.LogWarning("User update validation failed. Errors: {Errors}",
                         string.Join("; ", ModelState.Where(x => x.Value?.Errors.Count > 0)
                             .SelectMany(x => x.Value!.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
-                    
+
                     return HttpResponseHelper.CreateValidationErrorResponse(
                         ModelState.Where(x => x.Value?.Errors.Count > 0)
                             .ToDictionary(
@@ -312,10 +313,10 @@ namespace cams.Backend.Controller
                                 kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
                             ));
                 }
-                
+
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -325,12 +326,12 @@ namespace cams.Backend.Controller
                 var existingUser = await context.Users
                     .Where(u => u.Id != id && (u.Username == request.Username || u.Email == request.Email))
                     .FirstOrDefaultAsync();
-                
+
                 if (existingUser != null)
                 {
                     string duplicateField = existingUser.Username == request.Username ? "Username" : "Email";
-                    logger.LogWarning("User update failed - duplicate {Field}: {Value}", duplicateField, 
-                        duplicateField == "Username" ? request.Username : request.Email);
+                    logger.LogWarning("User update failed - duplicate {Field}: {Value}", duplicateField,
+                        LoggingHelper.Sanitize(duplicateField == "Username" ? request.Username : request.Email));
                     return HttpResponseHelper.CreateBadRequestResponse($"{duplicateField} already exists");
                 }
 
@@ -350,7 +351,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Updated user: {user.Username}"
+                    description: $"Updated user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "User updated successfully" });
@@ -367,13 +368,13 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpDelete("{id}")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeleteUser(Guid id)
         {
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -386,11 +387,11 @@ namespace cams.Backend.Controller
 
                 // Store username for logging before deletion
                 var username = user.Username;
-                
+
                 // Remove user roles first to avoid foreign key constraint issues
                 var userRoles = await context.UserRoles.Where(ur => ur.UserId == id).ToListAsync();
                 context.UserRoles.RemoveRange(userRoles);
-                
+
                 // Hard delete the user
                 context.Users.Remove(user);
                 await context.SaveChangesAsync();
@@ -401,7 +402,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: username,
-                    description: $"Permanently deleted user: {username}"
+                    description: $"Permanently deleted user: {LoggingHelper.Sanitize(username)}"
                 );
 
                 // Log system event for user deletion
@@ -409,8 +410,8 @@ namespace cams.Backend.Controller
                     "UserDeleted",
                     "Information",
                     "Authentication",
-                    $"User account permanently deleted: {username}",
-                    details: $"DeletedUserId: {id}, DeletedUsername: {username}, PerformedBy: {currentUserId}, RolesRemoved: {userRoles.Count}",
+                    $"User account permanently deleted: {LoggingHelper.Sanitize(username)}",
+                    details: $"DeletedUserId: {id}, DeletedUsername: {LoggingHelper.Sanitize(username)}, PerformedBy: {currentUserId}, RolesRemoved: {userRoles.Count}",
                     userId: currentUserId,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     httpMethod: HttpContext.Request.Method,
@@ -432,13 +433,13 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPatch("{id}/toggle")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> ToggleUserStatus(int id, [FromBody] ToggleUserStatusRequest request)
+        public async Task<IActionResult> ToggleUserStatus(Guid id, [FromBody] ToggleUserStatusRequest request)
         {
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -454,7 +455,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Toggled user status: {user.Username} - {(request.IsActive ? "Activated" : "Deactivated")}"
+                    description: $"Toggled user status: {LoggingHelper.Sanitize(user.Username)} - {(request.IsActive ? "Activated" : "Deactivated")}"
                 );
 
                 return Ok(new { message = $"User {(request.IsActive ? "activated" : "deactivated")} successfully" });
@@ -477,7 +478,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(request.UserId);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -487,7 +488,7 @@ namespace cams.Backend.Controller
                 var existingRoles = await context.UserRoles
                     .Where(ur => ur.UserId == request.UserId)
                     .ToListAsync();
-                
+
                 context.UserRoles.RemoveRange(existingRoles);
 
                 // Add new role assignments
@@ -512,7 +513,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: request.UserId,
                     entityName: user.Username,
-                    description: $"Assigned roles to user: {user.Username}"
+                    description: $"Assigned roles to user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "Roles assigned successfully" });
@@ -535,7 +536,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(request.UserId);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -556,7 +557,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: request.UserId,
                     entityName: user.Username,
-                    description: $"Removed roles from user: {user.Username}"
+                    description: $"Removed roles from user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "Roles removed successfully" });
@@ -573,7 +574,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/stats")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> GetUserStats(int id)
+        public async Task<IActionResult> GetUserStats(Guid id)
         {
             try
             {
@@ -615,13 +616,13 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{id}/reset-password")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> ResetUserPassword(int id, [FromBody] ResetPasswordRequest request)
+        public async Task<IActionResult> ResetUserPassword(Guid id, [FromBody] ResetPasswordRequest request)
         {
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -637,7 +638,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Reset password for user: {user.Username}"
+                    description: $"Reset password for user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "Password reset successfully" });
@@ -654,13 +655,13 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpPost("{id}/force-password-change")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
-        public async Task<IActionResult> ForcePasswordChange(int id)
+        public async Task<IActionResult> ForcePasswordChange(Guid id)
         {
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -676,7 +677,7 @@ namespace cams.Backend.Controller
                     "User",
                     entityId: id,
                     entityName: user.Username,
-                    description: $"Forced password change for user: {user.Username}"
+                    description: $"Forced password change for user: {LoggingHelper.Sanitize(user.Username)}"
                 );
 
                 return Ok(new { message = "User will be required to change password on next login" });
@@ -702,7 +703,7 @@ namespace cams.Backend.Controller
                     .Where(u => request.UserIds.Contains(u.Id))
                     .ToListAsync();
 
-                var successful = new List<int>();
+                var successful = new List<Guid>();
                 var failed = new List<object>();
 
                 foreach (var user in users)
@@ -762,7 +763,7 @@ namespace cams.Backend.Controller
                     .Where(u => request.UserIds.Contains(u.Id))
                     .ToListAsync();
 
-                var successful = new List<int>();
+                var successful = new List<Guid>();
                 var failed = new List<object>();
 
                 foreach (var user in users)
@@ -861,7 +862,7 @@ namespace cams.Backend.Controller
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     var search = searchTerm.ToLower();
-                    query = query.Where(u => 
+                    query = query.Where(u =>
                         u.Username.ToLower().Contains(search) ||
                         u.Email.ToLower().Contains(search) ||
                         (u.FirstName != null && u.FirstName.ToLower().Contains(search)) ||
@@ -875,7 +876,7 @@ namespace cams.Backend.Controller
 
                 if (roles != null && roles.Length > 0)
                 {
-                    query = query.Where(u => u.UserRoles.Any(ur => 
+                    query = query.Where(u => u.UserRoles.Any(ur =>
                         roles.Contains(ur.Role.Name) && ur.IsActive));
                 }
 
@@ -921,7 +922,7 @@ namespace cams.Backend.Controller
         /// </summary>
         [HttpGet("{id}/roles")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN, RoleConstants.ADMIN)]
-        public async Task<IActionResult> GetUserRoles(int id)
+        public async Task<IActionResult> GetUserRoles(Guid id)
         {
             try
             {

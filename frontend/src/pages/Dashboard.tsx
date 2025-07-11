@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+
 import { Link } from 'react-router-dom';
+
 import { Package, Users, Shield } from 'lucide-react';
+
 import { useAuth } from '../contexts/AuthContext';
-import { dashboardService } from '../services/dashboardService';
 import { useNotifications } from '../contexts/NotificationContext';
+import { dashboardService } from '../services/dashboardService';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -40,7 +43,8 @@ const Dashboard: React.FC = () => {
     fetchStats();
   }, [addNotification]);
 
-  const statCards = [
+  // Memoize statCards to prevent recreation on every render
+  const statCards = useMemo(() => [
     {
       name: 'Total Users',
       value: stats.totalUsers,
@@ -62,7 +66,7 @@ const Dashboard: React.FC = () => {
       color: 'bg-green-500',
       link: '/management/roles'
     }
-  ];
+  ], [stats.totalUsers, stats.totalApplications, stats.totalRoles]);
 
 
   return (

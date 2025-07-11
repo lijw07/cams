@@ -82,7 +82,7 @@ jobs:
       working-directory: ./Backend
 
     - name: Upload test results
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: always()
       with:
         name: backend-test-results-${{ matrix.dotnet-version }}
@@ -106,7 +106,7 @@ jobs:
         name: backend-coverage
 
     - name: Upload coverage report artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: matrix.dotnet-version == '8.0.x'
       with:
         name: coverage-report
@@ -145,7 +145,7 @@ jobs:
         fi
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: csharp
         config-file: ./.github/codeql/codeql-config.yml
@@ -155,7 +155,7 @@ jobs:
       working-directory: ./Backend
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
 
   api-testing:
     name: API Integration Tests
@@ -284,7 +284,7 @@ jobs:
         dotnet pack --configuration Release --output ./packages
         
     - name: Upload package artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: nuget-packages
         path: Backend/packages/*.nupkg

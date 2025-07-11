@@ -6,7 +6,7 @@ namespace cams.Backend.View
     {
         [Required(ErrorMessage = "Current password is required")]
         public string CurrentPassword { get; set; } = string.Empty;
-        
+
         [Required(ErrorMessage = "Confirmation is required")]
         public bool ConfirmDeactivation { get; set; }
     }

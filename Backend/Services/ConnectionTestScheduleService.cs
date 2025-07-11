@@ -3,6 +3,7 @@ using cams.Backend.Data;
 using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Constants;
+using Backend.Helpers;
 using NCrontab;
 
 namespace cams.Backend.Services
@@ -10,24 +11,16 @@ namespace cams.Backend.Services
     /// <summary>
     /// Service for managing connection test schedules
     /// </summary>
-    public class ConnectionTestScheduleService : IConnectionTestScheduleService
+    public class ConnectionTestScheduleService(
+        ApplicationDbContext context,
+        ILogger<ConnectionTestScheduleService> logger)
+        : IConnectionTestScheduleService
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<ConnectionTestScheduleService> _logger;
-
-        public ConnectionTestScheduleService(
-            ApplicationDbContext context,
-            ILogger<ConnectionTestScheduleService> logger)
-        {
-            _context = context;
-            _logger = logger;
-        }
-
-        public async Task<IEnumerable<ConnectionTestScheduleResponse>> GetUserSchedulesAsync(int userId)
+        public async Task<IEnumerable<ConnectionTestScheduleResponse>> GetUserSchedulesAsync(Guid userId)
         {
             try
             {
-                var schedules = await _context.ConnectionTestSchedules
+                var schedules = await context.ConnectionTestSchedules
                     .Include(s => s.Application)
                     .Where(s => s.Application.UserId == userId)
                     .Select(s => new ConnectionTestScheduleResponse
@@ -51,16 +44,16 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving connection test schedules for user {UserId}", userId);
+                logger.LogError(ex, "Error retrieving connection test schedules for user {UserId}", userId);
                 throw;
             }
         }
 
-        public async Task<ConnectionTestScheduleResponse?> GetScheduleByApplicationIdAsync(int applicationId, int userId)
+        public async Task<ConnectionTestScheduleResponse?> GetScheduleByApplicationIdAsync(Guid applicationId, Guid userId)
         {
             try
             {
-                var schedule = await _context.ConnectionTestSchedules
+                var schedule = await context.ConnectionTestSchedules
                     .Include(s => s.Application)
                     .Where(s => s.ApplicationId == applicationId && s.Application.UserId == userId)
                     .Select(s => new ConnectionTestScheduleResponse
@@ -84,16 +77,16 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving connection test schedule for application {ApplicationId} and user {UserId}", applicationId, userId);
+                logger.LogError(ex, "Error retrieving connection test schedule for application {ApplicationId} and user {UserId}", applicationId, userId);
                 throw;
             }
         }
 
-        public async Task<ConnectionTestScheduleResponse?> GetScheduleByIdAsync(int scheduleId, int userId)
+        public async Task<ConnectionTestScheduleResponse?> GetScheduleByIdAsync(Guid scheduleId, Guid userId)
         {
             try
             {
-                var schedule = await _context.ConnectionTestSchedules
+                var schedule = await context.ConnectionTestSchedules
                     .Include(s => s.Application)
                     .Where(s => s.Id == scheduleId && s.Application.UserId == userId)
                     .Select(s => new ConnectionTestScheduleResponse
@@ -117,17 +110,17 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving connection test schedule {ScheduleId} for user {UserId}", scheduleId, userId);
+                logger.LogError(ex, "Error retrieving connection test schedule {ScheduleId} for user {UserId}", scheduleId, userId);
                 throw;
             }
         }
 
-        public async Task<ConnectionTestScheduleResponse> UpsertScheduleAsync(ConnectionTestScheduleRequest request, int userId)
+        public async Task<ConnectionTestScheduleResponse> UpsertScheduleAsync(ConnectionTestScheduleRequest request, Guid userId)
         {
             try
             {
                 // Verify user owns the application
-                var application = await _context.Applications
+                var application = await context.Applications
                     .Where(a => a.Id == request.ApplicationId && a.UserId == userId)
                     .FirstOrDefaultAsync();
 
@@ -144,11 +137,11 @@ namespace cams.Backend.Services
                 }
 
                 // Check if schedule already exists for this application
-                var existingSchedule = await _context.ConnectionTestSchedules
+                var existingSchedule = await context.ConnectionTestSchedules
                     .FirstOrDefaultAsync(s => s.ApplicationId == request.ApplicationId);
 
                 ConnectionTestSchedule schedule;
-                
+
                 if (existingSchedule != null)
                 {
                     // Update existing schedule
@@ -170,10 +163,10 @@ namespace cams.Backend.Services
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
                     };
-                    _context.ConnectionTestSchedules.Add(schedule);
+                    context.ConnectionTestSchedules.Add(schedule);
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
                 return new ConnectionTestScheduleResponse
                 {
@@ -193,16 +186,16 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error upserting connection test schedule for application {ApplicationId} and user {UserId}", request.ApplicationId, userId);
+                logger.LogError(ex, "Error upserting connection test schedule for application {ApplicationId} and user {UserId}", request.ApplicationId, userId);
                 throw;
             }
         }
 
-        public async Task<ConnectionTestScheduleResponse?> UpdateScheduleAsync(ConnectionTestScheduleUpdateRequest request, int userId)
+        public async Task<ConnectionTestScheduleResponse?> UpdateScheduleAsync(ConnectionTestScheduleUpdateRequest request, Guid userId)
         {
             try
             {
-                var schedule = await _context.ConnectionTestSchedules
+                var schedule = await context.ConnectionTestSchedules
                     .Include(s => s.Application)
                     .Where(s => s.Id == request.Id && s.Application.UserId == userId)
                     .FirstOrDefaultAsync();
@@ -224,7 +217,7 @@ namespace cams.Backend.Services
                 schedule.NextRunTime = CalculateNextRunTime(request.CronExpression);
                 schedule.UpdatedAt = DateTime.UtcNow;
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
                 return new ConnectionTestScheduleResponse
                 {
@@ -244,16 +237,16 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating connection test schedule {ScheduleId} for user {UserId}", request.Id, userId);
+                logger.LogError(ex, "Error updating connection test schedule {ScheduleId} for user {UserId}", request.Id, userId);
                 throw;
             }
         }
 
-        public async Task<bool> DeleteScheduleAsync(int scheduleId, int userId)
+        public async Task<bool> DeleteScheduleAsync(Guid scheduleId, Guid userId)
         {
             try
             {
-                var schedule = await _context.ConnectionTestSchedules
+                var schedule = await context.ConnectionTestSchedules
                     .Include(s => s.Application)
                     .Where(s => s.Id == scheduleId && s.Application.UserId == userId)
                     .FirstOrDefaultAsync();
@@ -263,23 +256,23 @@ namespace cams.Backend.Services
                     return false;
                 }
 
-                _context.ConnectionTestSchedules.Remove(schedule);
-                await _context.SaveChangesAsync();
+                context.ConnectionTestSchedules.Remove(schedule);
+                await context.SaveChangesAsync();
 
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting connection test schedule {ScheduleId} for user {UserId}", scheduleId, userId);
+                logger.LogError(ex, "Error deleting connection test schedule {ScheduleId} for user {UserId}", scheduleId, userId);
                 throw;
             }
         }
 
-        public async Task<ConnectionTestScheduleResponse?> ToggleScheduleAsync(int scheduleId, bool isEnabled, int userId)
+        public async Task<ConnectionTestScheduleResponse?> ToggleScheduleAsync(Guid scheduleId, bool isEnabled, Guid userId)
         {
             try
             {
-                var schedule = await _context.ConnectionTestSchedules
+                var schedule = await context.ConnectionTestSchedules
                     .Include(s => s.Application)
                     .Where(s => s.Id == scheduleId && s.Application.UserId == userId)
                     .FirstOrDefaultAsync();
@@ -292,7 +285,7 @@ namespace cams.Backend.Services
                 schedule.IsEnabled = isEnabled;
                 schedule.UpdatedAt = DateTime.UtcNow;
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
 
                 return new ConnectionTestScheduleResponse
                 {
@@ -312,7 +305,7 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error toggling connection test schedule {ScheduleId} for user {UserId}", scheduleId, userId);
+                logger.LogError(ex, "Error toggling connection test schedule {ScheduleId} for user {UserId}", scheduleId, userId);
                 throw;
             }
         }
@@ -353,16 +346,16 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to calculate next run time for cron expression: {CronExpression}", cronExpression);
+                logger.LogWarning(ex, "Failed to calculate next run time for cron expression: {CronExpression}", LoggingHelper.Sanitize(cronExpression));
                 return null;
             }
         }
 
-        public async Task UpdateScheduleRunStatusAsync(int scheduleId, string status, string? message = null, TimeSpan? duration = null)
+        public async Task UpdateScheduleRunStatusAsync(Guid scheduleId, string status, string? message = null, TimeSpan? duration = null)
         {
             try
             {
-                var schedule = await _context.ConnectionTestSchedules
+                var schedule = await context.ConnectionTestSchedules
                     .FirstOrDefaultAsync(s => s.Id == scheduleId);
 
                 if (schedule != null)
@@ -374,12 +367,12 @@ namespace cams.Backend.Services
                     schedule.NextRunTime = CalculateNextRunTime(schedule.CronExpression);
                     schedule.UpdatedAt = DateTime.UtcNow;
 
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating schedule run status for schedule {ScheduleId}", scheduleId);
+                logger.LogError(ex, "Error updating schedule run status for schedule {ScheduleId}", scheduleId);
                 throw;
             }
         }

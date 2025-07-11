@@ -1,32 +1,53 @@
-import React from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
+
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import { usePageTracking } from './hooks/usePageTracking';
+
+import ErrorBoundary from './components/common/ErrorBoundary';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import Layout from './components/layout/Layout';
+import { useAuth } from './contexts/AuthContext';
+import { usePageTracking } from './hooks/usePageTracking';
 import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import ContactSales from './pages/ContactSales';
 import Dashboard from './pages/Dashboard';
-import Applications from './pages/Applications';
-import ApplicationDetail from './pages/ApplicationDetail';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
-import NotFound from './pages/NotFound';
 import HomePage from './pages/HomePage';
+import { initializeCSPMonitoring } from './utils/cspHelper';
+import { logSEOStatus } from './utils/seoValidation';
+import { PerformanceMonitor } from './utils/webVitals';
 
-// Management pages
-import UserManagement from './pages/management/UserManagement';
-import CreateUser from './pages/management/CreateUser';
-import EditUser from './pages/management/EditUser';
-import RoleManagement from './pages/management/RoleManagement';
-import BulkMigration from './pages/migration/BulkMigration';
+// Eagerly loaded pages (frequently accessed)
 
-// Log pages
-import AuditLogs from './pages/logs/AuditLogs';
-import SystemLogs from './pages/logs/SystemLogs';
-import SecurityLogs from './pages/logs/SecurityLogs';
-import PerformanceLogs from './pages/logs/PerformanceLogs';
+// Lazy loaded pages
+const Register = lazy(() => import('./pages/auth/Register'));
+const ContactSales = lazy(() => import('./pages/ContactSales'));
+const AboutUs = lazy(() => import('./pages/AboutUs'));
+const Features = lazy(() => import('./pages/Features'));
+const Integrations = lazy(() => import('./pages/Integrations'));
+const Documentation = lazy(() => import('./pages/Documentation'));
+const Pricing = lazy(() => import('./pages/Pricing'));
+const Applications = lazy(() => import('./pages/Applications'));
+const ApplicationDetail = lazy(() => import('./pages/ApplicationDetail'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+
+// Management pages (admin only - lazy load)
+const UserManagement = lazy(() => import('./pages/management/UserManagement'));
+const CreateUser = lazy(() => import('./pages/management/CreateUser'));
+const EditUser = lazy(() => import('./pages/management/EditUser'));
+const RoleManagement = lazy(() => import('./pages/management/RoleManagement'));
+const BulkMigration = lazy(() => import('./pages/migration/BulkMigration'));
+
+// Database Connection pages (lazy load)
+const DatabaseConnections = lazy(() => import('./pages/DatabaseConnections'));
+const CreateConnection = lazy(() => import('./pages/CreateConnection'));
+const ConnectionDetail = lazy(() => import('./pages/ConnectionDetail'));
+const ConnectionTestDemo = lazy(() => import('./pages/ConnectionTestDemo'));
+
+// Log pages (platform admin only - lazy load)
+const AuditLogs = lazy(() => import('./pages/logs/AuditLogs'));
+const SystemLogs = lazy(() => import('./pages/logs/SystemLogs'));
+const SecurityLogs = lazy(() => import('./pages/logs/SecurityLogs'));
+const PerformanceLogs = lazy(() => import('./pages/logs/PerformanceLogs'));
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -54,9 +75,22 @@ const App: React.FC = () => {
   // Enable automatic page tracking
   usePageTracking();
 
+  // SEO validation in development
+  useEffect(() => {
+    logSEOStatus();
+  }, []);
+
+  // Initialize security monitoring
+  useEffect(() => {
+    initializeCSPMonitoring();
+  }, []);
+
   return (
-    <div className="min-h-screen">
-      <Routes>
+    <ErrorBoundary>
+      <div className="min-h-screen">
+        <PerformanceMonitor />
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
         {/* Home page - accessible to all */}
         <Route path="/" element={<HomePage />} />
         
@@ -78,6 +112,11 @@ const App: React.FC = () => {
           }
         />
         <Route path="/contact-sales" element={<ContactSales />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/features" element={<Features />} />
+        <Route path="/integrations" element={<Integrations />} />
+        <Route path="/documentation" element={<Documentation />} />
+        <Route path="/pricing" element={<Pricing />} />
         
         {/* Protected routes with layout */}
         <Route
@@ -92,6 +131,12 @@ const App: React.FC = () => {
           {/* Application routes */}
           <Route path="applications" element={<Applications />} />
           <Route path="applications/:id" element={<ApplicationDetail />} />
+          
+          {/* Database Connection routes */}
+          <Route path="database-connections" element={<DatabaseConnections />} />
+          <Route path="database-connections/create" element={<CreateConnection />} />
+          <Route path="database-connections/:id" element={<ConnectionDetail />} />
+          <Route path="connection-test-demo" element={<ConnectionTestDemo />} />
           
           {/* Profile routes */}
           <Route path="profile" element={<Profile />} />
@@ -115,8 +160,10 @@ const App: React.FC = () => {
         
         {/* 404 route */}
         <Route path="*" element={<NotFound />} />
-      </Routes>
-    </div>
+          </Routes>
+        </Suspense>
+      </div>
+    </ErrorBoundary>
   );
 };
 

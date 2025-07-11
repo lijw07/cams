@@ -5,26 +5,26 @@ namespace cams.Backend.Services
 {
     public interface IDatabaseConnectionService
     {
-        Task<IEnumerable<DatabaseConnectionResponse>> GetUserConnectionsAsync(int userId, int? applicationId = null);
-        Task<DatabaseConnectionResponse?> GetConnectionByIdAsync(int id, int userId);
-        Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, int userId);
-        Task<DatabaseConnectionResponse?> UpdateConnectionAsync(DatabaseConnectionUpdateRequest request, int userId);
-        Task<bool> DeleteConnectionAsync(int id, int userId);
-        Task<DatabaseConnectionTestResponse> TestConnectionAsync(DatabaseConnectionTestRequest request, int userId);
-        Task<bool> ToggleConnectionStatusAsync(int id, int userId, bool isActive);
+        Task<IEnumerable<DatabaseConnectionResponse>> GetUserConnectionsAsync(Guid userId, Guid? applicationId = null);
+        Task<DatabaseConnectionResponse?> GetConnectionByIdAsync(Guid id, Guid userId);
+        Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, Guid userId);
+        Task<DatabaseConnectionResponse?> UpdateConnectionAsync(DatabaseConnectionUpdateRequest request, Guid userId);
+        Task<bool> DeleteConnectionAsync(Guid id, Guid userId);
+        Task<DatabaseConnectionTestResponse> TestConnectionAsync(DatabaseConnectionTestRequest request, Guid userId);
+        Task<bool> ToggleConnectionStatusAsync(Guid id, Guid userId, bool isActive);
         string BuildConnectionString(DatabaseConnectionRequest request);
         string EncryptSensitiveData(string data);
         string DecryptSensitiveData(string encryptedData);
-        
+
         // Additional methods for new endpoints
         ConnectionStringValidationResponse ValidateConnectionString(string connectionString, DatabaseType databaseType);
-        Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(int id, int userId);
-        Task<IEnumerable<DatabaseConnectionSummary>> GetConnectionsSummaryAsync(int userId, int? applicationId = null);
-        Task<ConnectionHealthResponse?> GetConnectionHealthAsync(int id, int userId);
-        Task<ConnectionHealthResponse?> RefreshConnectionHealthAsync(int id, int userId);
-        Task<BulkOperationResponse> BulkToggleStatusAsync(int[] connectionIds, bool isActive, int userId);
-        Task<BulkOperationResponse> BulkDeleteAsync(int[] connectionIds, int userId);
-        Task<ConnectionUsageStatsResponse?> GetConnectionUsageStatsAsync(int id, int userId);
-        Task<bool> UpdateLastAccessedAsync(int id, int userId);
+        Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(Guid id, Guid userId);
+        Task<IEnumerable<DatabaseConnectionSummary>> GetConnectionsSummaryAsync(Guid userId, Guid? applicationId = null);
+        Task<ConnectionHealthResponse?> GetConnectionHealthAsync(Guid id, Guid userId);
+        Task<ConnectionHealthResponse?> RefreshConnectionHealthAsync(Guid id, Guid userId);
+        Task<BulkOperationResponse> BulkToggleStatusAsync(Guid[] connectionIds, bool isActive, Guid userId);
+        Task<BulkOperationResponse> BulkDeleteAsync(Guid[] connectionIds, Guid userId);
+        Task<ConnectionUsageStatsResponse?> GetConnectionUsageStatsAsync(Guid id, Guid userId);
+        Task<bool> UpdateLastAccessedAsync(Guid id, Guid userId);
     }
 }

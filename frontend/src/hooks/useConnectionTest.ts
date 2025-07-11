@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { DatabaseType } from '../types';
-import { databaseConnectionService } from '../services/databaseConnectionService';
+
 import { useNotifications } from '../contexts/NotificationContext';
+import { databaseConnectionService } from '../services/databaseConnectionService';
+import { DatabaseType } from '../types';
 
 export interface ConnectionTestData {
   DatabaseType: DatabaseType;
@@ -34,8 +35,8 @@ export const useConnectionTest = (): UseConnectionTestReturn => {
     try {
       const result = await databaseConnectionService.testConnection(data);
       
-      if (result.isSuccessful) {
-        setTestResult({ success: true, message: result.message || 'Connection successful!' });
+      if (result.IsSuccessful) {
+        setTestResult({ success: true, message: result.Message || 'Connection successful!' });
         addNotification({
           title: 'Connection Test',
           message: 'Database connection test passed!',
@@ -43,10 +44,10 @@ export const useConnectionTest = (): UseConnectionTestReturn => {
           source: 'Database Test'
         });
       } else {
-        setTestResult({ success: false, message: result.message || 'Connection failed' });
+        setTestResult({ success: false, message: result.Message || 'Connection failed' });
         addNotification({
           title: 'Connection Test',
-          message: `Connection test failed: ${result.message}`,
+          message: `Connection test failed: ${result.Message}`,
           type: 'error',
           source: 'Database Test'
         });

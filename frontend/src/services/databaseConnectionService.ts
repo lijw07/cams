@@ -1,4 +1,3 @@
-import { apiService } from './api';
 import {
   DatabaseConnection,
   DatabaseConnectionRequest,
@@ -9,14 +8,17 @@ import {
   DatabaseTestRequest,
 } from '../types';
 
+import { apiService } from './api';
+
 export const databaseConnectionService = {
   // Regular database connection CRUD
-  async getConnections(applicationId?: number): Promise<DatabaseConnection[]> {
-    const params = applicationId ? { applicationId: applicationId } : undefined;
-    return apiService.get('/database-connections', params);
+  async getConnections(applicationId?: string): Promise<DatabaseConnection[]> {
+    const params = new URLSearchParams();
+    if (applicationId) params.append('application-id', applicationId);
+    return apiService.get(`/database-connections${params.toString() ? `?${params.toString()}` : ''}`);
   },
 
-  async getConnection(id: number): Promise<DatabaseConnection> {
+  async getConnection(id: string): Promise<DatabaseConnection> {
     return apiService.get(`/database-connections/${id}`);
   },
 
@@ -24,19 +26,19 @@ export const databaseConnectionService = {
     return apiService.post('/database-connections', data);
   },
 
-  async updateConnection(id: number, data: DatabaseConnectionUpdateRequest): Promise<DatabaseConnection> {
+  async updateConnection(id: string, data: DatabaseConnectionUpdateRequest): Promise<DatabaseConnection> {
     return apiService.put(`/database-connections/${id}`, data);
   },
 
-  async deleteConnection(id: number): Promise<void> {
+  async deleteConnection(id: string): Promise<void> {
     return apiService.delete(`/database-connections/${id}`);
   },
 
-  async toggleConnectionStatus(id: number, isActive: boolean): Promise<{ message: string }> {
+  async toggleConnectionStatus(id: string, isActive: boolean): Promise<{ message: string }> {
     return apiService.patch(`/database-connections/${id}/toggle`, { IsActive: isActive });
   },
 
-  async updateLastAccessed(id: number): Promise<{ message: string }> {
+  async updateLastAccessed(id: string): Promise<{ message: string }> {
     return apiService.post(`/database-connections/${id}/access`);
   },
 
@@ -45,7 +47,7 @@ export const databaseConnectionService = {
     return apiService.post('/database-connections/test', data);
   },
 
-  async testExistingConnection(id: number): Promise<ConnectionTestResult> {
+  async testExistingConnection(id: string): Promise<ConnectionTestResult> {
     return apiService.post(`/database-connections/${id}/test`);
   },
 
@@ -98,18 +100,19 @@ export const databaseConnectionService = {
   },
 
   // Connection summary operations
-  async getConnectionSummary(id: number): Promise<DatabaseConnectionSummary> {
+  async getConnectionSummary(id: string): Promise<DatabaseConnectionSummary> {
     return apiService.get(`/database-connections/${id}/summary`);
   },
 
-  async getConnectionsSummary(applicationId?: number): Promise<DatabaseConnectionSummary[]> {
-    const params = applicationId ? { applicationId } : undefined;
-    return apiService.get('/database-connections/summary', params);
+  async getConnectionsSummary(applicationId?: string): Promise<DatabaseConnectionSummary[]> {
+    const params = new URLSearchParams();
+    if (applicationId) params.append('application-id', applicationId);
+    return apiService.get(`/database-connections/summary${params.toString() ? `?${params.toString()}` : ''}`);
   },
 
   // Connection health and monitoring
-  async getConnectionHealth(id: number): Promise<{
-    connectionId: number;
+  async getConnectionHealth(id: string): Promise<{
+    connectionId: string;
     isHealthy: boolean;
     lastChecked: string;
     responseTime?: number;
@@ -118,8 +121,8 @@ export const databaseConnectionService = {
     return apiService.get(`/database-connections/${id}/health`);
   },
 
-  async refreshConnectionHealth(id: number): Promise<{
-    connectionId: number;
+  async refreshConnectionHealth(id: string): Promise<{
+    connectionId: string;
     isHealthy: boolean;
     lastChecked: string;
     responseTime?: number;
@@ -129,30 +132,30 @@ export const databaseConnectionService = {
   },
 
   // Bulk operations
-  async bulkToggleStatus(connectionIds: number[], isActive: boolean): Promise<{
-    successful: number[];
-    failed: Array<{ id: number; error: string }>;
+  async bulkToggleStatus(connectionIds: string[], isActive: boolean): Promise<{
+    successful: string[];
+    failed: Array<{ id: string; error: string }>;
     message: string;
   }> {
     return apiService.post('/database-connections/bulk/toggle', {
-      connectionIds,
-      isActive,
+      ConnectionIds: connectionIds,
+      IsActive: isActive,
     });
   },
 
-  async bulkDelete(connectionIds: number[]): Promise<{
-    successful: number[];
-    failed: Array<{ id: number; error: string }>;
+  async bulkDelete(connectionIds: string[]): Promise<{
+    successful: string[];
+    failed: Array<{ id: string; error: string }>;
     message: string;
   }> {
     return apiService.post('/database-connections/bulk/delete', {
-      connectionIds,
+      ConnectionIds: connectionIds,
     });
   },
 
   // Connection usage statistics
-  async getConnectionUsageStats(id: number): Promise<{
-    connectionId: number;
+  async getConnectionUsageStats(id: string): Promise<{
+    connectionId: string;
     totalApplications: number;
     activeApplications: number;
     lastUsed?: string;

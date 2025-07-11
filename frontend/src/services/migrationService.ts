@@ -1,4 +1,3 @@
-import { apiService } from './api';
 import {
   BulkMigrationRequest,
   BulkUserImportRequest,
@@ -7,6 +6,8 @@ import {
   MigrationResult,
   MigrationValidationResult
 } from '../types';
+
+import { apiService } from './api';
 
 export const migrationService = {
   // Validate migration data
@@ -79,72 +80,72 @@ export const migrationService = {
   // Generate example data for different types
   generateExampleUsers(): BulkUserImportRequest {
     return {
-      users: [
+      Users: [
         {
-          username: 'john.doe',
-          email: 'john.doe@example.com',
-          password: 'TempPassword123!',
-          firstName: 'John',
-          lastName: 'Doe',
-          phoneNumber: '123-456-7890',
-          isActive: true,
-          roles: ['User']
+          Username: 'john.doe',
+          Email: 'john.doe@example.com',
+          Password: 'TempPassword123!',
+          FirstName: 'John',
+          LastName: 'Doe',
+          PhoneNumber: '123-456-7890',
+          IsActive: true,
+          Roles: ['User']
         },
         {
-          username: 'jane.smith',
-          email: 'jane.smith@example.com',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          isActive: true,
-          roles: ['User', 'Admin']
+          Username: 'jane.smith',
+          Email: 'jane.smith@example.com',
+          FirstName: 'Jane',
+          LastName: 'Smith',
+          IsActive: true,
+          Roles: ['User', 'Admin']
         }
       ],
-      overwriteExisting: false,
-      sendWelcomeEmails: true
+      OverwriteExisting: false,
+      SendWelcomeEmails: true
     };
   },
 
   generateExampleRoles(): BulkRoleImportRequest {
     return {
-      roles: [
+      Roles: [
         {
-          name: 'Developer',
-          description: 'Software development team members',
-          isActive: true,
-          permissions: ['Read', 'Write', 'Execute']
+          Name: 'Developer',
+          Description: 'Software development team members',
+          IsActive: true,
+          Permissions: ['Read', 'Write', 'Execute']
         },
         {
-          name: 'QA Tester',
-          description: 'Quality assurance team members',
-          isActive: true,
-          permissions: ['Read', 'Test']
+          Name: 'QA Tester',
+          Description: 'Quality assurance team members',
+          IsActive: true,
+          Permissions: ['Read', 'Test']
         }
       ],
-      overwriteExisting: false
+      OverwriteExisting: false
     };
   },
 
   generateExampleApplications(): BulkApplicationImportRequest {
     return {
-      applications: [
+      Applications: [
         {
-          name: 'Customer Portal',
-          description: 'Web portal for customer account management',
-          version: '2.1.0',
-          environment: 'Production',
-          tags: 'web, customer, portal',
-          isActive: true
+          Name: 'Customer Portal',
+          Description: 'Web portal for customer account management',
+          Version: '2.1.0',
+          Environment: 'Production',
+          Tags: 'web, customer, portal',
+          IsActive: true
         },
         {
-          name: 'Internal API',
-          description: 'REST API for internal services',
-          version: '1.5.2',
-          environment: 'Development',
-          tags: 'api, rest, internal',
-          isActive: true
+          Name: 'Internal API',
+          Description: 'REST API for internal services',
+          Version: '1.5.2',
+          Environment: 'Development',
+          Tags: 'api, rest, internal',
+          IsActive: true
         }
       ],
-      overwriteExisting: false
+      OverwriteExisting: false
     };
   },
 

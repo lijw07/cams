@@ -1,7 +1,10 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react';
-import { useAuth } from './AuthContext';
-import { useAnalytics } from '../hooks/useAnalytics';
+
+import { env } from '../config/environment';
 import { CUSTOM_DIMENSIONS } from '../constants/AnalyticsConstants';
+import { useAnalytics } from '../hooks/useAnalytics';
+
+import { useAuth } from './AuthContext';
 
 interface AnalyticsContextType {
   isInitialized: boolean;
@@ -34,7 +37,7 @@ export const AnalyticsProvider: React.FC<AnalyticsProviderProps> = ({ children }
       setUserProperties({
         [CUSTOM_DIMENSIONS.USER_ROLE]: user.Roles?.[0] || 'user',
         [CUSTOM_DIMENSIONS.USER_PERMISSIONS]: user.Roles?.join(',') || '',
-        [CUSTOM_DIMENSIONS.ENVIRONMENT]: import.meta.env.MODE,
+        [CUSTOM_DIMENSIONS.ENVIRONMENT]: env.app.environment,
       });
     }
   }, [isAuthenticated, user, trackUser, setUserProperties, isInitialized]);

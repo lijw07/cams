@@ -23,7 +23,7 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if user has admin privileges
                 if (!User.IsInRole("Admin") && !User.IsInRole("PlatformAdmin"))
                 {
@@ -57,7 +57,7 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if user has admin privileges
                 if (!User.IsInRole("Admin") && !User.IsInRole("PlatformAdmin"))
                 {
@@ -107,7 +107,7 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if user has admin privileges
                 if (!User.IsInRole("Admin") && !User.IsInRole("PlatformAdmin"))
                 {
@@ -142,7 +142,7 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if user has admin privileges
                 if (!User.IsInRole("Admin") && !User.IsInRole("PlatformAdmin"))
                 {
@@ -177,7 +177,7 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if user has admin privileges
                 if (!User.IsInRole("Admin") && !User.IsInRole("PlatformAdmin"))
                 {
@@ -212,7 +212,7 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if user has admin privileges
                 if (!User.IsInRole("Admin") && !User.IsInRole("PlatformAdmin"))
                 {

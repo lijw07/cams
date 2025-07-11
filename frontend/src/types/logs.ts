@@ -1,10 +1,10 @@
 // Log Types
 export interface AuditLog {
-  Id: number;
-  UserId: number;
+  Id: string;
+  UserId: string;
   Action: string;
   EntityType: string;
-  EntityId?: number;
+  EntityId?: string;
   EntityName: string;
   OldValues?: string;
   NewValues?: string;
@@ -14,14 +14,14 @@ export interface AuditLog {
   Timestamp: string;
   Severity: string;
   User?: {
-    Id: number;
+    Id: string;
     Username: string;
     Email: string;
   };
 }
 
 export interface SystemLog {
-  Id: number;
+  Id: string;
   EventType: string;
   Level: string;
   Source: string;
@@ -29,7 +29,7 @@ export interface SystemLog {
   Details?: string;
   StackTrace?: string;
   CorrelationId?: string;
-  UserId?: number;
+  UserId?: string;
   IpAddress?: string;
   RequestPath?: string;
   HttpMethod?: string;
@@ -44,15 +44,15 @@ export interface SystemLog {
   ResolvedAt?: string;
   ResolutionNotes?: string;
   User?: {
-    Id: number;
+    Id: string;
     Username: string;
     Email: string;
   };
 }
 
 export interface SecurityLog {
-  Id: number;
-  UserId?: number;
+  Id: string;
+  UserId?: string;
   Username?: string;
   EventType: string;
   Status: string;
@@ -68,14 +68,14 @@ export interface SecurityLog {
   RequiresAction?: boolean;
   FailureReason?: string;
   User?: {
-    Id: number;
+    Id: string;
     Username: string;
     Email: string;
   };
 }
 
 export interface PerformanceLog {
-  Id: number;
+  Id: string;
   OperationType: string;
   RequestPath: string;
   HttpMethod: string;
@@ -85,7 +85,7 @@ export interface PerformanceLog {
   CpuUsage?: number;
   DatabaseQueries?: number;
   QueryExecutionTime?: number;
-  UserId?: number;
+  UserId?: string;
   IpAddress?: string;
   UserAgent?: string;
   Timestamp: string;
@@ -94,7 +94,7 @@ export interface PerformanceLog {
   IsSlowQuery: boolean;
   Threshold?: number;
   User?: {
-    Id: number;
+    Id: string;
     Username: string;
     Email: string;
   };
@@ -112,7 +112,7 @@ export interface LogFilterParams {
   eventType?: string;
   status?: string;
   severity?: string;
-  userId?: number;
+  userId?: string;
   isResolved?: boolean;
   riskLevel?: string;
   isBlocked?: boolean;
@@ -228,21 +228,21 @@ export interface AuditLogFilters extends Pick<LogFilterParams, 'page' | 'pageSiz
 
 export interface SystemLogFilters extends Pick<LogFilterParams, 'page' | 'pageSize' | 'sortBy' | 'sortDirection' | 'search' | 'startDate' | 'endDate' | 'level' | 'source' | 'isResolved'> {
   eventType?: string;
-  userId?: number;
+  userId?: string;
   [key: string]: unknown;
 }
 
 export interface SecurityLogFilters extends Pick<LogFilterParams, 'page' | 'pageSize' | 'sortBy' | 'sortDirection' | 'search' | 'startDate' | 'endDate' | 'status'> {
   severity?: string;
   eventType?: string;
-  userId?: number;
+  userId?: string;
   requiresAction?: boolean;
   [key: string]: unknown;
 }
 
 export interface PerformanceLogFilters extends Pick<LogFilterParams, 'page' | 'pageSize' | 'sortBy' | 'sortDirection' | 'search' | 'startDate' | 'endDate' | 'httpMethod' | 'statusCode' | 'isSlowQuery'> {
   performanceLevel?: string;
-  userId?: number;
+  userId?: string;
   minDuration?: number;
   maxDuration?: number;
   [key: string]: unknown;

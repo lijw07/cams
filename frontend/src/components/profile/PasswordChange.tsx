@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+
 import { Lock, Eye, EyeOff } from 'lucide-react';
+
 import { useNotifications } from '../../contexts/NotificationContext';
-import { Button, Input, FormField, Card, CardHeader, CardTitle, CardContent } from '../common';
 import { profileService } from '../../services/profileService';
+import { Button, Input, FormField, Card, CardHeader, CardTitle, CardContent } from '../common';
 
 const PasswordChange: React.FC = () => {
   const { addNotification } = useNotifications();

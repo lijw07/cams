@@ -1,4 +1,5 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useMemo } from 'react';
+
 import { ChevronDown } from 'lucide-react';
 
 export interface SelectOption {
@@ -12,6 +13,8 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   fullWidth?: boolean;
   options: SelectOption[];
   placeholder?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
 }
 
 const Select = forwardRef<HTMLSelectElement, SelectProps>(({
@@ -20,6 +23,7 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   options,
   placeholder,
   className = '',
+  'aria-invalid': ariaInvalid,
   ...props
 }, ref) => {
   const baseClasses = 'flex h-10 rounded-lg border px-3 py-2 text-sm bg-white dark:bg-secondary-800 text-secondary-900 dark:text-secondary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 appearance-none cursor-pointer';
@@ -32,11 +36,24 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
   
   const classes = `${baseClasses} ${errorClasses} ${widthClasses} ${className}`;
 
+  // Memoize option rendering to prevent recreation on every render
+  const optionElements = useMemo(() => 
+    options.map((option) => (
+      <option 
+        key={option.value} 
+        value={option.value}
+        disabled={option.disabled}
+      >
+        {option.label}
+      </option>
+    )), [options]);
+
   return (
     <div className="relative">
       <select
         ref={ref}
         className={classes}
+        aria-invalid={ariaInvalid ?? error}
         {...props}
       >
         {placeholder && (
@@ -44,17 +61,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(({
             {placeholder}
           </option>
         )}
-        {options.map((option) => (
-          <option 
-            key={option.value} 
-            value={option.value}
-            disabled={option.disabled}
-          >
-            {option.label}
-          </option>
-        ))}
+        {optionElements}
       </select>
-      <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary-500 pointer-events-none" />
+      <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary-500 pointer-events-none" aria-hidden="true" />
     </div>
   );
 });

@@ -1,16 +1,18 @@
 import { useCallback, useEffect } from 'react';
+
+import { env } from '../config/environment';
+import { DEFAULT_CONFIG } from '../constants/AnalyticsConstants';
 import { analyticsService } from '../services/analyticsService';
 import { 
   CustomEvent, 
   UserEvent, 
   PageViewEvent 
 } from '../types/analytics';
-import { DEFAULT_CONFIG } from '../constants/AnalyticsConstants';
 
 export const useAnalytics = () => {
   // Initialize analytics on mount
   useEffect(() => {
-    const measurementId = import.meta.env.VITE_GA_MEASUREMENT_ID;
+    const measurementId = env.analytics.measurementId;
     
     if (measurementId) {
       analyticsService.initialize({

@@ -4,7 +4,7 @@ namespace cams.Backend.View
 {
     public class UpdateUserRequest
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
 
         [Required]
         [StringLength(50, MinimumLength = 3)]

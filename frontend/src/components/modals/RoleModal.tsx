@@ -1,6 +1,9 @@
 import React, { useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
+
 import { X, Shield, Info, AlertCircle } from 'lucide-react';
+
 import { CreateRoleRequest, UpdateRoleRequest, Role } from '../../services/roleService';
 
 interface RoleModalProps {
@@ -22,6 +25,7 @@ const RoleModal: React.FC<RoleModalProps> = ({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting }
   } = useForm<CreateRoleRequest | UpdateRoleRequest>({
     defaultValues: {
@@ -170,7 +174,7 @@ const RoleModal: React.FC<RoleModalProps> = ({
                   </div>
                 )}
                 <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  {(register('Description').value?.length || 0)}/500 characters
+                  {(watch('Description')?.length || 0)}/500 characters
                 </p>
               </div>
 

@@ -5,6 +5,6 @@ namespace cams.Backend.View
     public class BulkDeleteUsersRequest
     {
         [Required]
-        public List<int> UserIds { get; set; } = new();
+        public List<Guid> UserIds { get; set; } = new();
     }
 }

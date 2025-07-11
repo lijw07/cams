@@ -1,5 +1,8 @@
 import * as signalR from '@microsoft/signalr';
+
+import { env } from '../config/environment';
 import { MigrationProgress } from '../types';
+
 import { apiService } from './api';
 
 class SignalRService {
@@ -18,8 +21,7 @@ class SignalRService {
       throw new Error('No authentication token available');
     }
 
-    const baseUrl = import.meta.env.VITE_API_URL || '';
-    const hubUrl = `${baseUrl}/hubs/migration`;
+    const hubUrl = `${env.api.baseUrl}/hubs/migration`;
 
     this.connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {

@@ -1,7 +1,9 @@
 import React from 'react';
+
 import { X, Zap } from 'lucide-react';
-import { ApplicationWithConnectionRequest } from '../../types';
+
 import { useApplicationWithConnection } from '../../hooks/useApplicationWithConnection';
+import { ApplicationWithConnectionRequest } from '../../types';
 import ApplicationDetailsStep from '../forms/ApplicationDetailsStep';
 import DatabaseConnectionStep from '../forms/DatabaseConnectionStep';
 

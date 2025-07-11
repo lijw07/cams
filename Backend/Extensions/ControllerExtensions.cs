@@ -30,7 +30,7 @@ namespace cams.Backend.Extensions
         /// <param name="controller">The controller instance</param>
         /// <returns>The user ID</returns>
         /// <exception cref="UnauthorizedAccessException">Thrown when user ID is not found or invalid</exception>
-        public static int GetCurrentUserId(this ControllerBase controller)
+        public static Guid GetCurrentUserId(this ControllerBase controller)
         {
             return UserHelper.GetCurrentUserId(controller.User);
         }

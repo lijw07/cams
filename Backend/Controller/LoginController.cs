@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using cams.Backend.Services;
 using cams.Backend.View;
 using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 
@@ -25,11 +26,11 @@ namespace cams.Backend.Controller
                 }
 
                 var response = await authenticationService.AuthenticateAsync(request);
-                
+
                 if (response == null)
                 {
-                    logger.LogWarning(ApplicationConstants.LogMessages.USER_LOGIN_FAILED, request.Username);
-                    
+                    logger.LogWarning(ApplicationConstants.LogMessages.USER_LOGIN_FAILED, LoggingHelper.Sanitize(request.Username));
+
                     // Log security event for failed login
                     await loggingService.LogSecurityEventAsync(
                         SecurityEventType.LoginFailure.ToString(),
@@ -41,12 +42,12 @@ namespace cams.Backend.Controller
                         failureReason: "Invalid username or password",
                         severity: SecuritySeverity.Warning.ToString()
                     );
-                    
+
                     return HttpResponseHelper.CreateUnauthorizedResponse(ApplicationConstants.ErrorMessages.INVALID_CREDENTIALS);
                 }
 
                 logger.LogInformation(ApplicationConstants.LogMessages.USER_LOGIN_SUCCESS, response.Username);
-                
+
                 // Log successful login security event
                 await loggingService.LogSecurityEventAsync(
                     SecurityEventType.Login.ToString(),
@@ -58,7 +59,7 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
-                
+
                 // Log audit event for login
                 await loggingService.LogAuditAsync(
                     response.UserId,
@@ -68,7 +69,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 // Set refresh token in HTTP-only cookie for better security
                 Response.Cookies.Append(ApplicationConstants.CookieNames.REFRESH_TOKEN, response.RefreshToken, new CookieOptions
                 {
@@ -82,7 +83,7 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error during authentication for username: {Username}", request.Username);
+                logger.LogError(ex, "Error during authentication for username: {Username}", LoggingHelper.Sanitize(request.Username));
                 return HttpResponseHelper.CreateErrorResponse("An error occurred during authentication");
             }
         }
@@ -94,14 +95,14 @@ namespace cams.Backend.Controller
             try
             {
                 var refreshToken = Request.Cookies[ApplicationConstants.CookieNames.REFRESH_TOKEN] ?? request.RefreshToken;
-                
+
                 if (string.IsNullOrEmpty(refreshToken))
                 {
                     return HttpResponseHelper.CreateBadRequestResponse(ApplicationConstants.ErrorMessages.REFRESH_TOKEN_REQUIRED);
                 }
 
                 var isValid = await authenticationService.ValidateRefreshTokenAsync(request.Username, refreshToken);
-                
+
                 if (!isValid)
                 {
                     return HttpResponseHelper.CreateUnauthorizedResponse(ApplicationConstants.ErrorMessages.INVALID_REFRESH_TOKEN);
@@ -122,7 +123,7 @@ namespace cams.Backend.Controller
                         failureReason: "User not found during token refresh",
                         severity: SecuritySeverity.Warning.ToString()
                     );
-                    
+
                     return HttpResponseHelper.CreateUnauthorizedResponse(ApplicationConstants.ErrorMessages.USER_NOT_FOUND);
                 }
 
@@ -163,12 +164,12 @@ namespace cams.Backend.Controller
             {
                 // Clear the refresh token cookie
                 Response.Cookies.Delete(ApplicationConstants.CookieNames.REFRESH_TOKEN);
-                
+
                 var userId = UserHelper.GetCurrentUserId(User);
                 var username = UserHelper.GetCurrentUsername(User);
-                
+
                 logger.LogInformation(ApplicationConstants.LogMessages.USER_LOGOUT_SUCCESS);
-                
+
                 // Log security event for logout
                 await loggingService.LogSecurityEventAsync(
                     SecurityEventType.Logout.ToString(),
@@ -180,7 +181,7 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
-                
+
                 // Log audit event for logout
                 await loggingService.LogAuditAsync(
                     userId,
@@ -190,7 +191,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return HttpResponseHelper.CreateSuccessResponse(new { }, ApplicationConstants.SuccessMessages.LOGOUT_SUCCESSFUL);
             }
             catch (Exception ex)
@@ -206,7 +207,7 @@ namespace cams.Backend.Controller
         {
             var userId = UserHelper.GetCurrentUserId(User);
             var username = UserHelper.GetCurrentUsername(User);
-            
+
             // Log audit event for token validation
             await loggingService.LogAuditAsync(
                 userId,
@@ -216,9 +217,10 @@ namespace cams.Backend.Controller
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                 userAgent: Request.Headers.UserAgent.ToString()
             );
-            
-            return Ok(new { 
-                isValid = true, 
+
+            return Ok(new
+            {
+                isValid = true,
                 username = username,
                 message = ApplicationConstants.SuccessMessages.TOKEN_VALID
             });

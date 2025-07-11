@@ -2,7 +2,7 @@ import { DatabaseConnectionSummary } from './database';
 
 // Application Types
 export interface Application {
-  Id: number;
+  Id: string;
   Name: string;
   Description?: string;
   Version?: string;
@@ -69,6 +69,18 @@ export interface ApplicationWithConnectionRequest {
   Audience?: string;
   GrantType?: string;
   TokenEndpoint?: string;
+  
+  // Additional cloud fields
+  ResourceGroup?: string;
+  ServiceAccountKey?: string;
+  RedirectUri?: string;
+  PrivateKey?: string;
+  PublicKey?: string;
+  Account?: string;
+  Warehouse?: string;
+  Schema?: string;
+  WorkspaceUrl?: string;
+  ClusterId?: string;
 }
 
 export interface ApplicationWithConnectionResponse {
@@ -79,8 +91,8 @@ export interface ApplicationWithConnectionResponse {
 }
 
 export interface ConnectionTestSchedule {
-  Id?: number;
-  ApplicationId: number;
+  Id?: string;
+  ApplicationId: string;
   ApplicationName?: string;
   CronExpression: string;
   IsEnabled: boolean;
@@ -92,7 +104,7 @@ export interface ConnectionTestSchedule {
 }
 
 export interface ConnectionTestScheduleRequest {
-  ApplicationId: number;
+  ApplicationId: string;
   CronExpression: string;
   IsEnabled: boolean;
 }

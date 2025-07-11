@@ -8,37 +8,28 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Enums;
 using cams.Backend.Data;
+using Backend.Helpers;
 
 namespace cams.Backend.Services
 {
-    public class DatabaseConnectionService : IDatabaseConnectionService
+    public class DatabaseConnectionService(
+        ILogger<DatabaseConnectionService> logger,
+        IOptions<JwtSettings> jwtSettings,
+        IApplicationService applicationService,
+        ApplicationDbContext context)
+        : IDatabaseConnectionService
     {
-        private readonly ILogger<DatabaseConnectionService> _logger;
-        private readonly JwtSettings _jwtSettings;
-        private readonly IApplicationService _applicationService;
-        private readonly ApplicationDbContext _context;
+        private readonly JwtSettings _jwtSettings = jwtSettings.Value;
 
-        public DatabaseConnectionService(
-            ILogger<DatabaseConnectionService> logger, 
-            IOptions<JwtSettings> jwtSettings, 
-            IApplicationService applicationService,
-            ApplicationDbContext context)
+        public async Task<IEnumerable<DatabaseConnectionResponse>> GetUserConnectionsAsync(Guid userId, Guid? applicationId = null)
         {
-            _logger = logger;
-            _jwtSettings = jwtSettings.Value;
-            _applicationService = applicationService;
-            _context = context;
-        }
-
-        public async Task<IEnumerable<DatabaseConnectionResponse>> GetUserConnectionsAsync(int userId, int? applicationId = null)
-        {
-            var query = _context.DatabaseConnections
+            var query = context.DatabaseConnections
                 .Include(c => c.Application)
                 .Where(c => c.UserId == userId);
-            
+
             if (applicationId.HasValue)
                 query = query.Where(c => c.ApplicationId == applicationId.Value);
-            
+
             var connections = await query
                 .OrderBy(c => c.Name)
                 .ToListAsync();
@@ -46,24 +37,24 @@ namespace cams.Backend.Services
             return connections.Select(c => MapToResponse(c));
         }
 
-        public async Task<DatabaseConnectionResponse?> GetConnectionByIdAsync(int id, int userId)
+        public async Task<DatabaseConnectionResponse?> GetConnectionByIdAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .Include(c => c.Application)
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             return connection != null ? MapToResponse(connection, includeSensitiveData: true) : null;
         }
 
-        public async Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, int userId)
+        public async Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, Guid userId)
         {
             // Validate that the user has access to the specified application
-            var hasAccess = await _applicationService.ValidateApplicationAccessAsync(request.ApplicationId, userId);
+            var hasAccess = await applicationService.ValidateApplicationAccessAsync(request.ApplicationId, userId);
             if (!hasAccess)
             {
                 throw new UnauthorizedAccessException("User does not have access to the specified application");
             }
-            
+
             var connection = new DatabaseConnection
             {
                 UserId = userId,
@@ -85,25 +76,26 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _context.DatabaseConnections.Add(connection);
-            await _context.SaveChangesAsync();
-            
+            context.DatabaseConnections.Add(connection);
+            await context.SaveChangesAsync();
+
             // Load the application for the response
-            await _context.Entry(connection)
+            await context.Entry(connection)
                 .Reference(c => c.Application)
                 .LoadAsync();
-            
-            _logger.LogInformation("Created database connection {ConnectionName} for user {UserId}", request.Name, userId);
-            
+
+            logger.LogInformation("Created database connection {ConnectionName} for user {UserId}",
+                LoggingHelper.Sanitize(request.Name), userId);
+
             return MapToResponse(connection);
         }
 
-        public async Task<DatabaseConnectionResponse?> UpdateConnectionAsync(DatabaseConnectionUpdateRequest request, int userId)
+        public async Task<DatabaseConnectionResponse?> UpdateConnectionAsync(DatabaseConnectionUpdateRequest request, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .Include(c => c.Application)
                 .FirstOrDefaultAsync(c => c.Id == request.Id && c.UserId == userId);
-            
+
             if (connection == null)
                 return null;
 
@@ -114,49 +106,50 @@ namespace cams.Backend.Services
             connection.Port = request.Port;
             connection.Database = request.Database;
             connection.Username = request.Username;
-            
+
             if (!string.IsNullOrEmpty(request.Password))
                 connection.PasswordHash = EncryptSensitiveData(request.Password);
-            
+
             if (!string.IsNullOrEmpty(request.ConnectionString))
                 connection.ConnectionString = EncryptSensitiveData(request.ConnectionString);
-            
+
             connection.ApiBaseUrl = request.ApiBaseUrl;
-            
+
             if (!string.IsNullOrEmpty(request.ApiKey))
                 connection.ApiKey = EncryptSensitiveData(request.ApiKey);
-            
+
             connection.AdditionalSettings = request.AdditionalSettings;
             connection.IsActive = request.IsActive;
             connection.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated database connection {ConnectionName} for user {UserId}", request.Name, userId);
-            
+            logger.LogInformation("Updated database connection {ConnectionName} for user {UserId}",
+                LoggingHelper.Sanitize(request.Name), userId);
+
             return MapToResponse(connection);
         }
 
-        public async Task<bool> DeleteConnectionAsync(int id, int userId)
+        public async Task<bool> DeleteConnectionAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return false;
 
-            _context.DatabaseConnections.Remove(connection);
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Deleted database connection {ConnectionId} for user {UserId}", id, userId);
-            
+            context.DatabaseConnections.Remove(connection);
+            await context.SaveChangesAsync();
+
+            logger.LogInformation("Deleted database connection {ConnectionId} for user {UserId}", id, userId);
+
             return true;
         }
 
-        public async Task<DatabaseConnectionTestResponse> TestConnectionAsync(DatabaseConnectionTestRequest request, int userId)
+        public async Task<DatabaseConnectionTestResponse> TestConnectionAsync(DatabaseConnectionTestRequest request, Guid userId)
         {
             var startTime = DateTime.UtcNow;
-            
+
             try
             {
                 DatabaseConnection? connection = null;
@@ -164,7 +157,7 @@ namespace cams.Backend.Services
 
                 if (request.ConnectionId.HasValue)
                 {
-                    connection = await _context.DatabaseConnections
+                    connection = await context.DatabaseConnections
                         .FirstOrDefaultAsync(c => c.Id == request.ConnectionId.Value && c.UserId == userId);
                     if (connection == null)
                     {
@@ -193,21 +186,21 @@ namespace cams.Backend.Services
                 }
 
                 var testResult = await PerformConnectionTestAsync(connection, connectionDetails);
-                
+
                 if (connection != null)
                 {
                     connection.LastTestedAt = DateTime.UtcNow;
                     connection.Status = testResult.IsSuccessful ? ConnectionStatus.Connected : ConnectionStatus.Failed;
                     connection.LastTestResult = testResult.Message;
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
                 }
 
                 return testResult;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error testing connection for user {UserId}", userId);
-                
+                logger.LogError(ex, "Error testing connection for user {UserId}", userId);
+
                 return new DatabaseConnectionTestResponse
                 {
                     IsSuccessful = false,
@@ -219,21 +212,21 @@ namespace cams.Backend.Services
             }
         }
 
-        public async Task<bool> ToggleConnectionStatusAsync(int id, int userId, bool isActive)
+        public async Task<bool> ToggleConnectionStatusAsync(Guid id, Guid userId, bool isActive)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return false;
 
             connection.IsActive = isActive;
             connection.UpdatedAt = DateTime.UtcNow;
-            
-            await _context.SaveChangesAsync();
-            
-            _logger.LogInformation("Toggled connection {ConnectionId} status to {IsActive} for user {UserId}", id, isActive, userId);
-            
+
+            await context.SaveChangesAsync();
+
+            logger.LogInformation("Toggled connection {ConnectionId} status to {IsActive} for user {UserId}", id, isActive, userId);
+
             return true;
         }
 
@@ -260,17 +253,17 @@ namespace cams.Backend.Services
             using var aes = Aes.Create();
             aes.Key = key;
             aes.GenerateIV();
-            
+
             using var encryptor = aes.CreateEncryptor();
             using var ms = new MemoryStream();
             ms.Write(aes.IV, 0, aes.IV.Length);
-            
+
             using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
             using (var writer = new StreamWriter(cs))
             {
                 writer.Write(data);
             }
-            
+
             return Convert.ToBase64String(ms.ToArray());
         }
 
@@ -281,30 +274,30 @@ namespace cams.Backend.Services
 
             var key = Encoding.UTF8.GetBytes(_jwtSettings.Secret.PadRight(32)[..32]);
             var buffer = Convert.FromBase64String(encryptedData);
-            
+
             using var aes = Aes.Create();
             aes.Key = key;
-            
+
             var iv = new byte[aes.IV.Length];
             Array.Copy(buffer, 0, iv, 0, iv.Length);
             aes.IV = iv;
-            
+
             using var decryptor = aes.CreateDecryptor();
             using var ms = new MemoryStream(buffer, iv.Length, buffer.Length - iv.Length);
             using var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read);
             using var reader = new StreamReader(cs);
-            
+
             return reader.ReadToEnd();
         }
 
         private async Task<DatabaseConnectionTestResponse> PerformConnectionTestAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request)
         {
             var startTime = DateTime.UtcNow;
-            
+
             try
             {
                 var dbType = connection?.Type ?? request?.Type ?? DatabaseType.SqlServer;
-                
+
                 switch (dbType)
                 {
                     case DatabaseType.SqlServer:
@@ -346,14 +339,14 @@ namespace cams.Backend.Services
         private async Task<DatabaseConnectionTestResponse> TestSqlServerConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime)
         {
             var connectionString = GetConnectionString(connection, request);
-            
+
             using var sqlConnection = new SqlConnection(connectionString);
             await sqlConnection.OpenAsync();
-            
+
             var command = sqlConnection.CreateCommand();
             command.CommandText = "SELECT 1";
             var result = await command.ExecuteScalarAsync();
-            
+
             return new DatabaseConnectionTestResponse
             {
                 IsSuccessful = true,
@@ -373,7 +366,7 @@ namespace cams.Backend.Services
         {
             var baseUrl = connection?.ApiBaseUrl ?? request?.ApiBaseUrl;
             var apiKey = connection?.ApiKey != null ? DecryptSensitiveData(connection.ApiKey) : request?.ApiKey;
-            
+
             if (string.IsNullOrEmpty(baseUrl))
             {
                 return new DatabaseConnectionTestResponse
@@ -387,14 +380,14 @@ namespace cams.Backend.Services
 
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromSeconds(30);
-            
+
             if (!string.IsNullOrEmpty(apiKey))
             {
                 httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
             }
 
             var response = await httpClient.GetAsync(baseUrl);
-            
+
             return new DatabaseConnectionTestResponse
             {
                 IsSuccessful = response.IsSuccessStatusCode,
@@ -413,13 +406,13 @@ namespace cams.Backend.Services
         {
             if (connection?.ConnectionString != null)
                 return DecryptSensitiveData(connection.ConnectionString);
-            
+
             if (request?.ConnectionString != null)
                 return request.ConnectionString;
-            
+
             if (request != null)
                 return BuildConnectionString(request);
-            
+
             throw new InvalidOperationException("No connection string available");
         }
 
@@ -455,7 +448,7 @@ namespace cams.Backend.Services
 
             return response;
         }
-        
+
 
         // New methods implementation
         public ConnectionStringValidationResponse ValidateConnectionString(string connectionString, DatabaseType databaseType)
@@ -472,7 +465,7 @@ namespace cams.Backend.Services
                 }
 
                 var components = new ConnectionStringComponents();
-                
+
                 switch (databaseType)
                 {
                     case DatabaseType.SqlServer:
@@ -506,12 +499,12 @@ namespace cams.Backend.Services
             }
         }
 
-        public async Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(int id, int userId)
+        public async Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .Include(c => c.Application)
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return null;
 
@@ -528,15 +521,15 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<IEnumerable<DatabaseConnectionSummary>> GetConnectionsSummaryAsync(int userId, int? applicationId = null)
+        public async Task<IEnumerable<DatabaseConnectionSummary>> GetConnectionsSummaryAsync(Guid userId, Guid? applicationId = null)
         {
-            var query = _context.DatabaseConnections
+            var query = context.DatabaseConnections
                 .Include(c => c.Application)
                 .Where(c => c.UserId == userId);
-            
+
             if (applicationId.HasValue)
                 query = query.Where(c => c.ApplicationId == applicationId.Value);
-            
+
             var connections = await query
                 .OrderBy(c => c.Name)
                 .ToListAsync();
@@ -554,16 +547,16 @@ namespace cams.Backend.Services
             });
         }
 
-        public async Task<ConnectionHealthResponse?> GetConnectionHealthAsync(int id, int userId)
+        public async Task<ConnectionHealthResponse?> GetConnectionHealthAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return null;
 
             var isHealthy = connection.Status == ConnectionStatus.Connected;
-            
+
             return new ConnectionHealthResponse
             {
                 ConnectionId = id,
@@ -574,18 +567,18 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<ConnectionHealthResponse?> RefreshConnectionHealthAsync(int id, int userId)
+        public async Task<ConnectionHealthResponse?> RefreshConnectionHealthAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return null;
 
             // Perform a quick health check
             var testRequest = new DatabaseConnectionTestRequest { ConnectionId = id };
             var testResult = await TestConnectionAsync(testRequest, userId);
-            
+
             return new ConnectionHealthResponse
             {
                 ConnectionId = id,
@@ -596,11 +589,11 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<BulkOperationResponse> BulkToggleStatusAsync(int[] connectionIds, bool isActive, int userId)
+        public async Task<BulkOperationResponse> BulkToggleStatusAsync(Guid[] connectionIds, bool isActive, Guid userId)
         {
             await Task.CompletedTask;
-            
-            var successful = new List<int>();
+
+            var successful = new List<Guid>();
             var failed = new List<BulkOperationError>();
 
             foreach (var id in connectionIds)
@@ -639,11 +632,11 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<BulkOperationResponse> BulkDeleteAsync(int[] connectionIds, int userId)
+        public async Task<BulkOperationResponse> BulkDeleteAsync(Guid[] connectionIds, Guid userId)
         {
             await Task.CompletedTask;
-            
-            var successful = new List<int>();
+
+            var successful = new List<Guid>();
             var failed = new List<BulkOperationError>();
 
             foreach (var id in connectionIds)
@@ -682,11 +675,11 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<ConnectionUsageStatsResponse?> GetConnectionUsageStatsAsync(int id, int userId)
+        public async Task<ConnectionUsageStatsResponse?> GetConnectionUsageStatsAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return null;
 
@@ -706,19 +699,19 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<bool> UpdateLastAccessedAsync(int id, int userId)
+        public async Task<bool> UpdateLastAccessedAsync(Guid id, Guid userId)
         {
-            var connection = await _context.DatabaseConnections
+            var connection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
-            
+
             if (connection == null)
                 return false;
 
             connection.LastAccessedAt = DateTime.UtcNow;
             connection.UpdatedAt = DateTime.UtcNow;
-            
-            await _context.SaveChangesAsync();
-            
+
+            await context.SaveChangesAsync();
+
             return true;
         }
     }

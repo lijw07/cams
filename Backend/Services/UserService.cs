@@ -2,64 +2,55 @@ using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Mappers;
 using cams.Backend.Data;
+using Backend.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
 {
-    public class UserService : IUserService
+    public class UserService(ILogger<UserService> logger, IUserMapper userMapper, ApplicationDbContext context)
+        : IUserService
     {
-        private readonly ILogger<UserService> _logger;
-        private readonly IUserMapper _userMapper;
-        private readonly ApplicationDbContext _context;
-
-        public UserService(ILogger<UserService> logger, IUserMapper userMapper, ApplicationDbContext context)
+        public async Task<UserProfileResponse?> GetUserProfileAsync(Guid userId)
         {
-            _logger = logger;
-            _userMapper = userMapper;
-            _context = context;
-        }
-
-        public async Task<UserProfileResponse?> GetUserProfileAsync(int userId)
-        {
-            var user = await _context.Users
+            var user = await context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-                
+
             if (user == null)
                 return null;
 
-            var applicationCount = await _context.Applications.CountAsync(a => a.UserId == userId);
-            var connectionCount = await _context.DatabaseConnections.CountAsync(c => c.UserId == userId);
+            var applicationCount = await context.Applications.CountAsync(a => a.UserId == userId);
+            var connectionCount = await context.DatabaseConnections.CountAsync(c => c.UserId == userId);
 
-            return _userMapper.MapToProfileResponse(user, applicationCount, connectionCount);
+            return userMapper.MapToProfileResponse(user, applicationCount, connectionCount);
         }
 
-        public async Task<UserProfileSummaryResponse?> GetUserProfileSummaryAsync(int userId)
+        public async Task<UserProfileSummaryResponse?> GetUserProfileSummaryAsync(Guid userId)
         {
-            var user = await _context.Users
+            var user = await context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-                
-            return user != null ? _userMapper.MapToProfileSummaryResponse(user) : null;
+
+            return user != null ? userMapper.MapToProfileSummaryResponse(user) : null;
         }
 
-        public async Task<User?> GetUserAsync(int userId)
+        public async Task<User?> GetUserAsync(Guid userId)
         {
-            return await _context.Users
+            return await context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
         }
 
-        public async Task<UserProfileResponse?> UpdateUserProfileAsync(int userId, UserProfileRequest request)
+        public async Task<UserProfileResponse?> UpdateUserProfileAsync(Guid userId, UserProfileRequest request)
         {
-            var user = await _context.Users
+            var user = await context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-                
+
             if (user == null)
                 return null;
 
@@ -69,20 +60,20 @@ namespace cams.Backend.Services
             user.PhoneNumber = request.PhoneNumber;
             user.UpdatedAt = DateTime.UtcNow;
 
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation("Updated profile for user {UserId}", userId);
+            logger.LogInformation("Updated profile for user {UserId}", userId);
 
-            var applicationCount = await _context.Applications.CountAsync(a => a.UserId == userId);
-            var connectionCount = await _context.DatabaseConnections.CountAsync(c => c.UserId == userId);
+            var applicationCount = await context.Applications.CountAsync(a => a.UserId == userId);
+            var connectionCount = await context.DatabaseConnections.CountAsync(c => c.UserId == userId);
 
-            return _userMapper.MapToProfileResponse(user, applicationCount, connectionCount);
+            return userMapper.MapToProfileResponse(user, applicationCount, connectionCount);
         }
 
-        public async Task<PasswordChangeResponse> ChangePasswordAsync(int userId, ChangePasswordRequest request)
+        public async Task<PasswordChangeResponse> ChangePasswordAsync(Guid userId, ChangePasswordRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             if (user == null)
             {
                 return new PasswordChangeResponse
@@ -95,7 +86,7 @@ namespace cams.Backend.Services
             // Verify current password
             if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             {
-                _logger.LogWarning("Failed password change attempt for user {UserId} - invalid current password", userId);
+                logger.LogWarning("Failed password change attempt for user {UserId} - invalid current password", userId);
                 return new PasswordChangeResponse
                 {
                     Success = false,
@@ -107,10 +98,10 @@ namespace cams.Backend.Services
             user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
             user.UpdatedAt = DateTime.UtcNow;
 
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation("Password changed successfully for user {UserId}", userId);
+            logger.LogInformation("Password changed successfully for user {UserId}", userId);
 
             return new PasswordChangeResponse
             {
@@ -120,9 +111,9 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<EmailChangeResponse> ChangeEmailAsync(int userId, ChangeEmailRequest request)
+        public async Task<EmailChangeResponse> ChangeEmailAsync(Guid userId, ChangeEmailRequest request)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             if (user == null)
             {
                 return new EmailChangeResponse
@@ -135,7 +126,7 @@ namespace cams.Backend.Services
             // Verify current password
             if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
             {
-                _logger.LogWarning("Failed email change attempt for user {UserId} - invalid password", userId);
+                logger.LogWarning("Failed email change attempt for user {UserId} - invalid password", userId);
                 return new EmailChangeResponse
                 {
                     Success = false,
@@ -157,10 +148,10 @@ namespace cams.Backend.Services
             user.Email = request.NewEmail;
             user.UpdatedAt = DateTime.UtcNow;
 
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation("Email changed successfully for user {UserId} to {NewEmail}", userId, request.NewEmail);
+            logger.LogInformation("Email changed successfully for user {UserId} to {NewEmail}", userId, LoggingHelper.Sanitize(request.NewEmail));
 
             return new EmailChangeResponse
             {
@@ -172,37 +163,37 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<bool> DeactivateUserAsync(int userId)
+        public async Task<bool> DeactivateUserAsync(Guid userId)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             if (user == null)
                 return false;
 
             user.IsActive = false;
             user.UpdatedAt = DateTime.UtcNow;
 
-            _context.Users.Update(user);
-            await _context.SaveChangesAsync();
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
 
-            _logger.LogInformation("Deactivated user {UserId}", userId);
-            
+            logger.LogInformation("Deactivated user {UserId}", userId);
+
             return true;
         }
 
-        public async Task<bool> ValidateCurrentPasswordAsync(int userId, string password)
+        public async Task<bool> ValidateCurrentPasswordAsync(Guid userId, string password)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
             return user != null && BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
         }
 
-        public async Task<bool> IsEmailTakenAsync(string email, int excludeUserId = 0)
+        public async Task<bool> IsEmailTakenAsync(string email, Guid? excludeUserId = null)
         {
-            return await _context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower() && u.Id != excludeUserId && u.IsActive);
+            return await context.Users.AnyAsync(u => u.Email.ToLower() == email.ToLower() && (excludeUserId == null || u.Id != excludeUserId) && u.IsActive);
         }
 
-        public async Task<bool> IsUsernameTakenAsync(string username, int excludeUserId = 0)
+        public async Task<bool> IsUsernameTakenAsync(string username, Guid? excludeUserId = null)
         {
-            return await _context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower() && u.Id != excludeUserId && u.IsActive);
+            return await context.Users.AnyAsync(u => u.Username.ToLower() == username.ToLower() && (excludeUserId == null || u.Id != excludeUserId) && u.IsActive);
         }
     }
 }

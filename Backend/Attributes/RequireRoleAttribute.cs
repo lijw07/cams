@@ -19,7 +19,7 @@ namespace cams.Backend.Attributes
             }
 
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier);
-            if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out Guid userId))
             {
                 context.Result = new UnauthorizedResult();
                 return;
@@ -27,15 +27,15 @@ namespace cams.Backend.Attributes
 
             var roleService = httpContext.RequestServices.GetRequiredService<IRoleService>();
             var logger = httpContext.RequestServices.GetRequiredService<ILogger<RequireRoleAttribute>>();
-            
+
             logger.LogInformation("RequireRole: Checking user {UserId} for roles: {RequiredRoles}", userId, string.Join(", ", roles));
-            
+
             bool hasRequiredRole = false;
             foreach (var role in roles)
             {
                 var hasRole = await roleService.UserHasRoleAsync(userId, role);
                 logger.LogInformation("RequireRole: User {UserId} has role '{Role}': {HasRole}", userId, role, hasRole);
-                
+
                 if (hasRole)
                 {
                     hasRequiredRole = true;
@@ -49,7 +49,7 @@ namespace cams.Backend.Attributes
                 context.Result = new ForbidResult();
                 return;
             }
-            
+
             logger.LogInformation("RequireRole: User {UserId} has required role access", userId);
 
             await next();

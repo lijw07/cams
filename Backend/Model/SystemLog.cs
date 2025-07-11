@@ -5,7 +5,7 @@ namespace cams.Backend.Model
     public class SystemLog
     {
         [Key]
-        public int Id { get; set; }
+        public Guid Id { get; set; } = Guid.NewGuid();
 
         [Required]
         [MaxLength(50)]
@@ -32,7 +32,7 @@ namespace cams.Backend.Model
         [MaxLength(100)]
         public string? CorrelationId { get; set; }
 
-        public int? UserId { get; set; }
+        public Guid? UserId { get; set; }
 
         [MaxLength(45)]
         public string? IpAddress { get; set; }

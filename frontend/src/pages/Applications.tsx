@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
+
+import { Link } from 'react-router-dom';
+
 import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search } from 'lucide-react';
-import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
-import { applicationService } from '../services/applicationService';
+
+import Pagination from '../components/common/Pagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
-import Pagination from '../components/common/Pagination';
 import { useNotifications } from '../contexts/NotificationContext';
-import { Link } from 'react-router-dom';
+import { applicationService } from '../services/applicationService';
+import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
 
 const Applications: React.FC = () => {
   const [pagedData, setPagedData] = useState<PagedResult<Application> | null>(null);
@@ -87,7 +90,7 @@ const Applications: React.FC = () => {
     }
   };
 
-  const handleToggleStatus = async (id: number, currentStatus: boolean) => {
+  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
     try {
       await applicationService.toggleApplicationStatus(id, !currentStatus);
       addNotification({ title: 'Success', message: `Application ${!currentStatus ? 'activated' : 'deactivated'} successfully`, type: 'success', source: 'Applications' });
@@ -98,7 +101,7 @@ const Applications: React.FC = () => {
     }
   };
 
-  const handleDeleteApplication = async (id: number) => {
+  const handleDeleteApplication = async (id: string) => {
     if (!confirm('Are you sure you want to delete this application?')) return;
     
     try {

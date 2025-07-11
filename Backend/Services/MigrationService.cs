@@ -2,7 +2,7 @@ using System.Text.Json;
 using cams.Backend.View;
 using cams.Backend.Model;
 using cams.Backend.Data;
-using cams.Backend.Helpers;
+using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 using Microsoft.AspNetCore.SignalR;
@@ -11,25 +11,13 @@ using cams.Backend.Hubs;
 
 namespace cams.Backend.Services
 {
-    public class MigrationService : IMigrationService
+    public class MigrationService(
+        ILogger<MigrationService> logger,
+        ILoggingService loggingService,
+        IHubContext<MigrationHub> hubContext,
+        ApplicationDbContext context)
+        : IMigrationService
     {
-        private readonly ILogger<MigrationService> _logger;
-        private readonly ILoggingService _loggingService;
-        private readonly IHubContext<MigrationHub> _hubContext;
-        private readonly ApplicationDbContext _context;
-
-        public MigrationService(
-            ILogger<MigrationService> logger,
-            ILoggingService loggingService,
-            IHubContext<MigrationHub> hubContext,
-            ApplicationDbContext context)
-        {
-            _logger = logger;
-            _loggingService = loggingService;
-            _hubContext = hubContext;
-            _context = context;
-        }
-
         public async Task<MigrationValidationResult> ValidateBulkImportAsync(BulkMigrationRequest request)
         {
             var result = new MigrationValidationResult();
@@ -80,25 +68,25 @@ namespace cams.Backend.Services
             }
             catch (JsonException ex)
             {
-                _logger.LogError(ex, "Error parsing migration data");
+                logger.LogError(ex, "Error parsing migration data");
                 result.Errors.Add("Invalid JSON format in migration data");
                 result.IsValid = false;
                 return result;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error validating bulk import");
+                logger.LogError(ex, "Error validating bulk import");
                 result.Errors.Add("Unexpected error during validation");
                 result.IsValid = false;
                 return result;
             }
         }
 
-        public async Task<MigrationResult> ProcessBulkMigrationAsync(BulkMigrationRequest request, int currentUserId)
+        public async Task<MigrationResult> ProcessBulkMigrationAsync(BulkMigrationRequest request, Guid currentUserId)
         {
             var startTime = DateTime.UtcNow;
             var progressId = Guid.NewGuid().ToString();
-            
+
             try
             {
                 if (request.ValidateOnly)
@@ -128,8 +116,8 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing bulk migration");
-                
+                logger.LogError(ex, "Error processing bulk migration");
+
                 // Send error update to clients
                 await SendProgressUpdate(progressId, new MigrationProgress
                 {
@@ -155,7 +143,7 @@ namespace cams.Backend.Services
             }
         }
 
-        public async Task<MigrationResult> ImportUsersAsync(BulkUserImportRequest request, int currentUserId, string progressId = "")
+        public async Task<MigrationResult> ImportUsersAsync(BulkUserImportRequest request, Guid currentUserId, string progressId = "")
         {
             var result = new MigrationResult
             {
@@ -188,7 +176,7 @@ namespace cams.Backend.Services
                     try
                     {
                         // Check if user already exists
-                        var existingUser = await _context.Users.FirstOrDefaultAsync(u => 
+                        var existingUser = await context.Users.FirstOrDefaultAsync(u =>
                             (u.Username == userDto.Username || u.Email == userDto.Email) && u.IsActive);
 
                         if (existingUser != null)
@@ -198,7 +186,7 @@ namespace cams.Backend.Services
                                 warnings.Add($"User '{userDto.Username}' already exists and was skipped");
                                 continue;
                             }
-                            
+
                             // Update existing user
                             existingUser.Email = userDto.Email;
                             existingUser.FirstName = userDto.FirstName;
@@ -214,8 +202,8 @@ namespace cams.Backend.Services
 
                             // Note: Update functionality not implemented yet
                             successCount++;
-                            
-                            await _loggingService.LogAuditAsync(
+
+                            await loggingService.LogAuditAsync(
                                 currentUserId,
                                 AuditAction.Update.ToString(),
                                 AuditEntityTypes.USER,
@@ -231,7 +219,7 @@ namespace cams.Backend.Services
                             {
                                 Username = userDto.Username,
                                 Email = userDto.Email,
-                                PasswordHash = !string.IsNullOrEmpty(userDto.Password) 
+                                PasswordHash = !string.IsNullOrEmpty(userDto.Password)
                                     ? BCrypt.Net.BCrypt.HashPassword(userDto.Password)
                                     : BCrypt.Net.BCrypt.HashPassword("TempPassword123!"),
                                 FirstName = userDto.FirstName,
@@ -243,13 +231,13 @@ namespace cams.Backend.Services
                             };
 
                             // Add user to database
-                            _context.Users.Add(newUser);
-                            await _context.SaveChangesAsync();
-                            
+                            context.Users.Add(newUser);
+                            await context.SaveChangesAsync();
+
                             // Default to User role if no roles specified
                             if (userDto.Roles.Count == 0)
                             {
-                                var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+                                var userRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
                                 if (userRole != null)
                                 {
                                     var newUserRole = new UserRole
@@ -259,10 +247,10 @@ namespace cams.Backend.Services
                                         IsActive = true,
                                         AssignedAt = DateTime.UtcNow
                                     };
-                                    _context.UserRoles.Add(newUserRole);
+                                    context.UserRoles.Add(newUserRole);
                                 }
                             }
-                            
+
                             // Note: Role assignment not implemented in this simplified version
                             if (userDto.Roles.Count > 0)
                             {
@@ -277,25 +265,25 @@ namespace cams.Backend.Services
                                 warnings.Add($"Welcome email functionality has been removed - {newUser.Email}");
                             }
 
-                            await _loggingService.LogAuditAsync(
+                            await loggingService.LogAuditAsync(
                                 currentUserId,
                                 AuditAction.Create.ToString(),
                                 AuditEntityTypes.USER,
                                 entityId: newUser.Id,
-                                description: $"User created via bulk migration: {userDto.Username}",
-                                newValues: $"Email: {userDto.Email}, FirstName: {userDto.FirstName}, LastName: {userDto.LastName}"
+                                description: $"User created via bulk migration: {LoggingHelper.Sanitize(userDto.Username)}",
+                                newValues: $"Email: {LoggingHelper.Sanitize(userDto.Email)}, FirstName: {LoggingHelper.Sanitize(userDto.FirstName)}, LastName: {LoggingHelper.Sanitize(userDto.LastName)}"
                             );
                         }
                     }
                     catch (Exception userEx)
                     {
-                        _logger.LogError(userEx, "Error importing user {Username}", userDto.Username);
-                        errors.Add($"Failed to import user '{userDto.Username}': {userEx.Message}");
+                        logger.LogError(userEx, "Error importing user {Username}", LoggingHelper.Sanitize(userDto.Username));
+                        errors.Add($"Failed to import user '{LoggingHelper.Sanitize(userDto.Username)}': {userEx.Message}");
                     }
                     finally
                     {
                         processedCount++;
-                        
+
                         // Send progress update every user or every 10% of progress
                         if (processedCount % Math.Max(1, request.Users.Count / 10) == 0 || processedCount == request.Users.Count)
                         {
@@ -321,7 +309,7 @@ namespace cams.Backend.Services
                 result.Errors = errors;
                 result.Warnings = warnings;
                 result.Success = errors.Count == 0;
-                result.Message = result.Success 
+                result.Message = result.Success
                     ? $"Successfully imported {successCount} users"
                     : $"Completed with {errors.Count} errors. {successCount} users imported successfully";
                 result.EndTime = DateTime.UtcNow;
@@ -330,7 +318,7 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during user bulk import");
+                logger.LogError(ex, "Error during user bulk import");
                 result.Success = false;
                 result.Message = "User import failed";
                 result.EndTime = DateTime.UtcNow;
@@ -339,7 +327,7 @@ namespace cams.Backend.Services
             }
         }
 
-        public async Task<MigrationResult> ImportRolesAsync(BulkRoleImportRequest request, int currentUserId, string progressId = "")
+        public async Task<MigrationResult> ImportRolesAsync(BulkRoleImportRequest request, Guid currentUserId, string progressId = "")
         {
             await SendProgressUpdate(progressId, new MigrationProgress
             {
@@ -368,7 +356,7 @@ namespace cams.Backend.Services
             };
         }
 
-        public async Task<MigrationResult> ImportApplicationsAsync(BulkApplicationImportRequest request, int currentUserId, string progressId = "")
+        public async Task<MigrationResult> ImportApplicationsAsync(BulkApplicationImportRequest request, Guid currentUserId, string progressId = "")
         {
             await SendProgressUpdate(progressId, new MigrationProgress
             {
@@ -417,13 +405,13 @@ namespace cams.Backend.Services
                 }
 
                 // Check if username already exists in database
-                if (await _context.Users.AnyAsync(u => u.Username.ToLower() == user.Username.ToLower() && u.IsActive))
+                if (await context.Users.AnyAsync(u => u.Username.ToLower() == user.Username.ToLower() && u.IsActive))
                 {
                     warnings.Add($"Username '{user.Username}' already exists in database");
                 }
 
                 // Check if email already exists in database
-                if (await _context.Users.AnyAsync(u => u.Email.ToLower() == user.Email.ToLower() && u.IsActive))
+                if (await context.Users.AnyAsync(u => u.Email.ToLower() == user.Email.ToLower() && u.IsActive))
                 {
                     warnings.Add($"Email '{user.Email}' already exists in database");
                 }
@@ -480,11 +468,11 @@ namespace cams.Backend.Services
 
             try
             {
-                await _hubContext.Clients.Group($"migration_{progressId}").SendAsync("ProgressUpdate", progress);
+                await hubContext.Clients.Group($"migration_{progressId}").SendAsync("ProgressUpdate", progress);
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Failed to send progress update for migration {ProgressId}", progressId);
+                logger.LogWarning(ex, "Failed to send progress update for migration {ProgressId}", progressId);
             }
         }
     }

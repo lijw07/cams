@@ -24,12 +24,12 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var profile = await userService.GetUserProfileAsync(userId);
-                
+
                 if (profile == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User profile");
                 }
-                
+
                 // Log audit event for profile retrieval
                 await loggingService.LogAuditAsync(
                     userId,
@@ -40,7 +40,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(profile);
             }
             catch (UnauthorizedAccessException)
@@ -61,12 +61,12 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var profile = await userService.GetUserProfileSummaryAsync(userId);
-                
+
                 if (profile == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User profile");
                 }
-                
+
                 // Log audit event for profile summary retrieval
                 await loggingService.LogAuditAsync(
                     userId,
@@ -77,7 +77,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(profile);
             }
             catch (UnauthorizedAccessException)
@@ -108,12 +108,12 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 var user = await userService.GetUserAsync(userId);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User profile");
                 }
-                
+
                 // Track changes for email notification
                 var changedFields = new List<string>();
                 if (user.FirstName != request.FirstName)
@@ -124,14 +124,14 @@ namespace cams.Backend.Controller
                     changedFields.Add($"Phone Number: {user.PhoneNumber ?? "(not set)"} → {request.PhoneNumber ?? "(not set)"}");
 
                 var updatedProfile = await userService.UpdateUserProfileAsync(userId, request);
-                
+
                 if (updatedProfile == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User profile");
                 }
-                
+
                 // Email notifications have been removed
-                
+
                 // Log audit event for profile update
                 await loggingService.LogAuditAsync(
                     userId,
@@ -143,7 +143,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(updatedProfile);
             }
             catch (UnauthorizedAccessException)
@@ -165,11 +165,11 @@ namespace cams.Backend.Controller
                 logger.LogInformation("Password change request received. ModelState.IsValid: {IsValid}", ModelState.IsValid);
                 if (!ModelState.IsValid)
                 {
-                    logger.LogWarning("Password change validation failed. Errors: {Errors}", 
+                    logger.LogWarning("Password change validation failed. Errors: {Errors}",
                         string.Join("; ", ModelState.Where(x => x.Value?.Errors.Count > 0)
                             .SelectMany(x => x.Value!.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
                 }
-                
+
                 if (!ModelState.IsValid)
                 {
                     return HttpResponseHelper.CreateValidationErrorResponse(
@@ -182,7 +182,7 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 var result = await userService.ChangePasswordAsync(userId, request);
-                
+
                 if (!result.Success)
                 {
                     // Log failed password change attempt
@@ -196,10 +196,10 @@ namespace cams.Backend.Controller
                         failureReason: result.Message,
                         severity: SecuritySeverity.Warning.ToString()
                     );
-                    
+
                     return HttpResponseHelper.CreateBadRequestResponse(result.Message);
                 }
-                
+
                 // Log successful password change
                 await loggingService.LogSecurityEventAsync(
                     SecurityEventType.PasswordChange.ToString(),
@@ -210,9 +210,9 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
-                
+
                 // Email notifications have been removed
-                
+
                 // Log audit event for password change
                 await loggingService.LogAuditAsync(
                     userId,
@@ -223,7 +223,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -255,9 +255,9 @@ namespace cams.Backend.Controller
                 var userId = UserHelper.GetCurrentUserId(User);
                 var user = await userService.GetUserAsync(userId);
                 var oldEmail = user?.Email;
-                
+
                 var result = await userService.ChangeEmailAsync(userId, request);
-                
+
                 if (!result.Success)
                 {
                     // Log failed email change attempt
@@ -271,10 +271,10 @@ namespace cams.Backend.Controller
                         failureReason: result.Message,
                         severity: SecuritySeverity.Warning.ToString()
                     );
-                    
+
                     return HttpResponseHelper.CreateBadRequestResponse(result.Message);
                 }
-                
+
                 // Log successful email change
                 await loggingService.LogSecurityEventAsync(
                     SecurityEventType.EmailChange.ToString(),
@@ -285,9 +285,9 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
-                
+
                 // Email notifications have been removed
-                
+
                 // Log audit event for email change
                 await loggingService.LogAuditAsync(
                     userId,
@@ -299,7 +299,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -330,7 +330,7 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 var isValid = await userService.ValidateCurrentPasswordAsync(userId, request.Password);
-                
+
                 // Log audit event for password validation
                 await loggingService.LogAuditAsync(
                     userId,
@@ -341,7 +341,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(new { isValid, message = isValid ? "Password is valid" : "Password is invalid" });
             }
             catch (UnauthorizedAccessException)
@@ -371,7 +371,7 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Validate password before deactivation
                 var isValidPassword = await userService.ValidateCurrentPasswordAsync(userId, request.CurrentPassword);
                 if (!isValidPassword)
@@ -387,17 +387,17 @@ namespace cams.Backend.Controller
                         failureReason: "Invalid password provided",
                         severity: SecuritySeverity.Warning.ToString()
                     );
-                    
+
                     return HttpResponseHelper.CreateBadRequestResponse("Current password is incorrect");
                 }
 
                 var success = await userService.DeactivateUserAsync(userId);
-                
+
                 if (!success)
                 {
                     return HttpResponseHelper.CreateErrorResponse("Failed to deactivate account");
                 }
-                
+
                 // Log successful account deactivation
                 await loggingService.LogSecurityEventAsync(
                     SecurityEventType.AccountDeactivation.ToString(),
@@ -408,9 +408,9 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     severity: SecuritySeverity.Information.ToString()
                 );
-                
+
                 // Email notifications have been removed
-                
+
                 // Log audit event for account deactivation
                 await loggingService.LogAuditAsync(
                     userId,
@@ -422,7 +422,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(new { message = "Account deactivated successfully" });
             }
             catch (UnauthorizedAccessException)
@@ -443,7 +443,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var isTaken = await userService.IsEmailTakenAsync(email, userId);
-                
+
                 // Log audit event for email availability check
                 await loggingService.LogAuditAsync(
                     userId,
@@ -453,11 +453,12 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
-                return Ok(new { 
-                    email, 
-                    isAvailable = !isTaken, 
-                    message = isTaken ? "Email is already in use" : "Email is available" 
+
+                return Ok(new
+                {
+                    email,
+                    isAvailable = !isTaken,
+                    message = isTaken ? "Email is already in use" : "Email is available"
                 });
             }
             catch (UnauthorizedAccessException)

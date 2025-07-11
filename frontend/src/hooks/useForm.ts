@@ -1,5 +1,4 @@
-import { useState, useCallback } from 'react';
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 
 export interface UseFormOptions<T> {
   initialValues: T;
@@ -12,7 +11,7 @@ export interface UseFormReturn<T> {
   errors: Partial<Record<keyof T, string>>;
   touched: Partial<Record<keyof T, boolean>>;
   isSubmitting: boolean;
-  setFieldValue: (field: keyof T, value: any) => void;
+  setFieldValue: <K extends keyof T>(field: K, value: T[K]) => void;
   setFieldError: (field: keyof T, error: string) => void;
   setFieldTouched: (field: keyof T, isTouched?: boolean) => void;
   resetForm: () => void;
@@ -21,7 +20,7 @@ export interface UseFormReturn<T> {
   validateForm: () => boolean;
 }
 
-export const useForm = <T extends Record<string, any>>({
+export const useForm = <T extends Record<string, unknown>>({
   initialValues,
   validate,
   onSubmit,
@@ -31,7 +30,7 @@ export const useForm = <T extends Record<string, any>>({
   const [touched, setTouched] = useState<Partial<Record<keyof T, boolean>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const setFieldValue = useCallback((field: keyof T, value: any) => {
+  const setFieldValue = useCallback(<K extends keyof T>(field: K, value: T[K]) => {
     setValues(prev => ({ ...prev, [field]: value }));
     
     // Clear error when user starts typing

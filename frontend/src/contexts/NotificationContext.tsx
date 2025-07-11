@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+
 import { useNavigate } from 'react-router-dom';
+
 import { Notification, NotificationContextType } from '../types';
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);

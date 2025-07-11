@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /applications/
+Disallow: /logs/
+Disallow: /management/
+Disallow: /settings
+Disallow: /profile
+Disallow: /migration
+
+# Allow public pages for SEO
+Allow: /contact-sales
+
+# Block authentication pages from indexing
+Disallow: /login
+Disallow: /register
+
+# Sitemap location
+Sitemap: https://your-domain.com/sitemap.xml
+
+# Crawl delay (optional - be respectful to search engines)
+Crawl-delay: 1

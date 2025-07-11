@@ -1,0 +1,103 @@
+{
+  "name": "CAMS - Centralized Application Management System",
+  "short_name": "CAMS",
+  "description": "Streamline your database operations with CAMS. Connect to SQL Server, MySQL, PostgreSQL, Oracle, MongoDB and more. Real-time monitoring, enterprise security, and cloud integration for modern teams.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#3B82F6",
+  "background_color": "#FFFFFF",
+  "scope": "/",
+  "categories": ["business", "productivity", "developer"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/desktop-home.jpg",
+      "sizes": "1280x720",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "CAMS Dashboard - Desktop View"
+    },
+    {
+      "src": "/screenshots/mobile-home.jpg",
+      "sizes": "430x932",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "CAMS Dashboard - Mobile View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View your application dashboard",
+      "url": "/dashboard",
+      "icons": [
+        {
+          "src": "/icons/dashboard-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Applications",
+      "short_name": "Apps",
+      "description": "Manage your applications",
+      "url": "/applications",
+      "icons": [
+        {
+          "src": "/icons/apps-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "Database Connections",
+      "short_name": "Connections",
+      "description": "Manage database connections",
+      "url": "/applications",
+      "icons": [
+        {
+          "src": "/icons/database-96x96.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "edge_side_panel": {
+    "preferred_width": 400
+  }
+}
