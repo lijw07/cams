@@ -10,7 +10,7 @@ public class BulkToggleRequest
     [Required(ErrorMessage = "Connection IDs are required")]
     [MinLength(1, ErrorMessage = "At least one connection ID is required")]
     public Guid[] ConnectionIds { get; set; } = Array.Empty<Guid>();
-        
+
     [Required]
     public bool IsActive { get; set; }
 }

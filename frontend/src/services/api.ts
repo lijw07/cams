@@ -1,8 +1,12 @@
+// Re-export from new apiService for backward compatibility
+export { apiService as default, apiService } from './apiService';
+
+// Legacy implementation (deprecated - will be removed)
 import axios, { AxiosInstance, AxiosResponse, AxiosError } from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 
-class ApiService {
+class LegacyApiService {
   private _client: AxiosInstance;
   
   get client(): AxiosInstance {
@@ -129,5 +133,5 @@ class ApiService {
   }
 }
 
-export const apiService = new ApiService();
-export default apiService;
+// Legacy export (deprecated)
+export const legacyApiService = new LegacyApiService();

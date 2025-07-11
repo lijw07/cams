@@ -281,3 +281,6 @@ static async Task SeedDataWithRetryAsync(ApplicationDbContext context, ILogger l
         }
     }
 }
+
+// Make the Program class accessible to test projects
+public partial class Program { }

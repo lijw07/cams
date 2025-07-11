@@ -25,7 +25,7 @@ namespace cams.Backend.View
         public ConnectionStatus Status { get; set; }
         public string StatusName => Status.ToString();
         public string? LastTestResult { get; set; }
-        
+
         // Sensitive data - only included when explicitly requested
         public string? ConnectionString { get; set; }
         public string? ApiKey { get; set; }

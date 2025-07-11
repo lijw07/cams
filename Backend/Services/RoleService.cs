@@ -153,7 +153,7 @@ namespace cams.Backend.Services
             var role = await context.Roles
                 .Include(r => r.UserRoles)
                 .FirstOrDefaultAsync(r => r.Id == id);
-                
+
             if (role == null)
             {
                 return false;
@@ -179,13 +179,13 @@ namespace cams.Backend.Services
             {
                 context.UserRoles.RemoveRange(inactiveUserRoles);
             }
-            
+
             // The cascade delete will automatically remove any remaining active UserRole records
             context.Roles.Remove(role);
 
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Permanently deleted role: {RoleName} (cleaned up {InactiveCount} inactive user assignments)", 
+            logger.LogInformation("Permanently deleted role: {RoleName} (cleaned up {InactiveCount} inactive user assignments)",
                 LoggingHelper.Sanitize(role.Name), inactiveUserRoles.Count);
 
             return true;
@@ -205,7 +205,7 @@ namespace cams.Backend.Services
 
             await context.SaveChangesAsync();
 
-            logger.LogInformation("Toggled role status: {RoleName} is now {Status}", 
+            logger.LogInformation("Toggled role status: {RoleName} is now {Status}",
                 LoggingHelper.Sanitize(role.Name), role.IsActive ? "active" : "inactive");
 
             return true;
@@ -315,29 +315,29 @@ namespace cams.Backend.Services
         public async Task<bool> UserHasRoleAsync(Guid userId, string roleName)
         {
             logger.LogInformation("RoleService.UserHasRoleAsync: Checking if user {UserId} has role '{RoleName}'", userId, LoggingHelper.Sanitize(roleName));
-            
+
             var userRoles = await context.UserRoles
                 .Include(ur => ur.Role)
                 .Where(ur => ur.UserId == userId)
                 .ToListAsync();
-                
+
             logger.LogInformation("RoleService.UserHasRoleAsync: User {UserId} has {RoleCount} role assignments", userId, userRoles.Count);
-            
+
             foreach (var ur in userRoles)
             {
                 logger.LogInformation("RoleService.UserHasRoleAsync: User {UserId} role assignment - Role: '{RoleName}', IsActive: {IsActive}, RoleIsActive: {RoleIsActive}",
                     userId, LoggingHelper.Sanitize(ur.Role?.Name ?? "NULL"), ur.IsActive, ur.Role?.IsActive ?? false);
             }
-            
+
             var hasRole = await context.UserRoles
                 .Include(ur => ur.Role)
-                .AnyAsync(ur => ur.UserId == userId && 
-                              ur.Role.Name == roleName && 
-                              ur.IsActive && 
+                .AnyAsync(ur => ur.UserId == userId &&
+                              ur.Role.Name == roleName &&
+                              ur.IsActive &&
                               ur.Role.IsActive);
-                              
+
             logger.LogInformation("RoleService.UserHasRoleAsync: Final result for user {UserId} and role '{RoleName}': {HasRole}", userId, LoggingHelper.Sanitize(roleName), hasRole);
-            
+
             return hasRole;
         }
 
@@ -379,7 +379,7 @@ namespace cams.Backend.Services
         public async Task<bool> CheckRoleNameAvailabilityAsync(string name, Guid? excludeId = null)
         {
             var query = context.Roles.Where(r => r.Name == name);
-            
+
             if (excludeId.HasValue)
             {
                 query = query.Where(r => r.Id != excludeId.Value);
@@ -446,14 +446,14 @@ namespace cams.Backend.Services
 
                     // Hard delete - remove from database
                     context.Roles.Remove(role);
-                    
+
                     // Also remove any inactive user-role assignments
                     var userRoleAssignments = await context.UserRoles
                         .Where(ur => ur.RoleId == roleId)
                         .ToListAsync();
-                    
+
                     context.UserRoles.RemoveRange(userRoleAssignments);
-                    
+
                     result.Successful.Add(roleId);
 
                     logger.LogInformation("Role {RoleId} deleted by user {UserId}", roleId, deletedBy);
@@ -575,7 +575,7 @@ namespace cams.Backend.Services
                 IsActive = ur.User.IsActive,
                 AssignedAt = ur.AssignedAt,
                 AssignedBy = ur.AssignedBy,
-                AssignedByName = ur.AssignedByUser != null ? 
+                AssignedByName = ur.AssignedByUser != null ?
                     $"{ur.AssignedByUser.FirstName} {ur.AssignedByUser.LastName}".Trim() : null
             });
         }
@@ -600,7 +600,7 @@ namespace cams.Backend.Services
                 }
             }
 
-            logger.LogInformation("Assigned role {RoleId} to {SuccessCount}/{TotalCount} users", 
+            logger.LogInformation("Assigned role {RoleId} to {SuccessCount}/{TotalCount} users",
                 roleId, successCount, userIds.Count);
 
             return successCount > 0;
@@ -622,7 +622,7 @@ namespace cams.Backend.Services
                 }
             }
 
-            logger.LogInformation("Removed role {RoleId} from {SuccessCount}/{TotalCount} users", 
+            logger.LogInformation("Removed role {RoleId} from {SuccessCount}/{TotalCount} users",
                 roleId, successCount, userIds.Count);
 
             return successCount > 0;

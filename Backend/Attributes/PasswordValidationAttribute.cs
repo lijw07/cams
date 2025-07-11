@@ -8,7 +8,7 @@ namespace cams.Backend.Attributes
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var password = value as string;
-            
+
             if (string.IsNullOrEmpty(password))
             {
                 return ValidationResult.Success;

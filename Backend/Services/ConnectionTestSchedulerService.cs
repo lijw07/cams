@@ -72,12 +72,12 @@ namespace cams.Backend.Services
 
             try
             {
-                logger.LogInformation("Executing scheduled connection test for application {ApplicationId} (Schedule: {ScheduleId})", 
+                logger.LogInformation("Executing scheduled connection test for application {ApplicationId} (Schedule: {ScheduleId})",
                     schedule.ApplicationId, schedule.Id);
 
                 // Get all active database connections for this application
                 var connections = await databaseConnectionService.GetUserConnectionsAsync(
-                    schedule.Application.UserId, 
+                    schedule.Application.UserId,
                     schedule.ApplicationId);
 
                 var activeConnections = connections.Where(c => c.IsActive).ToList();
@@ -109,7 +109,7 @@ namespace cams.Backend.Services
                         };
 
                         var testResult = await databaseConnectionService.TestConnectionAsync(
-                            testRequest, 
+                            testRequest,
                             schedule.Application.UserId);
 
                         testResults.Add(testResult);
@@ -117,20 +117,20 @@ namespace cams.Backend.Services
                         if (testResult.IsSuccessful)
                         {
                             successCount++;
-                            logger.LogDebug("Connection test successful for connection {ConnectionId} ({ConnectionName})", 
+                            logger.LogDebug("Connection test successful for connection {ConnectionId} ({ConnectionName})",
                                 connection.Id, LoggingHelper.Sanitize(connection.Name));
                         }
                         else
                         {
                             failCount++;
-                            logger.LogWarning("Connection test failed for connection {ConnectionId} ({ConnectionName}): {Error}", 
+                            logger.LogWarning("Connection test failed for connection {ConnectionId} ({ConnectionName}): {Error}",
                                 connection.Id, LoggingHelper.Sanitize(connection.Name), LoggingHelper.Sanitize(testResult.Message));
                         }
                     }
                     catch (Exception ex)
                     {
                         failCount++;
-                        logger.LogError(ex, "Error testing connection {ConnectionId} ({ConnectionName})", 
+                        logger.LogError(ex, "Error testing connection {ConnectionId} ({ConnectionName})",
                             connection.Id, LoggingHelper.Sanitize(connection.Name));
                     }
                 }
@@ -148,13 +148,13 @@ namespace cams.Backend.Services
                     stopwatch.Elapsed);
 
                 logger.LogInformation("Completed scheduled connection test for application {ApplicationId}. " +
-                    "Status: {Status}, Duration: {Duration}ms", 
+                    "Status: {Status}, Duration: {Duration}ms",
                     schedule.ApplicationId, status, stopwatch.ElapsedMilliseconds);
             }
             catch (Exception ex)
             {
                 stopwatch.Stop();
-                logger.LogError(ex, "Error executing scheduled connection test for application {ApplicationId}", 
+                logger.LogError(ex, "Error executing scheduled connection test for application {ApplicationId}",
                     schedule.ApplicationId);
 
                 try

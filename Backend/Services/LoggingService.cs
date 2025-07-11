@@ -32,7 +32,7 @@ namespace cams.Backend.Services
 
             context.AuditLogs.Add(auditLog);
             await context.SaveChangesAsync();
-            
+
             logger.LogInformation("Audit log created: User {UserId} performed {Action} on {EntityType} {EntityId}",
                 userId, action, entityType, entityId);
         }
@@ -63,8 +63,8 @@ namespace cams.Backend.Services
             return result;
         }
 
-        public async Task<(IEnumerable<AuditLog> data, int totalCount)> GetAuditLogsWithCountAsync(Guid? userId = null, 
-            string? entityType = null, DateTime? fromDate = null, DateTime? toDate = null, 
+        public async Task<(IEnumerable<AuditLog> data, int totalCount)> GetAuditLogsWithCountAsync(Guid? userId = null,
+            string? entityType = null, DateTime? fromDate = null, DateTime? toDate = null,
             int pageSize = 100, int pageNumber = 1)
         {
             var query = context.AuditLogs.Include(a => a.User).AsQueryable();
@@ -127,7 +127,7 @@ namespace cams.Backend.Services
 
             context.SecurityLogs.Add(securityLog);
             await context.SaveChangesAsync();
-            
+
             logger.LogInformation("Security event logged: {EventType} - {Status} for user {UserId}",
                 eventType, status, userId);
         }
@@ -217,7 +217,7 @@ namespace cams.Backend.Services
                 query = query.Where(log => log.Timestamp >= fromDate.Value);
 
             var logs = await query.ToListAsync();
-            
+
             var failedAttempts = logs
                 .GroupBy(log => log.IpAddress)
                 .Where(group => group.Count() >= (threshold ?? 5))
@@ -257,7 +257,7 @@ namespace cams.Backend.Services
 
             context.SystemLogs.Add(systemLog);
             await context.SaveChangesAsync();
-            
+
             logger.LogInformation("System event logged: {EventType} - {Level} from {Source}: {Message}",
                 eventType, level, source, message);
         }
@@ -523,7 +523,7 @@ namespace cams.Backend.Services
             var logsToRemove = await context.AuditLogs
                 .Where(log => log.Timestamp < cutoffDate)
                 .ToListAsync();
-            
+
             context.AuditLogs.RemoveRange(logsToRemove);
             await context.SaveChangesAsync();
 
@@ -536,7 +536,7 @@ namespace cams.Backend.Services
             var logsToRemove = await context.SecurityLogs
                 .Where(log => log.Timestamp < cutoffDate)
                 .ToListAsync();
-            
+
             context.SecurityLogs.RemoveRange(logsToRemove);
             await context.SaveChangesAsync();
 
@@ -549,7 +549,7 @@ namespace cams.Backend.Services
             var logsToRemove = await context.SystemLogs
                 .Where(log => log.Timestamp < cutoffDate)
                 .ToListAsync();
-            
+
             context.SystemLogs.RemoveRange(logsToRemove);
             await context.SaveChangesAsync();
 
@@ -562,7 +562,7 @@ namespace cams.Backend.Services
             var logsToRemove = await context.PerformanceLogs
                 .Where(log => log.Timestamp < cutoffDate)
                 .ToListAsync();
-            
+
             context.PerformanceLogs.RemoveRange(logsToRemove);
             await context.SaveChangesAsync();
 
@@ -589,7 +589,7 @@ namespace cams.Backend.Services
 
             var timeSpan = logs.Max(l => l.Timestamp) - logs.Min(l => l.Timestamp);
             var minutes = timeSpan.TotalMinutes;
-            
+
             return minutes > 0 ? logs.Count / minutes : logs.Count;
         }
 

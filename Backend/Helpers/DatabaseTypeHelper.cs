@@ -37,19 +37,19 @@ namespace cams.Backend.Helpers
         {
             return type switch
             {
-                DatabaseType.SqlServer or 
-                DatabaseType.MySQL or 
-                DatabaseType.PostgreSQL or 
-                DatabaseType.Oracle or 
+                DatabaseType.SqlServer or
+                DatabaseType.MySQL or
+                DatabaseType.PostgreSQL or
+                DatabaseType.Oracle or
                 DatabaseType.SQLite => "Relational Database",
-                
+
                 DatabaseType.MongoDB => "Document Database",
                 DatabaseType.Redis => "Key-Value Store",
-                
-                DatabaseType.RestApi or 
-                DatabaseType.GraphQL or 
+
+                DatabaseType.RestApi or
+                DatabaseType.GraphQL or
                 DatabaseType.WebSocket => "API Connection",
-                
+
                 DatabaseType.Custom => "Custom",
                 _ => "Other"
             };
@@ -78,10 +78,10 @@ namespace cams.Backend.Helpers
         /// <returns>True if relational, false otherwise</returns>
         public static bool IsRelationalDatabase(DatabaseType type)
         {
-            return type is DatabaseType.SqlServer or 
-                          DatabaseType.MySQL or 
-                          DatabaseType.PostgreSQL or 
-                          DatabaseType.Oracle or 
+            return type is DatabaseType.SqlServer or
+                          DatabaseType.MySQL or
+                          DatabaseType.PostgreSQL or
+                          DatabaseType.Oracle or
                           DatabaseType.SQLite;
         }
 
@@ -92,8 +92,8 @@ namespace cams.Backend.Helpers
         /// <returns>True if API connection, false otherwise</returns>
         public static bool IsApiConnection(DatabaseType type)
         {
-            return type is DatabaseType.RestApi or 
-                          DatabaseType.GraphQL or 
+            return type is DatabaseType.RestApi or
+                          DatabaseType.GraphQL or
                           DatabaseType.WebSocket;
         }
     }

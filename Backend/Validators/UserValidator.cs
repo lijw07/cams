@@ -157,7 +157,7 @@ namespace cams.Backend.Validators
         {
             bool hasLetter = password.Any(char.IsLetter);
             bool hasDigit = password.Any(char.IsDigit);
-            
+
             return hasLetter && hasDigit;
         }
     }

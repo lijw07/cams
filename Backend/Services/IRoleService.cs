@@ -17,7 +17,7 @@ namespace cams.Backend.Services
         Task<IEnumerable<UserRoleResponse>> GetUserRolesAsync(Guid userId);
         Task<IEnumerable<UserRoleResponse>> GetUsersWithRoleAsync(Guid roleId);
         Task<bool> UserHasRoleAsync(Guid userId, string roleName);
-        
+
         // Advanced role management methods
         Task<bool> CheckRoleNameAvailabilityAsync(string name, Guid? excludeId = null);
         Task<IEnumerable<RoleResponse>> GetSystemRolesAsync();

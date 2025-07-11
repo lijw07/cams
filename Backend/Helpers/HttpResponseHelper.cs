@@ -26,10 +26,10 @@ namespace cams.Backend.Helpers
         /// <returns>OkObjectResult with success details</returns>
         public static OkObjectResult CreateSuccessResponse<T>(T data, string? message = null)
         {
-            var response = message != null 
+            var response = message != null
                 ? new { data, message }
                 : (object?)data;
-            
+
             return new OkObjectResult(response);
         }
 

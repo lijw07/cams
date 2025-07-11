@@ -6,7 +6,6 @@ using cams.Backend.Helpers;
 using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
-using cams.Backend.Model;
 
 namespace cams.Backend.Controller
 {
@@ -25,14 +24,14 @@ namespace cams.Backend.Controller
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} requested database connections{ApplicationFilter}", 
+                logger.LogInformation("User {UserId} requested database connections{ApplicationFilter}",
                     userId, applicationId.HasValue ? $" for application {applicationId}" : "");
-                
+
                 var connections = await connectionService.GetUserConnectionsAsync(userId, applicationId);
-                
-                logger.LogInformation("Retrieved {ConnectionCount} database connections for user {UserId}{ApplicationFilter}", 
+
+                logger.LogInformation("Retrieved {ConnectionCount} database connections for user {UserId}{ApplicationFilter}",
                     connections.Count(), userId, applicationId.HasValue ? $" for application {applicationId}" : "");
-                
+
                 // Log audit event for database connection list retrieval
                 await loggingService.LogAuditAsync(
                     userId,
@@ -42,7 +41,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(connections);
             }
             catch (UnauthorizedAccessException)
@@ -64,9 +63,9 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested database connection {ConnectionId}", userId, id);
-                
+
                 var connection = await connectionService.GetConnectionByIdAsync(id, userId);
-                
+
                 if (connection == null)
                 {
                     logger.LogWarning("Database connection {ConnectionId} not found for user {UserId}", id, userId);
@@ -74,7 +73,7 @@ namespace cams.Backend.Controller
                 }
 
                 logger.LogInformation("Successfully retrieved database connection {ConnectionId} for user {UserId}", id, userId);
-                
+
                 // Log audit event for database connection retrieval
                 await loggingService.LogAuditAsync(
                     userId,
@@ -86,7 +85,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(connection);
             }
             catch (UnauthorizedAccessException)
@@ -117,14 +116,14 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} creating database connection: {ConnectionName} (Type: {DatabaseType})", 
+                logger.LogInformation("User {UserId} creating database connection: {ConnectionName} (Type: {DatabaseType})",
                     userId, LoggingHelper.Sanitize(request.Name), request.Type);
-                
+
                 var connection = await connectionService.CreateConnectionAsync(request, userId);
-                
-                logger.LogInformation("Successfully created database connection {ConnectionId} ({ConnectionName}) for user {UserId}", 
+
+                logger.LogInformation("Successfully created database connection {ConnectionId} ({ConnectionName}) for user {UserId}",
                     connection.Id, LoggingHelper.Sanitize(connection.Name), userId);
-                
+
                 // Log audit event for database connection creation
                 await loggingService.LogAuditAsync(
                     userId,
@@ -151,7 +150,7 @@ namespace cams.Backend.Controller
                     requestPath: HttpContext.Request.Path,
                     statusCode: 201
                 );
-                
+
                 return CreatedAtAction(nameof(GetConnection), new { id = connection.Id }, connection);
             }
             catch (UnauthorizedAccessException)
@@ -161,13 +160,13 @@ namespace cams.Backend.Controller
             }
             catch (ArgumentException ex)
             {
-                logger.LogWarning("Invalid database connection request from user {UserId}: {ErrorMessage}", 
+                logger.LogWarning("Invalid database connection request from user {UserId}: {ErrorMessage}",
                     UserHelper.GetCurrentUserId(User), ex.Message);
                 return HttpResponseHelper.CreateBadRequestResponse(ex.Message);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating database connection {ConnectionName} for user {UserId}", 
+                logger.LogError(ex, "Error creating database connection {ConnectionName} for user {UserId}",
                     LoggingHelper.Sanitize(request.Name), UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse("Error creating database connection");
             }
@@ -195,12 +194,12 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 var connection = await connectionService.UpdateConnectionAsync(request, userId);
-                
+
                 if (connection == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
                 }
-                
+
                 // Log audit event for database connection update
                 await loggingService.LogAuditAsync(
                     userId,
@@ -213,7 +212,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(connection);
             }
             catch (UnauthorizedAccessException)
@@ -238,12 +237,12 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var deleted = await connectionService.DeleteConnectionAsync(id, userId);
-                
+
                 if (!deleted)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
                 }
-                
+
                 // Log audit event for database connection deletion
                 await loggingService.LogAuditAsync(
                     userId,
@@ -268,7 +267,7 @@ namespace cams.Backend.Controller
                     requestPath: HttpContext.Request.Path,
                     statusCode: 204
                 );
-                
+
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -293,23 +292,23 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                
+
                 if (request.ConnectionId.HasValue)
                 {
-                    logger.LogInformation("User {UserId} testing existing database connection {ConnectionId}", 
+                    logger.LogInformation("User {UserId} testing existing database connection {ConnectionId}",
                         userId, request.ConnectionId.Value);
                 }
                 else
                 {
-                    logger.LogInformation("User {UserId} testing new database connection (Type: {DatabaseType})", 
+                    logger.LogInformation("User {UserId} testing new database connection (Type: {DatabaseType})",
                         userId, request.ConnectionDetails?.Type);
                 }
-                
+
                 var testResult = await connectionService.TestConnectionAsync(request, userId);
-                
-                logger.LogInformation("Database connection test completed for user {UserId} - Success: {IsSuccessful}, Response Time: {ResponseTime}ms", 
+
+                logger.LogInformation("Database connection test completed for user {UserId} - Success: {IsSuccessful}, Response Time: {ResponseTime}ms",
                     userId, testResult.IsSuccessful, testResult.ResponseTime.TotalMilliseconds);
-                
+
                 // Log audit event for connection test
                 await loggingService.LogAuditAsync(
                     userId,
@@ -320,7 +319,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 // Log performance data for connection test
                 await loggingService.LogPerformanceAsync(
                     PerformanceOperations.DATABASE_QUERY,
@@ -369,7 +368,7 @@ namespace cams.Backend.Controller
                         duration: testResult.ResponseTime
                     );
                 }
-                
+
                 return Ok(testResult);
             }
             catch (UnauthorizedAccessException)
@@ -379,7 +378,7 @@ namespace cams.Backend.Controller
             }
             catch (ArgumentException ex)
             {
-                logger.LogWarning("Invalid database connection test request from user {UserId}: {ErrorMessage}", 
+                logger.LogWarning("Invalid database connection test request from user {UserId}: {ErrorMessage}",
                     UserHelper.GetCurrentUserId(User), ex.Message);
                 return HttpResponseHelper.CreateBadRequestResponse(ex.Message);
             }
@@ -387,7 +386,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogError(ex, "Error testing database connection for user {UserId}", userId);
-                
+
                 // Log system event for connection test system error
                 await loggingService.LogSystemEventAsync(
                     SystemEventType.DatabaseError.ToString(),
@@ -402,7 +401,7 @@ namespace cams.Backend.Controller
                     requestPath: HttpContext.Request.Path,
                     statusCode: 500
                 );
-                
+
                 return HttpResponseHelper.CreateErrorResponse("Error testing database connection");
             }
         }
@@ -414,7 +413,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var updated = await connectionService.ToggleConnectionStatusAsync(id, userId, request.IsActive);
-                
+
                 if (!updated)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
@@ -432,10 +431,10 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
 
-                var message = request.IsActive 
-                    ? ApplicationConstants.SuccessMessages.CONNECTION_ACTIVATED 
+                var message = request.IsActive
+                    ? ApplicationConstants.SuccessMessages.CONNECTION_ACTIVATED
                     : ApplicationConstants.SuccessMessages.CONNECTION_DEACTIVATED;
-                
+
                 return HttpResponseHelper.CreateSuccessResponse(new { }, message);
             }
             catch (UnauthorizedAccessException)
@@ -522,7 +521,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var summary = await connectionService.GetConnectionSummaryAsync(id, userId);
-                
+
                 if (summary == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
@@ -548,7 +547,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var summaries = await connectionService.GetConnectionsSummaryAsync(userId, applicationId);
-                
+
                 return Ok(summaries);
             }
             catch (UnauthorizedAccessException)
@@ -569,7 +568,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var health = await connectionService.GetConnectionHealthAsync(id, userId);
-                
+
                 if (health == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
@@ -595,7 +594,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var health = await connectionService.RefreshConnectionHealthAsync(id, userId);
-                
+
                 if (health == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
@@ -631,7 +630,7 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 var result = await connectionService.BulkToggleStatusAsync(request.ConnectionIds, request.IsActive, userId);
-                
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -662,7 +661,7 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 var result = await connectionService.BulkDeleteAsync(request.ConnectionIds, userId);
-                
+
                 return Ok(result);
             }
             catch (UnauthorizedAccessException)
@@ -683,7 +682,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var stats = await connectionService.GetConnectionUsageStatsAsync(id, userId);
-                
+
                 if (stats == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");
@@ -709,17 +708,17 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} testing existing database connection {ConnectionId}", userId, id);
-                
+
                 var request = new DatabaseConnectionTestRequest
                 {
                     ConnectionId = id
                 };
-                
+
                 var testResult = await connectionService.TestConnectionAsync(request, userId);
-                
-                logger.LogInformation("Database connection test completed for connection {ConnectionId} and user {UserId} - Success: {IsSuccessful}", 
+
+                logger.LogInformation("Database connection test completed for connection {ConnectionId} and user {UserId} - Success: {IsSuccessful}",
                     id, userId, testResult.IsSuccessful);
-                
+
                 // Log audit event for connection test
                 await loggingService.LogAuditAsync(
                     userId,
@@ -730,7 +729,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(testResult);
             }
             catch (UnauthorizedAccessException)
@@ -740,7 +739,7 @@ namespace cams.Backend.Controller
             }
             catch (ArgumentException ex)
             {
-                logger.LogWarning("Invalid database connection test request for connection {ConnectionId} from user {UserId}: {ErrorMessage}", 
+                logger.LogWarning("Invalid database connection test request for connection {ConnectionId} from user {UserId}: {ErrorMessage}",
                     id, UserHelper.GetCurrentUserId(User), ex.Message);
                 return HttpResponseHelper.CreateBadRequestResponse(ex.Message);
             }
@@ -758,7 +757,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var updated = await connectionService.UpdateLastAccessedAsync(id, userId);
-                
+
                 if (!updated)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Connection");

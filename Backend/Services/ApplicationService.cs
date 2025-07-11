@@ -31,7 +31,7 @@ namespace cams.Backend.Services
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
                 var searchTerm = request.SearchTerm.ToLower();
-                query = query.Where(a => 
+                query = query.Where(a =>
                     a.Name.ToLower().Contains(searchTerm) ||
                     a.Description!.ToLower().Contains(searchTerm) ||
                     a.Environment!.ToLower().Contains(searchTerm) ||
@@ -41,7 +41,7 @@ namespace cams.Backend.Services
             // Apply sorting
             query = request.SortBy?.ToLower() switch
             {
-                "name" => request.SortDirection?.ToLower() == "desc" 
+                "name" => request.SortDirection?.ToLower() == "desc"
                     ? query.OrderByDescending(a => a.Name)
                     : query.OrderBy(a => a.Name),
                 "createdat" => request.SortDirection?.ToLower() == "desc"
@@ -101,10 +101,10 @@ namespace cams.Backend.Services
 
             context.Applications.Add(application);
             await context.SaveChangesAsync();
-            
-            logger.LogInformation("Created application {ApplicationName} for user {UserId}", 
+
+            logger.LogInformation("Created application {ApplicationName} for user {UserId}",
                 LoggingHelper.Sanitize(request.Name), userId);
-            
+
             return MapToResponse(application);
         }
 
@@ -125,9 +125,9 @@ namespace cams.Backend.Services
             application.UpdatedAt = DateTime.UtcNow;
 
             await context.SaveChangesAsync();
-            logger.LogInformation("Updated application {ApplicationName} for user {UserId}", 
+            logger.LogInformation("Updated application {ApplicationName} for user {UserId}",
                 LoggingHelper.Sanitize(request.Name), userId);
-            
+
             return MapToResponse(application);
         }
 
@@ -142,10 +142,10 @@ namespace cams.Backend.Services
             var connectionCount = application.DatabaseConnections.Count;
             context.Applications.Remove(application); // Cascade delete will handle connections
             await context.SaveChangesAsync();
-            
-            logger.LogInformation("Deleted application {ApplicationId} and {ConnectionCount} connections for user {UserId}", 
+
+            logger.LogInformation("Deleted application {ApplicationId} and {ConnectionCount} connections for user {UserId}",
                 id, connectionCount, userId);
-            
+
             return true;
         }
 
@@ -159,10 +159,10 @@ namespace cams.Backend.Services
             application.IsActive = isActive;
             application.UpdatedAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
-            
-            logger.LogInformation("Toggled application {ApplicationId} status to {IsActive} for user {UserId}", 
+
+            logger.LogInformation("Toggled application {ApplicationId} status to {IsActive} for user {UserId}",
                 id, isActive, userId);
-            
+
             return true;
         }
 
@@ -175,7 +175,7 @@ namespace cams.Backend.Services
 
             application.LastAccessedAt = DateTime.UtcNow;
             await context.SaveChangesAsync();
-            
+
             return true;
         }
 
@@ -300,29 +300,29 @@ namespace cams.Backend.Services
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            
+
             context.DatabaseConnections.Add(connection);
             await context.SaveChangesAsync();
-            
-            logger.LogInformation("Created application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
+
+            logger.LogInformation("Created application {ApplicationName} with connection {ConnectionName} for user {UserId}",
                 LoggingHelper.Sanitize(application.Name), LoggingHelper.Sanitize(connection.Name), userId);
-            
+
             // Simple connection test simulation if requested
             bool testResult = false;
             string? testMessage = null;
             TimeSpan? testDuration = null;
-            
+
             if (request.TestConnectionOnCreate)
             {
                 try
                 {
                     var testStartTime = DateTime.UtcNow;
                     // Simple validation - in production this would actually test the connection
-                    testResult = !string.IsNullOrEmpty(connection.Server) && 
+                    testResult = !string.IsNullOrEmpty(connection.Server) &&
                                  (connection.Type != DatabaseType.SqlServer || !string.IsNullOrEmpty(connection.Database));
                     testMessage = testResult ? "Connection validated successfully" : "Connection validation failed - missing required fields";
                     testDuration = DateTime.UtcNow - testStartTime;
-                    
+
                     // Update connection status
                     connection.Status = testResult ? ConnectionStatus.Connected : ConnectionStatus.Failed;
                     connection.LastTestedAt = DateTime.UtcNow;
@@ -338,7 +338,7 @@ namespace cams.Backend.Services
                     connection.LastTestResult = testMessage;
                 }
             }
-            
+
             return MapToApplicationWithConnectionResponse(application, connection, testResult, testMessage, testDuration);
         }
 
@@ -349,14 +349,14 @@ namespace cams.Backend.Services
                 .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && a.UserId == userId);
             var existingConnection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.Id == request.ConnectionId && c.UserId == userId);
-            
+
             if (existingApp == null || existingConnection == null)
                 return null;
-            
+
             // Verify connection belongs to application
             if (existingConnection.ApplicationId != existingApp.Id)
                 return null;
-            
+
             // Update application
             existingApp.Name = request.ApplicationName;
             existingApp.Description = request.ApplicationDescription;
@@ -374,40 +374,40 @@ namespace cams.Backend.Services
             existingConnection.Port = request.Port;
             existingConnection.Database = request.Database;
             existingConnection.Username = request.Username;
-            
+
             // Only update password if provided
             if (!string.IsNullOrWhiteSpace(request.Password))
             {
                 existingConnection.PasswordHash = request.Password; // Should be encrypted in production
             }
-            
+
             existingConnection.ConnectionString = request.ConnectionString;
             existingConnection.ApiBaseUrl = request.ApiBaseUrl;
             existingConnection.ApiKey = request.ApiKey;
             existingConnection.AdditionalSettings = request.AdditionalSettings;
             existingConnection.IsActive = request.IsConnectionActive;
             existingConnection.UpdatedAt = DateTime.UtcNow;
-            
+
             await context.SaveChangesAsync();
-            logger.LogInformation("Updated application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
+            logger.LogInformation("Updated application {ApplicationName} with connection {ConnectionName} for user {UserId}",
                 LoggingHelper.Sanitize(existingApp.Name), LoggingHelper.Sanitize(existingConnection.Name), userId);
-            
+
             // Test connection if requested
             bool testResult = false;
             string? testMessage = null;
             TimeSpan? testDuration = null;
-            
+
             if (request.TestConnectionOnCreate)
             {
                 try
                 {
                     var testStartTime = DateTime.UtcNow;
                     // Simple validation
-                    testResult = !string.IsNullOrEmpty(existingConnection.Server) && 
+                    testResult = !string.IsNullOrEmpty(existingConnection.Server) &&
                                  (existingConnection.Type != DatabaseType.SqlServer || !string.IsNullOrEmpty(existingConnection.Database));
                     testMessage = testResult ? "Connection validated successfully" : "Connection validation failed - missing required fields";
                     testDuration = DateTime.UtcNow - testStartTime;
-                    
+
                     // Update connection status
                     existingConnection.Status = testResult ? ConnectionStatus.Connected : ConnectionStatus.Failed;
                     existingConnection.LastTestedAt = DateTime.UtcNow;
@@ -423,7 +423,7 @@ namespace cams.Backend.Services
                     existingConnection.LastTestResult = testMessage;
                 }
             }
-            
+
             return MapToApplicationWithConnectionResponse(existingApp, existingConnection, testResult, testMessage, testDuration);
         }
 
@@ -434,13 +434,13 @@ namespace cams.Backend.Services
                 .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
             if (application == null)
                 return null;
-            
+
             // Get the first (primary) connection for this application
             var primaryConnection = await context.DatabaseConnections
                 .FirstOrDefaultAsync(c => c.ApplicationId == applicationId);
             if (primaryConnection == null)
                 return null;
-            
+
             return MapToApplicationWithConnectionResponse(application, primaryConnection);
         }
 
@@ -494,14 +494,14 @@ namespace cams.Backend.Services
 
             // Simple masking - replace password with ***
             var masked = connectionString;
-            
+
             if (masked.Contains("password", StringComparison.OrdinalIgnoreCase))
             {
                 var passwordPattern = @"(password\s*=\s*)[^;]+";
                 masked = System.Text.RegularExpressions.Regex.Replace(
-                    masked, 
-                    passwordPattern, 
-                    "$1***", 
+                    masked,
+                    passwordPattern,
+                    "$1***",
                     System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             }
 

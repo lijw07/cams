@@ -148,7 +148,7 @@ namespace cams.Backend.Controller
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error creating user");
-                
+
                 await loggingService.LogSecurityEventAsync(
                     "UserCreationFailed",
                     "Failed",

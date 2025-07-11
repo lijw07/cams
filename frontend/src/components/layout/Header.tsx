@@ -100,9 +100,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
         <div className="flex items-center space-x-4">
           <button
             onClick={onMenuClick}
+            aria-label="Toggle navigation menu"
             className="p-2 rounded-md text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700 md:hidden"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" aria-hidden="true" />
           </button>
           
           <div>
@@ -118,19 +119,23 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="relative" ref={notificationRef}>
             <button
               onClick={() => setNotificationMenuOpen(!notificationMenuOpen)}
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+              aria-expanded={notificationMenuOpen}
+              aria-controls="notification-menu"
               className="p-2 rounded-md text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700 relative"
             >
-              <Bell className="w-5 h-5" />
+              <Bell className="w-5 h-5" aria-hidden="true" />
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                   {unreadCount > 99 ? '99+' : unreadCount}
+                  <span className="sr-only">{unreadCount} unread notifications</span>
                 </span>
               )}
             </button>
 
             {/* Notifications dropdown */}
             {notificationMenuOpen && (
-              <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-secondary-800 rounded-md shadow-lg border border-secondary-200 dark:border-secondary-700 z-50 max-h-96 overflow-hidden">
+              <div id="notification-menu" role="menu" aria-label="Notifications menu" className="absolute right-0 mt-2 w-80 bg-white dark:bg-secondary-800 rounded-md shadow-lg border border-secondary-200 dark:border-secondary-700 z-50 max-h-96 overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-secondary-200 dark:border-secondary-700">
                   <h3 className="text-lg font-semibold text-secondary-900 dark:text-white">
@@ -143,27 +148,30 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                           onClick={() => {
                             markAllAsRead();
                           }}
+                          aria-label="Mark all notifications as read"
                           className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           title="Mark all as read"
                         >
-                          <CheckCheck className="w-4 h-4" />
+                          <CheckCheck className="w-4 h-4" aria-hidden="true" />
                         </button>
                         <button
                           onClick={() => {
                             clearAllNotifications();
                           }}
+                          aria-label="Clear all notifications"
                           className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                           title="Clear all"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
                         </button>
                       </>
                     )}
                     <button
                       onClick={() => setNotificationMenuOpen(false)}
+                      aria-label="Close notifications"
                       className="p-1 text-secondary-400 hover:text-secondary-600 dark:hover:text-secondary-300"
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-4 h-4" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -220,10 +228,11 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                               e.stopPropagation();
                               deleteNotification(notification.id);
                             }}
+                            aria-label={`Delete notification: ${notification.title}`}
                             className="ml-2 p-1 text-secondary-400 hover:text-red-500 dark:hover:text-red-400"
                             title="Delete notification"
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-4 h-4" aria-hidden="true" />
                           </button>
                         </div>
                       </div>
@@ -238,6 +247,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="relative" ref={userMenuRef}>
             <button
               onClick={() => setUserMenuOpen(!userMenuOpen)}
+              aria-label="User menu"
+              aria-expanded={userMenuOpen}
+              aria-controls="user-menu"
               className="flex items-center space-x-2 p-2 rounded-md text-secondary-600 dark:text-secondary-400 hover:text-secondary-900 dark:hover:text-white hover:bg-secondary-100 dark:hover:bg-secondary-700"
             >
               <div className="w-8 h-8 rounded-full bg-primary-600 text-white flex items-center justify-center border-2 border-secondary-300 shadow-sm">
@@ -253,7 +265,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
             {/* User dropdown menu */}
             {userMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-md shadow-lg border border-secondary-200 dark:border-secondary-700 py-1 z-50">
+              <div id="user-menu" role="menu" aria-label="User account menu" className="absolute right-0 mt-2 w-48 bg-white dark:bg-secondary-800 rounded-md shadow-lg border border-secondary-200 dark:border-secondary-700 py-1 z-50">
                 <div className="px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 border-b border-secondary-200 dark:border-secondary-700">
                   <div className="font-medium">
                     {user?.FirstName && user?.LastName 
@@ -270,9 +282,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                     navigate('/profile');
                     setUserMenuOpen(false);
                   }}
+                  role="menuitem"
                   className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
                 >
-                  <User className="w-4 h-4" />
+                  <User className="w-4 h-4" aria-hidden="true" />
                   <span>Profile</span>
                 </button>
                 
@@ -282,18 +295,20 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                     navigate('/settings');
                     setUserMenuOpen(false);
                   }}
+                  role="menuitem"
                   className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-secondary-700 dark:text-secondary-300 hover:bg-secondary-100 dark:hover:bg-secondary-700"
                 >
-                  <Settings className="w-4 h-4" />
+                  <Settings className="w-4 h-4" aria-hidden="true" />
                   <span>Settings</span>
                 </button>
                 
                 <div className="border-t border-secondary-200 dark:border-secondary-700 mt-1 pt-1">
                   <button
                     onClick={handleLogout}
+                    role="menuitem"
                     className="flex items-center space-x-2 w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
                   >
-                    <LogOut className="w-4 h-4" />
+                    <LogOut className="w-4 h-4" aria-hidden="true" />
                     <span>Sign out</span>
                   </button>
                 </div>

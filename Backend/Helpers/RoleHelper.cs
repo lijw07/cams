@@ -9,7 +9,7 @@ namespace cams.Backend.Helpers
         public const string PLATFORM_ADMIN = RoleConstants.PLATFORM_ADMIN;
         public const string ADMIN = RoleConstants.ADMIN;
         public const string USER = RoleConstants.USER;
-        
+
         /// <summary>
         /// Check if user has any of the specified roles
         /// </summary>
@@ -17,15 +17,15 @@ namespace cams.Backend.Helpers
         {
             if (user?.UserRoles == null || !requiredRoles.Any())
                 return false;
-                
+
             var userRoles = user.UserRoles
                 .Where(ur => ur.IsActive && ur.Role.IsActive)
                 .Select(ur => ur.Role.Name)
                 .ToList();
-                
+
             return requiredRoles.Any(role => userRoles.Contains(role, StringComparer.OrdinalIgnoreCase));
         }
-        
+
         /// <summary>
         /// Check if user has admin privileges (Admin or PlatformAdmin)
         /// </summary>
@@ -33,7 +33,7 @@ namespace cams.Backend.Helpers
         {
             return HasRole(user, ADMIN, PLATFORM_ADMIN);
         }
-        
+
         /// <summary>
         /// Check if user has platform admin privileges
         /// </summary>
@@ -41,7 +41,7 @@ namespace cams.Backend.Helpers
         {
             return HasRole(user, PLATFORM_ADMIN);
         }
-        
+
         /// <summary>
         /// Get all active roles for a user
         /// </summary>
@@ -49,7 +49,7 @@ namespace cams.Backend.Helpers
         {
             if (user?.UserRoles == null)
                 return new List<string>();
-                
+
             return user.UserRoles
                 .Where(ur => ur.IsActive && ur.Role.IsActive)
                 .Select(ur => ur.Role.Name)

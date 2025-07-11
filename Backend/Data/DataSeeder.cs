@@ -19,7 +19,7 @@ namespace cams.Backend.Data
             try
             {
                 Console.WriteLine("Starting database initialization...");
-                
+
                 // First, ensure the database exists
                 Console.WriteLine("Ensuring database exists...");
                 var created = await context.Database.EnsureCreatedAsync();
@@ -42,17 +42,17 @@ namespace cams.Backend.Data
                         Console.WriteLine("No pending migrations found.");
                     }
                 }
-                
+
                 Console.WriteLine("Database initialization completed. Starting data seeding...");
-                
+
                 // Seed roles
                 await SeedRolesAsync(context);
                 await context.SaveChangesAsync(); // Save roles to get IDs
-                
+
                 // Seed default users
                 await SeedDefaultUsersAsync(context);
                 await context.SaveChangesAsync(); // Save users to get IDs
-                
+
                 // Seed default user roles
                 await SeedDefaultUserRolesAsync(context);
                 await context.SaveChangesAsync(); // Save user roles
@@ -66,7 +66,7 @@ namespace cams.Backend.Data
                 throw;
             }
         }
-        
+
         private static async Task SeedRolesAsync(ApplicationDbContext context)
         {
             // Check if roles already exist
@@ -74,9 +74,9 @@ namespace cams.Backend.Data
             {
                 return; // Roles already seeded
             }
-            
+
             var roles = new List<Role>();
-            
+
             foreach (var roleName in RoleConstants.DefaultRoles)
             {
                 var role = new Role
@@ -87,14 +87,14 @@ namespace cams.Backend.Data
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
-                
+
                 roles.Add(role);
             }
-            
+
             await context.Roles.AddRangeAsync(roles);
             Console.WriteLine($"Seeded {roles.Count} default roles");
         }
-        
+
         private static async Task SeedDefaultUsersAsync(ApplicationDbContext context)
         {
             // Check if users already exist
@@ -102,7 +102,7 @@ namespace cams.Backend.Data
             {
                 return; // Users already seeded
             }
-            
+
             var users = new List<User>
             {
                 new User
@@ -150,11 +150,11 @@ namespace cams.Backend.Data
                     UpdatedAt = DateTime.UtcNow
                 }
             };
-            
+
             await context.Users.AddRangeAsync(users);
             Console.WriteLine($"Seeded {users.Count} default users");
         }
-        
+
         private static async Task SeedDefaultUserRolesAsync(ApplicationDbContext context)
         {
             // Check if user roles already exist
@@ -162,30 +162,30 @@ namespace cams.Backend.Data
             {
                 return; // User roles already seeded
             }
-            
+
             // Get roles
             var platformAdminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == RoleConstants.PLATFORM_ADMIN);
             var adminRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == RoleConstants.ADMIN);
             var userRole = await context.Roles.FirstOrDefaultAsync(r => r.Name == RoleConstants.USER);
-            
+
             if (platformAdminRole == null || adminRole == null || userRole == null)
             {
                 Console.WriteLine("Roles not found, cannot seed user roles");
                 return;
             }
-            
+
             // Get users by username
             var platformAdminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "platformadmin");
             var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
             var regularUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "user");
             var testUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "testuser");
-            
+
             if (platformAdminUser == null || adminUser == null || regularUser == null || testUser == null)
             {
                 Console.WriteLine("Users not found, cannot seed user roles");
                 return;
             }
-            
+
             var userRoles = new List<UserRole>
             {
                 // Platform Admin user gets Platform_Admin role
@@ -221,7 +221,7 @@ namespace cams.Backend.Data
                     IsActive = true
                 }
             };
-            
+
             await context.UserRoles.AddRangeAsync(userRoles);
             Console.WriteLine($"Seeded {userRoles.Count} default user role assignments");
         }

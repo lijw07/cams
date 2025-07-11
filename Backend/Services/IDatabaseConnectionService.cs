@@ -15,7 +15,7 @@ namespace cams.Backend.Services
         string BuildConnectionString(DatabaseConnectionRequest request);
         string EncryptSensitiveData(string data);
         string DecryptSensitiveData(string encryptedData);
-        
+
         // Additional methods for new endpoints
         ConnectionStringValidationResponse ValidateConnectionString(string connectionString, DatabaseType databaseType);
         Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(Guid id, Guid userId);

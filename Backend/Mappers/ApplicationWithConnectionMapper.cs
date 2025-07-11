@@ -96,13 +96,13 @@ namespace cams.Backend.Mappers
             existingConnection.Port = request.Port;
             existingConnection.Database = request.Database;
             existingConnection.Username = request.Username;
-            
+
             // Only update password if provided
             if (!string.IsNullOrWhiteSpace(request.Password))
             {
                 existingConnection.PasswordHash = request.Password; // Should be encrypted in production
             }
-            
+
             existingConnection.ConnectionString = request.ConnectionString;
             existingConnection.ApiBaseUrl = request.ApiBaseUrl;
             existingConnection.ApiKey = request.ApiKey;

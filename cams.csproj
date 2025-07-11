@@ -28,5 +28,11 @@
         <PackageReference Include="NCrontab" Version="3.3.3" />
     </ItemGroup>
 
+    <ItemGroup>
+        <Compile Remove="Cams.Tests\**" />
+        <Content Remove="Cams.Tests\**" />
+        <EmbeddedResource Remove="Cams.Tests\**" />
+        <None Remove="Cams.Tests\**" />
+    </ItemGroup>
 
 </Project>

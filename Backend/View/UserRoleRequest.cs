@@ -6,7 +6,7 @@ namespace cams.Backend.View
     {
         [Required]
         public Guid UserId { get; set; }
-        
+
         [Required]
         public Guid RoleId { get; set; }
     }

@@ -9,7 +9,7 @@ public class ApplicationWithConnectionUpdateRequest : ApplicationWithConnectionR
 {
     [Required(ErrorMessage = "Application ID is required")]
     public Guid ApplicationId { get; set; }
-        
+
     [Required(ErrorMessage = "Connection ID is required")]
     public Guid ConnectionId { get; set; }
 }

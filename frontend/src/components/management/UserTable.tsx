@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { 
   Edit, 
   Trash2, 
@@ -33,7 +33,7 @@ interface UserTableProps {
   onPageSizeChange: (pageSize: number) => void;
 }
 
-const UserTable: React.FC<UserTableProps> = ({
+const UserTable: React.FC<UserTableProps> = memo(({
   users,
   loading,
   selectedUsers,
@@ -46,13 +46,28 @@ const UserTable: React.FC<UserTableProps> = ({
   onPageChange,
   onPageSizeChange
 }) => {
-  const getUserStatusIcon = (user: UserManagement) => {
+  // Memoize utility functions
+  const getUserStatusIcon = useCallback((user: UserManagement) => {
     return user.IsActive ? UserCheck : UserX;
-  };
+  }, []);
 
-  const getUserStatusColor = (user: UserManagement) => {
+  const getUserStatusColor = useCallback((user: UserManagement) => {
     return user.IsActive ? 'text-green-600' : 'text-red-600';
-  };
+  }, []);
+
+  // Memoize select all state
+  const isAllSelected = useMemo(() => {
+    return selectedUsers.length === users.length && users.length > 0;
+  }, [selectedUsers.length, users.length]);
+
+  // Memoize select all handler
+  const handleSelectAll = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      users.forEach(user => onToggleUser(user.Id));
+    } else {
+      users.forEach(user => onToggleUser(user.Id));
+    }
+  }, [users, onToggleUser]);
 
   if (loading) {
     return (
@@ -78,14 +93,9 @@ const UserTable: React.FC<UserTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 <input
                   type="checkbox"
-                  checked={selectedUsers.length === users.length && users.length > 0}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      users.forEach(user => onToggleUser(user.Id));
-                    } else {
-                      users.forEach(user => onToggleUser(user.Id));
-                    }
-                  }}
+                  checked={isAllSelected}
+                  onChange={handleSelectAll}
+                  aria-label="Select all users"
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                 />
               </th>
@@ -210,6 +220,8 @@ const UserTable: React.FC<UserTableProps> = ({
       />
     </div>
   );
-};
+})
+
+UserTable.displayName = 'UserTable';
 
 export default UserTable;

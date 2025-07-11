@@ -6,7 +6,8 @@ namespace Backend.Helpers
     public static class LoggingHelper
     {
         private static readonly Regex SanitizationRegex = new Regex(@"[\r\n\t]", RegexOptions.Compiled);
-        
+        private static readonly Regex MultipleSpacesRegex = new Regex(@"\s+", RegexOptions.Compiled);
+
         /// <summary>
         /// Sanitizes a string value for safe logging by removing newlines and other control characters
         /// </summary>
@@ -14,11 +15,14 @@ namespace Backend.Helpers
         {
             if (string.IsNullOrEmpty(input))
                 return input;
-                
+
             // Remove newlines, carriage returns, and tabs
-            return SanitizationRegex.Replace(input, " ").Trim();
+            var sanitized = SanitizationRegex.Replace(input, " ");
+            // Collapse multiple spaces into single spaces
+            sanitized = MultipleSpacesRegex.Replace(sanitized, " ");
+            return sanitized.Trim();
         }
-        
+
         /// <summary>
         /// Sanitizes a GUID value for safe logging
         /// </summary>
@@ -26,7 +30,7 @@ namespace Backend.Helpers
         {
             return input.ToString();
         }
-        
+
         /// <summary>
         /// Sanitizes an object for safe logging by converting to string and removing control characters
         /// </summary>
@@ -34,10 +38,10 @@ namespace Backend.Helpers
         {
             if (input == null)
                 return null;
-                
+
             return Sanitize(input.ToString());
         }
-        
+
         /// <summary>
         /// Creates a safe log message with sanitized parameters
         /// </summary>
@@ -48,7 +52,7 @@ namespace Backend.Helpers
             {
                 sanitizedArgs[i] = Sanitize(args[i]);
             }
-            
+
             return string.Format(template, sanitizedArgs);
         }
     }

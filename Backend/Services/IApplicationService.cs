@@ -14,7 +14,7 @@ namespace cams.Backend.Services
         Task<bool> UpdateLastAccessedAsync(Guid id, Guid userId);
         Task<IEnumerable<DatabaseConnectionSummary>> GetApplicationConnectionsAsync(Guid applicationId, Guid userId);
         Task<bool> ValidateApplicationAccessAsync(Guid applicationId, Guid userId);
-        
+
         // Combined application and database connection operations
         Task<ApplicationWithConnectionResponse> CreateApplicationWithConnectionAsync(ApplicationWithConnectionRequest request, Guid userId);
         Task<ApplicationWithConnectionResponse?> UpdateApplicationWithConnectionAsync(ApplicationWithConnectionUpdateRequest request, Guid userId);

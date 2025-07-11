@@ -15,7 +15,7 @@ using Backend.Helpers;
 namespace cams.Backend.Services
 {
     public class AuthenticationService(
-        IOptions<JwtSettings> jwtSettings, 
+        IOptions<JwtSettings> jwtSettings,
         ILogger<AuthenticationService> logger,
         ApplicationDbContext context,
         IUserMapper userMapper)
@@ -28,7 +28,7 @@ namespace cams.Backend.Services
         public async Task<LoginResponse?> AuthenticateAsync(LoginRequest request)
         {
             var user = await ValidateUserAsync(request.Username, request.Password);
-            
+
             if (user == null)
             {
                 logger.LogWarning("Authentication failed for user: {Username}", LoggingHelper.Sanitize(request.Username));
@@ -37,17 +37,17 @@ namespace cams.Backend.Services
 
             var token = GenerateJwtToken(user);
             var refreshToken = GenerateRefreshToken();
-            
+
             // Update user's refresh token
             user.RefreshToken = refreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
             user.LastLoginAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
-            
+
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            logger.LogInformation("User {Username} authenticated successfully", user.Username);
+            logger.LogInformation("User {Username} authenticated successfully", LoggingHelper.Sanitize(user.Username));
 
             return new LoginResponse
             {
@@ -66,7 +66,7 @@ namespace cams.Backend.Services
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
-                
+
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 return null;
@@ -74,12 +74,12 @@ namespace cams.Backend.Services
 
             return user;
         }
-        
+
         public async Task<RegisterResponse?> RegisterAsync(RegisterRequest request)
         {
             // Validate request
-            if (string.IsNullOrWhiteSpace(request.Username) || 
-                string.IsNullOrWhiteSpace(request.Email) || 
+            if (string.IsNullOrWhiteSpace(request.Username) ||
+                string.IsNullOrWhiteSpace(request.Email) ||
                 string.IsNullOrWhiteSpace(request.Password))
             {
                 return new RegisterResponse
@@ -88,7 +88,7 @@ namespace cams.Backend.Services
                     Message = "Username, email, and password are required"
                 };
             }
-            
+
             if (request.Password != request.ConfirmPassword)
             {
                 return new RegisterResponse
@@ -97,7 +97,7 @@ namespace cams.Backend.Services
                     Message = "Passwords do not match"
                 };
             }
-            
+
             // Check if username or email already exists
             if (await _context.Users.AnyAsync(u => u.Username == request.Username && u.IsActive))
             {
@@ -107,7 +107,7 @@ namespace cams.Backend.Services
                     Message = "Username is already taken"
                 };
             }
-            
+
             if (await _context.Users.AnyAsync(u => u.Email == request.Email && u.IsActive))
             {
                 return new RegisterResponse
@@ -116,7 +116,7 @@ namespace cams.Backend.Services
                     Message = "Email is already registered"
                 };
             }
-            
+
             // Create new user
             var newUser = new User
             {
@@ -130,11 +130,11 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-            
+
             // Add user to database
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
-            
+
             // Get the default User role
             var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User" && r.IsActive);
             if (userRole != null)
@@ -147,21 +147,21 @@ namespace cams.Backend.Services
                     IsActive = true,
                     AssignedAt = DateTime.UtcNow
                 };
-                
+
                 _context.UserRoles.Add(newUserRole);
                 await _context.SaveChangesAsync();
-                
+
                 // Load the user with roles for return
                 newUser.UserRoles = new List<UserRole> { newUserRole };
                 newUserRole.Role = userRole;
             }
-            
-            logger.LogInformation("User {Username} registered successfully with ID {UserId}", 
-                newUser.Username, newUser.Id);
-            
+
+            logger.LogInformation("User {Username} registered successfully with ID {UserId}",
+                LoggingHelper.Sanitize(newUser.Username), newUser.Id);
+
             // Map to profile response for return
             var userProfile = _userMapper.MapToProfileResponse(newUser, 0, 0);
-            
+
             return new RegisterResponse
             {
                 Success = true,
@@ -175,7 +175,7 @@ namespace cams.Backend.Services
         {
             var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
             var tokenHandler = new JwtSecurityTokenHandler();
-            
+
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -183,7 +183,7 @@ namespace cams.Backend.Services
                 new Claim(ClaimTypes.Email, user.Email),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
-            
+
             // Add role claims
             foreach (var userRole in user.UserRoles.Where(ur => ur.IsActive && ur.Role.IsActive))
             {
@@ -197,7 +197,7 @@ namespace cams.Backend.Services
                 Issuer = _jwtSettings.Issuer,
                 Audience = _jwtSettings.Audience,
                 SigningCredentials = new SigningCredentials(
-                    new SymmetricSecurityKey(key), 
+                    new SymmetricSecurityKey(key),
                     SecurityAlgorithms.HmacSha256Signature)
             };
 
@@ -217,9 +217,9 @@ namespace cams.Backend.Services
         {
             var user = await _context.Users
                 .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
-            
-            return user != null && 
-                   user.RefreshToken == refreshToken && 
+
+            return user != null &&
+                   user.RefreshToken == refreshToken &&
                    user.RefreshTokenExpiryTime > DateTime.UtcNow;
         }
 
@@ -229,27 +229,27 @@ namespace cams.Backend.Services
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
-            
+
             if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
-                logger.LogWarning("Invalid refresh token for user: {Username}", username);
+                logger.LogWarning("Invalid refresh token for user: {Username}", LoggingHelper.Sanitize(username));
                 return null;
             }
 
             // Generate new tokens
             var newToken = GenerateJwtToken(user);
             var newRefreshToken = GenerateRefreshToken();
-            
+
             // Update user's refresh token
             user.RefreshToken = newRefreshToken;
             user.RefreshTokenExpiryTime = DateTime.UtcNow.AddDays(_jwtSettings.RefreshTokenExpirationDays);
             user.LastLoginAt = DateTime.UtcNow;
             user.UpdatedAt = DateTime.UtcNow;
-            
+
             _context.Users.Update(user);
             await _context.SaveChangesAsync();
 
-            logger.LogInformation("Token refreshed successfully for user: {Username}", username);
+            logger.LogInformation("Token refreshed successfully for user: {Username}", LoggingHelper.Sanitize(username));
 
             return new LoginResponse
             {

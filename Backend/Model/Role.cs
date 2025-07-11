@@ -6,22 +6,22 @@ namespace cams.Backend.Model
     {
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
-        
+
         [Required]
         [MaxLength(50)]
         public string Name { get; set; } = string.Empty;
-        
+
         [MaxLength(255)]
         public string? Description { get; set; }
-        
+
         public bool IsActive { get; set; } = true;
-        
+
         public bool IsSystem { get; set; } = false;
-        
+
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-        
+
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-        
+
         // Navigation properties
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }

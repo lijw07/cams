@@ -2,7 +2,6 @@ using System.Text.Json;
 using cams.Backend.View;
 using cams.Backend.Model;
 using cams.Backend.Data;
-using cams.Backend.Helpers;
 using Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
@@ -87,7 +86,7 @@ namespace cams.Backend.Services
         {
             var startTime = DateTime.UtcNow;
             var progressId = Guid.NewGuid().ToString();
-            
+
             try
             {
                 if (request.ValidateOnly)
@@ -118,7 +117,7 @@ namespace cams.Backend.Services
             catch (Exception ex)
             {
                 logger.LogError(ex, "Error processing bulk migration");
-                
+
                 // Send error update to clients
                 await SendProgressUpdate(progressId, new MigrationProgress
                 {
@@ -177,7 +176,7 @@ namespace cams.Backend.Services
                     try
                     {
                         // Check if user already exists
-                        var existingUser = await context.Users.FirstOrDefaultAsync(u => 
+                        var existingUser = await context.Users.FirstOrDefaultAsync(u =>
                             (u.Username == userDto.Username || u.Email == userDto.Email) && u.IsActive);
 
                         if (existingUser != null)
@@ -187,7 +186,7 @@ namespace cams.Backend.Services
                                 warnings.Add($"User '{userDto.Username}' already exists and was skipped");
                                 continue;
                             }
-                            
+
                             // Update existing user
                             existingUser.Email = userDto.Email;
                             existingUser.FirstName = userDto.FirstName;
@@ -203,7 +202,7 @@ namespace cams.Backend.Services
 
                             // Note: Update functionality not implemented yet
                             successCount++;
-                            
+
                             await loggingService.LogAuditAsync(
                                 currentUserId,
                                 AuditAction.Update.ToString(),
@@ -220,7 +219,7 @@ namespace cams.Backend.Services
                             {
                                 Username = userDto.Username,
                                 Email = userDto.Email,
-                                PasswordHash = !string.IsNullOrEmpty(userDto.Password) 
+                                PasswordHash = !string.IsNullOrEmpty(userDto.Password)
                                     ? BCrypt.Net.BCrypt.HashPassword(userDto.Password)
                                     : BCrypt.Net.BCrypt.HashPassword("TempPassword123!"),
                                 FirstName = userDto.FirstName,
@@ -234,7 +233,7 @@ namespace cams.Backend.Services
                             // Add user to database
                             context.Users.Add(newUser);
                             await context.SaveChangesAsync();
-                            
+
                             // Default to User role if no roles specified
                             if (userDto.Roles.Count == 0)
                             {
@@ -251,7 +250,7 @@ namespace cams.Backend.Services
                                     context.UserRoles.Add(newUserRole);
                                 }
                             }
-                            
+
                             // Note: Role assignment not implemented in this simplified version
                             if (userDto.Roles.Count > 0)
                             {
@@ -284,7 +283,7 @@ namespace cams.Backend.Services
                     finally
                     {
                         processedCount++;
-                        
+
                         // Send progress update every user or every 10% of progress
                         if (processedCount % Math.Max(1, request.Users.Count / 10) == 0 || processedCount == request.Users.Count)
                         {
@@ -310,7 +309,7 @@ namespace cams.Backend.Services
                 result.Errors = errors;
                 result.Warnings = warnings;
                 result.Success = errors.Count == 0;
-                result.Message = result.Success 
+                result.Message = result.Success
                     ? $"Successfully imported {successCount} users"
                     : $"Completed with {errors.Count} errors. {successCount} users imported successfully";
                 result.EndTime = DateTime.UtcNow;

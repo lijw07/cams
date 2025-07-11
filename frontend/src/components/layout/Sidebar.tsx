@@ -101,6 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         <div 
           className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
           onClick={() => setOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -113,7 +114,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
         <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-              <Database className="w-5 h-5 text-white" />
+              <Database className="w-5 h-5 text-white" aria-hidden="true" />
             </div>
             <span className="text-lg font-semibold text-gray-900 dark:text-white">CAMS</span>
           </div>
@@ -121,13 +122,14 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
           {/* Close button for mobile */}
           <button
             onClick={() => setOpen(false)}
+            aria-label="Close navigation menu"
             className="p-2 rounded-md text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 md:hidden"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-8">
+        <nav className="flex-1 px-4 py-6 space-y-8" aria-label="Main navigation">
           {/* Main navigation */}
           <div>
             <h3 className="px-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -145,9 +147,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                       : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                     }
                   `}
+                  aria-current={item.current ? 'page' : undefined}
                   onClick={() => setOpen(false)}
                 >
-                  <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
+                  <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
                   {item.name}
                 </NavLink>
               ))}
@@ -180,9 +183,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                           : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                         }
                       `}
+                      aria-current={item.current ? 'page' : undefined}
                       onClick={() => setOpen(false)}
                     >
-                      <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
+                      <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
                       {item.name}
                     </NavLink>
                   ))
@@ -211,7 +215,7 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                     `}
                     onClick={() => setOpen(false)}
                   >
-                    <item.icon className="flex-shrink-0 w-5 h-5 mr-3" />
+                    <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
                     {item.name}
                   </NavLink>
                 ))}

@@ -28,7 +28,7 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check user's role to determine what users they can see
                 var isPlatformAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.PLATFORM_ADMIN);
                 var isAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.ADMIN);
@@ -47,7 +47,7 @@ namespace cams.Backend.Controller
                 // Admins can only see users with "User" role
                 if (!isPlatformAdmin && isAdmin)
                 {
-                    query = query.Where(u => u.UserRoles.Any(ur => 
+                    query = query.Where(u => u.UserRoles.Any(ur =>
                         ur.Role.Name == RoleConstants.USER && ur.IsActive));
                 }
 
@@ -55,7 +55,7 @@ namespace cams.Backend.Controller
                 if (!string.IsNullOrWhiteSpace(request.SearchTerm))
                 {
                     var searchTerm = request.SearchTerm.ToLower();
-                    query = query.Where(u => 
+                    query = query.Where(u =>
                         u.Username.ToLower().Contains(searchTerm) ||
                         u.Email.ToLower().Contains(searchTerm) ||
                         (u.FirstName != null && u.FirstName.ToLower().Contains(searchTerm)) ||
@@ -64,7 +64,7 @@ namespace cams.Backend.Controller
 
                 // Get total count for pagination (before applying Skip/Take)
                 var totalCount = await query.CountAsync();
-                
+
                 // Calculate pagination metadata
                 var totalPages = (int)Math.Ceiling((double)totalCount / request.PageSize);
                 var offset = (request.PageNumber - 1) * request.PageSize;
@@ -142,7 +142,7 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check user's role to determine what users they can see
                 var isPlatformAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.PLATFORM_ADMIN);
                 var isAdmin = await roleService.UserHasRoleAsync(currentUserId, RoleConstants.ADMIN);
@@ -161,7 +161,7 @@ namespace cams.Backend.Controller
                 // Admins can only see users with "User" role
                 if (!isPlatformAdmin && isAdmin)
                 {
-                    query = query.Where(u => u.UserRoles.Any(ur => 
+                    query = query.Where(u => u.UserRoles.Any(ur =>
                         ur.Role.Name == RoleConstants.USER && ur.IsActive));
                 }
 
@@ -230,11 +230,11 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                
+
                 // Check if username or email already exists
                 var existingUser = await context.Users
                     .FirstOrDefaultAsync(u => u.Username == request.Username || u.Email == request.Email);
-                
+
                 if (existingUser != null)
                 {
                     return HttpResponseHelper.CreateBadRequestResponse("Username or email already exists");
@@ -297,15 +297,15 @@ namespace cams.Backend.Controller
         {
             try
             {
-                logger.LogInformation("UpdateUser request received for ID {UserId}. Request data: {RequestData}", 
+                logger.LogInformation("UpdateUser request received for ID {UserId}. Request data: {RequestData}",
                     id, System.Text.Json.JsonSerializer.Serialize(request));
-                
+
                 if (!ModelState.IsValid)
                 {
-                    logger.LogWarning("User update validation failed. Errors: {Errors}", 
+                    logger.LogWarning("User update validation failed. Errors: {Errors}",
                         string.Join("; ", ModelState.Where(x => x.Value?.Errors.Count > 0)
                             .SelectMany(x => x.Value!.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
-                    
+
                     return HttpResponseHelper.CreateValidationErrorResponse(
                         ModelState.Where(x => x.Value?.Errors.Count > 0)
                             .ToDictionary(
@@ -313,10 +313,10 @@ namespace cams.Backend.Controller
                                 kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
                             ));
                 }
-                
+
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -326,11 +326,11 @@ namespace cams.Backend.Controller
                 var existingUser = await context.Users
                     .Where(u => u.Id != id && (u.Username == request.Username || u.Email == request.Email))
                     .FirstOrDefaultAsync();
-                
+
                 if (existingUser != null)
                 {
                     string duplicateField = existingUser.Username == request.Username ? "Username" : "Email";
-                    logger.LogWarning("User update failed - duplicate {Field}: {Value}", duplicateField, 
+                    logger.LogWarning("User update failed - duplicate {Field}: {Value}", duplicateField,
                         LoggingHelper.Sanitize(duplicateField == "Username" ? request.Username : request.Email));
                     return HttpResponseHelper.CreateBadRequestResponse($"{duplicateField} already exists");
                 }
@@ -374,7 +374,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -387,11 +387,11 @@ namespace cams.Backend.Controller
 
                 // Store username for logging before deletion
                 var username = user.Username;
-                
+
                 // Remove user roles first to avoid foreign key constraint issues
                 var userRoles = await context.UserRoles.Where(ur => ur.UserId == id).ToListAsync();
                 context.UserRoles.RemoveRange(userRoles);
-                
+
                 // Hard delete the user
                 context.Users.Remove(user);
                 await context.SaveChangesAsync();
@@ -439,7 +439,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -478,7 +478,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(request.UserId);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -488,7 +488,7 @@ namespace cams.Backend.Controller
                 var existingRoles = await context.UserRoles
                     .Where(ur => ur.UserId == request.UserId)
                     .ToListAsync();
-                
+
                 context.UserRoles.RemoveRange(existingRoles);
 
                 // Add new role assignments
@@ -536,7 +536,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(request.UserId);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -622,7 +622,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -661,7 +661,7 @@ namespace cams.Backend.Controller
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
                 var user = await context.Users.FindAsync(id);
-                
+
                 if (user == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("User");
@@ -862,7 +862,7 @@ namespace cams.Backend.Controller
                 if (!string.IsNullOrWhiteSpace(searchTerm))
                 {
                     var search = searchTerm.ToLower();
-                    query = query.Where(u => 
+                    query = query.Where(u =>
                         u.Username.ToLower().Contains(search) ||
                         u.Email.ToLower().Contains(search) ||
                         (u.FirstName != null && u.FirstName.ToLower().Contains(search)) ||
@@ -876,7 +876,7 @@ namespace cams.Backend.Controller
 
                 if (roles != null && roles.Length > 0)
                 {
-                    query = query.Where(u => u.UserRoles.Any(ur => 
+                    query = query.Where(u => u.UserRoles.Any(ur =>
                         roles.Contains(ur.Role.Name) && ur.IsActive));
                 }
 

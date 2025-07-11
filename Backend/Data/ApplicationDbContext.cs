@@ -53,18 +53,18 @@ namespace cams.Backend.Data
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => new { e.UserId, e.RoleId }).IsUnique();
                 entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETUTCDATE()");
-                
+
                 // Configure relationships
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.UserRoles)
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Cascade);
-                
+
                 entity.HasOne(e => e.Role)
                     .WithMany(r => r.UserRoles)
                     .HasForeignKey(e => e.RoleId)
                     .OnDelete(DeleteBehavior.Cascade);
-                
+
                 entity.HasOne(e => e.AssignedByUser)
                     .WithMany()
                     .HasForeignKey(e => e.AssignedBy)
@@ -82,7 +82,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.Tags).HasMaxLength(500);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
-                
+
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -106,13 +106,13 @@ namespace cams.Backend.Data
                 entity.Property(e => e.AdditionalSettings).HasMaxLength(1000);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
-                
+
                 // Configure relationships - avoid multiple cascade paths
                 entity.HasOne(e => e.User)
                     .WithMany()
                     .HasForeignKey(e => e.UserId)
                     .OnDelete(DeleteBehavior.Restrict); // Prevent cascade from User
-                
+
                 entity.HasOne(e => e.Application)
                     .WithMany(a => a.DatabaseConnections)
                     .HasForeignKey(e => e.ApplicationId)
@@ -133,7 +133,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.UserAgent).HasMaxLength(500);
                 entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.Severity).HasMaxLength(20).HasDefaultValue("Information");
-                
+
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -161,7 +161,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.ThreadId).HasMaxLength(100);
                 entity.Property(e => e.Metadata).HasMaxLength(1000);
                 entity.Property(e => e.ResolutionNotes).HasMaxLength(500);
-                
+
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -185,7 +185,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.Severity).HasMaxLength(20).HasDefaultValue("Information");
                 entity.Property(e => e.FailureReason).HasMaxLength(500);
-                
+
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -209,7 +209,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.Metadata).HasMaxLength(1000);
                 entity.Property(e => e.AlertTrigger).HasMaxLength(500);
                 entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
-                
+
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
                     .WithMany()
@@ -226,13 +226,13 @@ namespace cams.Backend.Data
                 entity.Property(e => e.LastRunMessage).HasMaxLength(1000);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
-                
+
                 // Configure relationship with Application
                 entity.HasOne(e => e.Application)
                     .WithMany()
                     .HasForeignKey(e => e.ApplicationId)
                     .OnDelete(DeleteBehavior.Cascade);
-                
+
                 // Ensure one schedule per application
                 entity.HasIndex(e => e.ApplicationId).IsUnique();
             });

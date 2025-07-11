@@ -16,7 +16,7 @@ namespace cams.Backend.Services
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-                
+
             if (user == null)
                 return null;
 
@@ -32,7 +32,7 @@ namespace cams.Backend.Services
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-                
+
             return user != null ? userMapper.MapToProfileSummaryResponse(user) : null;
         }
 
@@ -50,7 +50,7 @@ namespace cams.Backend.Services
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-                
+
             if (user == null)
                 return null;
 
@@ -176,7 +176,7 @@ namespace cams.Backend.Services
             await context.SaveChangesAsync();
 
             logger.LogInformation("Deactivated user {UserId}", userId);
-            
+
             return true;
         }
 

@@ -3,6 +3,7 @@ using cams.Backend.Data;
 using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Constants;
+using Backend.Helpers;
 using NCrontab;
 
 namespace cams.Backend.Services
@@ -140,7 +141,7 @@ namespace cams.Backend.Services
                     .FirstOrDefaultAsync(s => s.ApplicationId == request.ApplicationId);
 
                 ConnectionTestSchedule schedule;
-                
+
                 if (existingSchedule != null)
                 {
                     // Update existing schedule
@@ -345,7 +346,7 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
-                logger.LogWarning(ex, "Failed to calculate next run time for cron expression: {CronExpression}", cronExpression);
+                logger.LogWarning(ex, "Failed to calculate next run time for cron expression: {CronExpression}", LoggingHelper.Sanitize(cronExpression));
                 return null;
             }
         }

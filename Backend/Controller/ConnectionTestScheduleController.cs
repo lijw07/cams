@@ -24,12 +24,12 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested connection test schedules", userId);
-                
+
                 var schedules = await scheduleService.GetUserSchedulesAsync(userId);
-                
-                logger.LogInformation("Retrieved {ScheduleCount} connection test schedules for user {UserId}", 
+
+                logger.LogInformation("Retrieved {ScheduleCount} connection test schedules for user {UserId}",
                     schedules.Count(), userId);
-                
+
                 // Log audit event
                 await loggingService.LogAuditAsync(
                     userId,
@@ -39,7 +39,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(schedules);
             }
             catch (UnauthorizedAccessException)
@@ -61,18 +61,18 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested connection test schedule for application {ApplicationId}", userId, applicationId);
-                
+
                 var schedule = await scheduleService.GetScheduleByApplicationIdAsync(applicationId, userId);
-                
+
                 if (schedule == null)
                 {
                     logger.LogInformation("No connection test schedule found for application {ApplicationId} and user {UserId}", applicationId, userId);
                     return NotFound(new { message = "Schedule not found for this application" });
                 }
 
-                logger.LogInformation("Retrieved connection test schedule {ScheduleId} for application {ApplicationId} and user {UserId}", 
+                logger.LogInformation("Retrieved connection test schedule {ScheduleId} for application {ApplicationId} and user {UserId}",
                     schedule.Id, applicationId, userId);
-                
+
                 // Log audit event
                 await loggingService.LogAuditAsync(
                     userId,
@@ -83,7 +83,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(schedule);
             }
             catch (UnauthorizedAccessException)
@@ -114,14 +114,14 @@ namespace cams.Backend.Controller
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
-                logger.LogInformation("User {UserId} creating/updating connection test schedule for application {ApplicationId}", 
+                logger.LogInformation("User {UserId} creating/updating connection test schedule for application {ApplicationId}",
                     userId, request.ApplicationId);
-                
+
                 var schedule = await scheduleService.UpsertScheduleAsync(request, userId);
-                
-                logger.LogInformation("Successfully created/updated connection test schedule {ScheduleId} for application {ApplicationId} and user {UserId}", 
+
+                logger.LogInformation("Successfully created/updated connection test schedule {ScheduleId} for application {ApplicationId} and user {UserId}",
                     schedule.Id, request.ApplicationId, userId);
-                
+
                 // Log audit event
                 await loggingService.LogAuditAsync(
                     userId,
@@ -133,7 +133,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(schedule);
             }
             catch (UnauthorizedAccessException ex)
@@ -143,13 +143,13 @@ namespace cams.Backend.Controller
             }
             catch (ArgumentException ex)
             {
-                logger.LogWarning("Invalid connection test schedule request from user {UserId}: {ErrorMessage}", 
+                logger.LogWarning("Invalid connection test schedule request from user {UserId}: {ErrorMessage}",
                     UserHelper.GetCurrentUserId(User), ex.Message);
                 return HttpResponseHelper.CreateBadRequestResponse(ex.Message);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error creating/updating connection test schedule for application {ApplicationId} and user {UserId}", 
+                logger.LogError(ex, "Error creating/updating connection test schedule for application {ApplicationId} and user {UserId}",
                     request.ApplicationId, UserHelper.GetCurrentUserId(User));
                 return HttpResponseHelper.CreateErrorResponse("Error creating/updating connection test schedule");
             }
@@ -178,16 +178,16 @@ namespace cams.Backend.Controller
                     CronExpression = request.CronExpression,
                     IsEnabled = request.IsEnabled
                 };
-                
+
                 var schedule = await scheduleService.UpdateScheduleAsync(updateRequest, userId);
-                
+
                 if (schedule == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Schedule");
                 }
-                
+
                 logger.LogInformation("Successfully updated connection test schedule {ScheduleId} for user {UserId}", id, userId);
-                
+
                 // Log audit event
                 await loggingService.LogAuditAsync(
                     userId,
@@ -199,7 +199,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return Ok(schedule);
             }
             catch (UnauthorizedAccessException)
@@ -224,14 +224,14 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var deleted = await scheduleService.DeleteScheduleAsync(id, userId);
-                
+
                 if (!deleted)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Schedule");
                 }
-                
+
                 logger.LogInformation("Successfully deleted connection test schedule {ScheduleId} for user {UserId}", id, userId);
-                
+
                 // Log audit event
                 await loggingService.LogAuditAsync(
                     userId,
@@ -242,7 +242,7 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
-                
+
                 return NoContent();
             }
             catch (UnauthorizedAccessException)
@@ -263,13 +263,13 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 var schedule = await scheduleService.ToggleScheduleAsync(id, request.IsEnabled, userId);
-                
+
                 if (schedule == null)
                 {
                     return HttpResponseHelper.CreateNotFoundResponse("Schedule");
                 }
 
-                logger.LogInformation("Successfully toggled connection test schedule {ScheduleId} to {Status} for user {UserId}", 
+                logger.LogInformation("Successfully toggled connection test schedule {ScheduleId} to {Status} for user {UserId}",
                     id, request.IsEnabled ? "enabled" : "disabled", userId);
 
                 // Log audit event
@@ -314,11 +314,11 @@ namespace cams.Backend.Controller
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} validating cron expression: {CronExpression}", userId, request.Expression);
-                
+
                 var validation = await scheduleService.ValidateCronExpressionAsync(request.Expression);
-                
+
                 logger.LogInformation("Cron expression validation result for user {UserId}: {IsValid}", userId, validation.IsValid);
-                
+
                 return Ok(validation);
             }
             catch (Exception ex)
@@ -335,7 +335,7 @@ namespace cams.Backend.Controller
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} manually triggering connection test for schedule {ScheduleId}", userId, id);
-                
+
                 // Get the schedule to verify access and get application info
                 var schedule = await scheduleService.GetScheduleByIdAsync(id, userId);
                 if (schedule == null)
@@ -360,8 +360,9 @@ namespace cams.Backend.Controller
                             "No active database connections found",
                             stopwatch.Elapsed);
 
-                        return Ok(new { 
-                            status = "skipped", 
+                        return Ok(new
+                        {
+                            status = "skipped",
                             message = "No active database connections found",
                             duration = stopwatch.Elapsed
                         });
@@ -383,7 +384,8 @@ namespace cams.Backend.Controller
 
                             var testResult = await databaseConnectionService.TestConnectionAsync(testRequest, userId);
 
-                            testResults.Add(new {
+                            testResults.Add(new
+                            {
                                 connectionId = connection.Id,
                                 connectionName = connection.Name,
                                 isSuccessful = testResult.IsSuccessful,
@@ -399,7 +401,8 @@ namespace cams.Backend.Controller
                         catch (Exception ex)
                         {
                             failCount++;
-                            testResults.Add(new {
+                            testResults.Add(new
+                            {
                                 connectionId = connection.Id,
                                 connectionName = connection.Name,
                                 isSuccessful = false,
@@ -430,7 +433,8 @@ namespace cams.Backend.Controller
                         userAgent: Request.Headers.UserAgent.ToString()
                     );
 
-                    return Ok(new {
+                    return Ok(new
+                    {
                         status,
                         message,
                         duration = stopwatch.Elapsed,
