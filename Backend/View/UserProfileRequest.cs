@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using cams.Backend.Attributes;
 
 namespace cams.Backend.View
 {
@@ -11,7 +12,7 @@ namespace cams.Backend.View
         public string? LastName { get; set; }
         
         [StringLength(15, ErrorMessage = "Phone number cannot exceed 15 characters")]
-        [Phone(ErrorMessage = "Invalid phone number format")]
+        [PhoneNumberValidation(ErrorMessage = "Invalid phone number format")]
         public string? PhoneNumber { get; set; }
     }
     
@@ -21,9 +22,8 @@ namespace cams.Backend.View
         public string CurrentPassword { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "New password is required")]
-        [StringLength(100, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 100 characters")]
-        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]", 
-            ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one digit, and one special character")]
+        [StringLength(100, ErrorMessage = "Password cannot exceed 100 characters")]
+        [PasswordValidation]
         public string NewPassword { get; set; } = string.Empty;
         
         [Required(ErrorMessage = "Password confirmation is required")]

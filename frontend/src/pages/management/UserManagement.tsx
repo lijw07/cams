@@ -11,7 +11,8 @@ import {
   Eye
 } from 'lucide-react';
 import { usersService, UserManagement, PaginationRequest } from '../../services/usersService';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../contexts/NotificationContext';
+import UserModal from '../../components/modals/UserModal';
 
 const UserManagementPage: React.FC = () => {
   const navigate = useNavigate();
@@ -20,9 +21,11 @@ const UserManagementPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [pagination, setPagination] = useState({
     currentPage: 1,
-    pageSize: 10,
-    totalCount: 0,
-    pageCount: 0,
+    perPage: 20,
+    totalItems: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrevious: false,
   });
 
   const [filters, setFilters] = useState({
@@ -32,29 +35,42 @@ const UserManagementPage: React.FC = () => {
   });
 
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
+  const { addNotification } = useNotifications();
+  
+  // Modal state
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
+  const [selectedUser, setSelectedUser] = useState<UserManagement | null>(null);
 
   const loadUsers = async () => {
     try {
       setLoading(true);
       const request: PaginationRequest = {
-        page: pagination.currentPage,
-        pageSize: pagination.pageSize,
-        sortBy: filters.sortBy,
-        sortDirection: filters.sortDirection,
-        searchTerm: searchTerm || undefined,
+        PageNumber: pagination.currentPage,
+        PageSize: pagination.perPage,
+        SortBy: filters.sortBy,
+        SortDirection: filters.sortDirection,
+        SearchTerm: searchTerm || undefined,
       };
 
       const response = await usersService.getUsers(request);
-      setUsers(response.data);
+      setUsers(response.Data || []);
       setPagination({
-        currentPage: response.currentPage,
-        pageSize: response.pageSize,
-        totalCount: response.totalCount,
-        pageCount: response.pageCount,
+        currentPage: response.Pagination.CurrentPage,
+        perPage: response.Pagination.PerPage,
+        totalItems: response.Pagination.TotalItems,
+        totalPages: response.Pagination.TotalPages,
+        hasNext: response.Pagination.HasNext,
+        hasPrevious: response.Pagination.HasPrevious,
       });
     } catch (error) {
       console.error('Error loading users:', error);
-      toast.error('Failed to load users');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to load users', 
+        type: 'error', 
+        source: 'UserManagement' 
+      });
     } finally {
       setLoading(false);
     }
@@ -62,16 +78,26 @@ const UserManagementPage: React.FC = () => {
 
   useEffect(() => {
     loadUsers();
-  }, [pagination.currentPage, pagination.pageSize, filters, searchTerm]);
+  }, [pagination.currentPage, pagination.perPage, filters, searchTerm]);
 
   const handleToggleUserStatus = async (userId: number, isActive: boolean) => {
     try {
       await usersService.toggleUserStatus(userId, !isActive);
-      toast.success(`User ${!isActive ? 'activated' : 'deactivated'} successfully`);
+      addNotification({ 
+        title: 'Success', 
+        message: `User ${!isActive ? 'activated' : 'deactivated'} successfully`, 
+        type: 'success', 
+        source: 'UserManagement' 
+      });
       loadUsers();
     } catch (error) {
       console.error('Error toggling user status:', error);
-      toast.error('Failed to update user status');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to update user status', 
+        type: 'error', 
+        source: 'UserManagement' 
+      });
     }
   };
 
@@ -82,28 +108,53 @@ const UserManagementPage: React.FC = () => {
 
     try {
       await usersService.deleteUser(userId);
-      toast.success('User deleted successfully');
+      addNotification({ 
+        title: 'Success', 
+        message: 'User deleted successfully', 
+        type: 'success', 
+        source: 'UserManagement' 
+      });
       loadUsers();
     } catch (error) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to delete user', 
+        type: 'error', 
+        source: 'UserManagement' 
+      });
     }
   };
 
   const handleBulkStatusToggle = async (isActive: boolean) => {
     if (selectedUsers.length === 0) {
-      toast.error('Please select users first');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Please select users first', 
+        type: 'error', 
+        source: 'UserManagement' 
+      });
       return;
     }
 
     try {
       const response = await usersService.bulkToggleStatus(selectedUsers, isActive);
-      toast.success(response.message);
+      addNotification({ 
+        title: 'Success', 
+        message: response.message, 
+        type: 'success', 
+        source: 'UserManagement' 
+      });
       setSelectedUsers([]);
       loadUsers();
     } catch (error) {
       console.error('Error updating users status:', error);
-      toast.error('Failed to update users status');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to update users status', 
+        type: 'error', 
+        source: 'UserManagement' 
+      });
     }
   };
 
@@ -111,14 +162,103 @@ const UserManagementPage: React.FC = () => {
     setPagination(prev => ({ ...prev, currentPage: page }));
   };
 
-  const getRolesBadge = (roles: string[]) => {
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPagination(prev => ({ 
+      ...prev, 
+      perPage: newPageSize, 
+      currentPage: 1 // Reset to first page when changing page size
+    }));
+  };
+
+  // Modal handlers
+  const handleCreateUser = () => {
+    setModalMode('create');
+    setSelectedUser(null);
+    setIsUserModalOpen(true);
+  };
+
+  const handleEditUser = async (userId: number) => {
+    try {
+      const user = await usersService.getUser(userId);
+      setModalMode('edit');
+      setSelectedUser(user);
+      setIsUserModalOpen(true);
+    } catch (error) {
+      console.error('Error loading user for edit:', error);
+      addNotification({
+        title: 'Error',
+        message: 'Failed to load user for editing',
+        type: 'error',
+        source: 'UserManagement'
+      });
+    }
+  };
+
+  const handleUserModalSubmit = async (data: any, roleIds: number[]) => {
+    try {
+      if (modalMode === 'create') {
+        // For create mode, the backend accepts RoleIds in the CreateUserRequest
+        await usersService.createUser({
+          ...data,
+          RoleIds: roleIds
+        });
+        addNotification({
+          title: 'Success',
+          message: 'User created successfully',
+          type: 'success',
+          source: 'UserManagement'
+        });
+      } else if (modalMode === 'edit' && selectedUser) {
+        // For edit mode, update user info and roles separately
+        
+        // 1. Update basic user information (excluding roles)
+        await usersService.updateUser(selectedUser.Id, {
+          Id: selectedUser.Id,
+          Username: selectedUser.Username, // Keep original username (backend requirement)
+          Email: data.Email,
+          FirstName: data.FirstName || null,
+          LastName: data.LastName || null,
+          PhoneNumber: data.PhoneNumber || null,
+          IsActive: data.IsActive
+        });
+        
+        // 2. Update roles separately if they changed
+        const currentRoleIds = selectedUser.Roles.map(r => r.Id).sort();
+        const newRoleIds = roleIds.sort();
+        
+        if (JSON.stringify(newRoleIds) !== JSON.stringify(currentRoleIds)) {
+          await usersService.updateUserRoles(selectedUser.Id, roleIds);
+        }
+
+        addNotification({
+          title: 'Success',
+          message: 'User updated successfully',
+          type: 'success',
+          source: 'UserManagement'
+        });
+      }
+      
+      loadUsers(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error submitting user:', error);
+      addNotification({
+        title: 'Error',
+        message: error.response?.data?.message || `Failed to ${modalMode} user`,
+        type: 'error',
+        source: 'UserManagement'
+      });
+      throw error; // Re-throw to let modal handle the error
+    }
+  };
+
+  const getRolesBadge = (roles: Array<{ Id: number; Name: string; Description: string; IsActive: boolean; CreatedAt: string; UpdatedAt: string }>) => {
     if (roles.length === 0) return <span className="text-gray-500">No roles</span>;
     
     return (
       <div className="flex flex-wrap gap-1">
         {roles.slice(0, 2).map((role, index) => (
           <span key={index} className="badge badge-secondary text-xs">
-            {role}
+            {role.Name}
           </span>
         ))}
         {roles.length > 2 && (
@@ -148,7 +288,7 @@ const UserManagementPage: React.FC = () => {
           <p className="text-gray-600 dark:text-gray-300">Manage system users, roles, and permissions</p>
         </div>
         <button
-          onClick={() => navigate('/management/users/create')}
+          onClick={handleCreateUser}
           className="btn btn-primary"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -243,7 +383,7 @@ const UserManagementPage: React.FC = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
             <p className="mt-2 text-gray-600 dark:text-gray-300">Loading users...</p>
           </div>
-        ) : users.length === 0 ? (
+        ) : !users || users.length === 0 ? (
           <div className="p-8 text-center">
             <Users className="w-16 h-16 mx-auto text-gray-400 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No users found</h3>
@@ -251,7 +391,7 @@ const UserManagementPage: React.FC = () => {
               {searchTerm ? 'No users match your search criteria.' : 'Get started by creating your first user.'}
             </p>
             <button
-              onClick={() => navigate('/management/users/create')}
+              onClick={handleCreateUser}
               className="btn btn-primary"
             >
               <Plus className="w-4 h-4 mr-2" />
@@ -267,9 +407,9 @@ const UserManagementPage: React.FC = () => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       <input
                         type="checkbox"
-                        checked={selectedUsers.length === users.length}
+                        checked={users && selectedUsers.length === users.length}
                         onChange={(e) => {
-                          setSelectedUsers(e.target.checked ? users.map(u => u.id) : []);
+                          setSelectedUsers(e.target.checked ? (users || []).map(u => u.Id) : []);
                         }}
                         className="rounded border-gray-300 dark:border-gray-600"
                       />
@@ -295,17 +435,21 @@ const UserManagementPage: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {users.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap">
+                  {(users || []).map((user) => (
+                    <tr 
+                      key={user.Id} 
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer"
+                      onClick={() => handleEditUser(user.Id)}
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                         <input
                           type="checkbox"
-                          checked={selectedUsers.includes(user.id)}
+                          checked={selectedUsers.includes(user.Id)}
                           onChange={(e) => {
                             setSelectedUsers(prev => 
                               e.target.checked 
-                                ? [...prev, user.id]
-                                : prev.filter(id => id !== user.id)
+                                ? [...prev, user.Id]
+                                : prev.filter(id => id !== user.Id)
                             );
                           }}
                           className="rounded border-gray-300 dark:border-gray-600"
@@ -314,70 +458,70 @@ const UserManagementPage: React.FC = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-semibold">
-                            {user.firstName?.[0] || user.username?.[0] || 'U'}
+                            {user.FirstName?.[0] || user.Username?.[0] || 'U'}
                           </div>
                           <div className="ml-4">
                             <div className="text-sm font-medium text-gray-900 dark:text-white">
-                              {user.firstName && user.lastName 
-                                ? `${user.firstName} ${user.lastName}`
-                                : user.username
+                              {user.FirstName && user.LastName 
+                                ? `${user.FirstName} ${user.LastName}`
+                                : user.Username
                               }
                             </div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                            <div className="text-xs text-gray-400">@{user.username}</div>
+                            <div className="text-sm text-gray-500">{user.Email}</div>
+                            <div className="text-xs text-gray-400">@{user.Username}</div>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getRolesBadge(user.roles)}
+                        {getRolesBadge(user.Roles)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(user.isActive)}
+                        {getStatusBadge(user.IsActive)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="space-y-1">
-                          <div>{user.applicationCount} apps</div>
-                          <div>{user.databaseConnectionCount} connections</div>
+                          <div>{user.ApplicationCount} apps</div>
+                          <div>{user.DatabaseConnectionCount} connections</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {user.lastLoginAt 
-                          ? new Date(user.lastLoginAt).toLocaleDateString()
+                        {user.LastLoginAt 
+                          ? new Date(user.LastLoginAt).toLocaleDateString()
                           : 'Never'
                         }
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => navigate(`/management/users/${user.id}`)}
+                            onClick={() => navigate(`/management/users/${user.Id}`)}
                             className="text-blue-600 hover:text-blue-900"
                             title="View Details"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => navigate(`/management/users/${user.id}/edit`)}
+                            onClick={() => handleEditUser(user.Id)}
                             className="text-yellow-600 hover:text-yellow-900"
                             title="Edit User"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => navigate(`/management/users/${user.id}/roles`)}
+                            onClick={() => navigate(`/management/users/${user.Id}/roles`)}
                             className="text-purple-600 hover:text-purple-900"
                             title="Manage Roles"
                           >
                             <Shield className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleToggleUserStatus(user.id, user.isActive)}
-                            className={`${user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
-                            title={user.isActive ? 'Deactivate' : 'Activate'}
+                            onClick={() => handleToggleUserStatus(user.Id, user.IsActive)}
+                            className={`${user.IsActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'}`}
+                            title={user.IsActive ? 'Deactivate' : 'Activate'}
                           >
                             <Power className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => handleDeleteUser(user.id)}
+                            onClick={() => handleDeleteUser(user.Id)}
                             className="text-red-600 hover:text-red-900"
                             title="Delete User"
                           >
@@ -391,36 +535,128 @@ const UserManagementPage: React.FC = () => {
               </table>
             </div>
 
-            {/* Pagination */}
-            {pagination.pageCount > 1 && (
-              <div className="px-6 py-3 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Showing {((pagination.currentPage - 1) * pagination.pageSize) + 1} to{' '}
-                    {Math.min(pagination.currentPage * pagination.pageSize, pagination.totalCount)} of{' '}
-                    {pagination.totalCount} users
+            {/* Enhanced Pagination */}
+            <div className="bg-white dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="text-sm text-gray-700 dark:text-gray-300">
+                    Showing {((pagination.currentPage - 1) * pagination.perPage) + 1} to {Math.min(pagination.currentPage * pagination.perPage, pagination.totalItems)} of {pagination.totalItems} users
                   </div>
-                  <div className="flex gap-2">
-                    {Array.from({ length: pagination.pageCount }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => handlePageChange(page)}
-                        className={`px-3 py-1 text-sm rounded ${
-                          page === pagination.currentPage
-                            ? 'bg-primary text-white'
-                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
+                  
+                  {/* Page size selector */}
+                  <div className="flex items-center space-x-2">
+                    <label className="text-sm text-gray-700 dark:text-gray-300">Show:</label>
+                    <select
+                      value={pagination.perPage}
+                      onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                      className="text-sm border border-gray-300 dark:border-gray-600 rounded-md px-2 py-1 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value={10}>10</option>
+                      <option value={20}>20</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">per page</span>
                   </div>
                 </div>
+
+                {/* Navigation buttons */}
+                <div className="flex items-center space-x-1">
+                  {/* First page */}
+                  <button
+                    onClick={() => handlePageChange(1)}
+                    disabled={!pagination.hasPrevious}
+                    className={`px-3 py-1 text-sm font-medium rounded-md ${
+                      !pagination.hasPrevious
+                        ? 'text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                        : 'text-primary-600 hover:text-primary-900 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    First
+                  </button>
+                  
+                  {/* Previous page */}
+                  <button
+                    onClick={() => handlePageChange(pagination.currentPage - 1)}
+                    disabled={!pagination.hasPrevious}
+                    className={`px-3 py-1 text-sm font-medium rounded-md ${
+                      !pagination.hasPrevious
+                        ? 'text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                        : 'text-primary-600 hover:text-primary-900 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Previous
+                  </button>
+
+                  {/* Page numbers */}
+                  {(() => {
+                    const pageNumbers = [];
+                    const maxVisible = 5;
+                    let startPage = Math.max(1, pagination.currentPage - Math.floor(maxVisible / 2));
+                    let endPage = Math.min(pagination.totalPages, startPage + maxVisible - 1);
+                    
+                    if (endPage - startPage + 1 < maxVisible) {
+                      startPage = Math.max(1, endPage - maxVisible + 1);
+                    }
+
+                    for (let i = startPage; i <= endPage; i++) {
+                      pageNumbers.push(
+                        <button
+                          key={i}
+                          onClick={() => handlePageChange(i)}
+                          className={`px-3 py-1 text-sm font-medium rounded-md ${
+                            pagination.currentPage === i
+                              ? 'bg-primary-600 text-white'
+                              : 'text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {i}
+                        </button>
+                      );
+                    }
+                    return pageNumbers;
+                  })()}
+
+                  {/* Next page */}
+                  <button
+                    onClick={() => handlePageChange(pagination.currentPage + 1)}
+                    disabled={!pagination.hasNext}
+                    className={`px-3 py-1 text-sm font-medium rounded-md ${
+                      !pagination.hasNext
+                        ? 'text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                        : 'text-primary-600 hover:text-primary-900 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Next
+                  </button>
+                  
+                  {/* Last page */}
+                  <button
+                    onClick={() => handlePageChange(pagination.totalPages)}
+                    disabled={!pagination.hasNext}
+                    className={`px-3 py-1 text-sm font-medium rounded-md ${
+                      !pagination.hasNext
+                        ? 'text-gray-400 bg-gray-100 dark:bg-gray-700 cursor-not-allowed'
+                        : 'text-primary-600 hover:text-primary-900 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    Last
+                  </button>
+                </div>
               </div>
-            )}
+            </div>
           </>
         )}
       </div>
+
+      {/* User Modal */}
+      <UserModal
+        isOpen={isUserModalOpen}
+        onClose={() => setIsUserModalOpen(false)}
+        onSubmit={handleUserModalSubmit}
+        user={selectedUser}
+        mode={modalMode}
+      />
     </div>
   );
 };

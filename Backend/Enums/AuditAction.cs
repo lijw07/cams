@@ -13,6 +13,7 @@ namespace cams.Backend.Enums
         StatusChange,
         Export,
         Import,
-        ConnectionTest
+        ConnectionTest,
+        CreateOrUpdate
     }
 }

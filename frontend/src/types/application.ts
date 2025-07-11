@@ -1,0 +1,98 @@
+import { DatabaseConnectionSummary } from './database';
+
+// Application Types
+export interface Application {
+  Id: number;
+  Name: string;
+  Description?: string;
+  Version?: string;
+  Environment?: string;
+  Tags?: string;
+  IsActive: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  LastAccessedAt?: string;
+  DatabaseConnectionCount: number;
+  DatabaseConnections?: DatabaseConnectionSummary[];
+}
+
+export interface ApplicationRequest {
+  Name: string;
+  Description?: string;
+  Version?: string;
+  Environment?: string;
+  Tags?: string;
+  IsActive: boolean;
+}
+
+export interface ApplicationWithConnectionRequest {
+  // Application details (matching backend's PascalCase expectations)
+  ApplicationName: string;
+  ApplicationDescription?: string;
+  Version?: string;
+  Environment?: string;
+  Tags?: string;
+  IsApplicationActive: boolean;
+  
+  // Connection details
+  ConnectionName: string;
+  ConnectionDescription?: string;
+  DatabaseType: number;
+  Server: string;
+  Port?: number;
+  Database?: string;
+  Username?: string;
+  Password?: string;
+  ConnectionString?: string;
+  ApiBaseUrl?: string;
+  ApiKey?: string;
+  AdditionalSettings?: string;
+  IsConnectionActive: boolean;
+  TestConnectionOnCreate?: boolean;
+  
+  // Cloud-specific fields
+  AuthenticationMethod?: number;
+  Region?: string;
+  AccountId?: string;
+  ProjectId?: string;
+  InstanceId?: string;
+  AccessKeyId?: string;
+  SecretAccessKey?: string;
+  SessionToken?: string;
+  ClientId?: string;
+  ClientSecret?: string;
+  TenantId?: string;
+  SubscriptionId?: string;
+  CertificatePath?: string;
+  CertificatePassword?: string;
+  Scope?: string;
+  Audience?: string;
+  GrantType?: string;
+  TokenEndpoint?: string;
+}
+
+export interface ApplicationWithConnectionResponse {
+  Application: Application;
+  DatabaseConnection: DatabaseConnectionSummary;
+  ConnectionTestResult?: boolean;
+  ConnectionTestMessage?: string;
+}
+
+export interface ConnectionTestSchedule {
+  Id?: number;
+  ApplicationId: number;
+  ApplicationName?: string;
+  CronExpression: string;
+  IsEnabled: boolean;
+  LastRunTime?: string;
+  NextRunTime?: string;
+  LastRunStatus?: 'success' | 'failed' | 'running';
+  CreatedAt?: string;
+  UpdatedAt?: string;
+}
+
+export interface ConnectionTestScheduleRequest {
+  ApplicationId: number;
+  CronExpression: string;
+  IsEnabled: boolean;
+}

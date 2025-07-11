@@ -6,115 +6,105 @@ import {
   DatabaseConnectionSummary,
   DatabaseType,
   ConnectionTestResult,
+  DatabaseTestRequest,
 } from '../types';
 
 export const databaseConnectionService = {
   // Regular database connection CRUD
   async getConnections(applicationId?: number): Promise<DatabaseConnection[]> {
-    const params = applicationId ? { applicationId } : undefined;
-    return apiService.get('/databaseconnection', params);
+    const params = applicationId ? { applicationId: applicationId } : undefined;
+    return apiService.get('/database-connections', params);
   },
 
   async getConnection(id: number): Promise<DatabaseConnection> {
-    return apiService.get(`/databaseconnection/${id}`);
+    return apiService.get(`/database-connections/${id}`);
   },
 
   async createConnection(data: DatabaseConnectionRequest): Promise<DatabaseConnection> {
-    return apiService.post('/databaseconnection', data);
+    return apiService.post('/database-connections', data);
   },
 
   async updateConnection(id: number, data: DatabaseConnectionUpdateRequest): Promise<DatabaseConnection> {
-    return apiService.put(`/databaseconnection/${id}`, data);
+    return apiService.put(`/database-connections/${id}`, data);
   },
 
   async deleteConnection(id: number): Promise<void> {
-    return apiService.delete(`/databaseconnection/${id}`);
+    return apiService.delete(`/database-connections/${id}`);
   },
 
   async toggleConnectionStatus(id: number, isActive: boolean): Promise<{ message: string }> {
-    return apiService.patch(`/databaseconnection/${id}/toggle`, { isActive });
+    return apiService.patch(`/database-connections/${id}/toggle`, { IsActive: isActive });
   },
 
   async updateLastAccessed(id: number): Promise<{ message: string }> {
-    return apiService.post(`/databaseconnection/${id}/access`);
+    return apiService.post(`/database-connections/${id}/access`);
   },
 
   // Connection testing
-  async testConnection(data: {
-    databaseType: DatabaseType;
-    server: string;
-    database: string;
-    username: string;
-    password: string;
-    port?: number;
-    useIntegratedSecurity?: boolean;
-    connectionTimeout?: number;
-    commandTimeout?: number;
-    additionalParams?: string;
-  }): Promise<ConnectionTestResult> {
-    return apiService.post('/databaseconnection/test', data);
+  async testConnection(data: DatabaseTestRequest): Promise<ConnectionTestResult> {
+    return apiService.post('/database-connections/test', data);
   },
 
   async testExistingConnection(id: number): Promise<ConnectionTestResult> {
-    return apiService.post(`/databaseconnection/${id}/test`);
+    return apiService.post(`/database-connections/${id}/test`);
   },
 
   // Connection string operations
   async buildConnectionString(data: {
-    databaseType: DatabaseType;
-    server: string;
-    database: string;
-    username: string;
-    password: string;
-    port?: number;
-    useIntegratedSecurity?: boolean;
-    connectionTimeout?: number;
-    commandTimeout?: number;
-    additionalParams?: string;
-  }): Promise<{ connectionString: string }> {
-    return apiService.post('/databaseconnection/build-connection-string', data);
+    DatabaseType: DatabaseType;
+    Server: string;
+    Database: string;
+    Username: string;
+    Password: string;
+    Port?: number;
+    UseIntegratedSecurity?: boolean;
+    ConnectionTimeout?: number;
+    CommandTimeout?: number;
+    AdditionalParams?: string;
+  }): Promise<{ ConnectionString: string }> {
+    return apiService.post('/database-connections/connection-string/build', data);
   },
 
   async validateConnectionString(connectionString: string, databaseType: DatabaseType): Promise<{
-    isValid: boolean;
-    message: string;
-    parsedComponents?: {
-      server?: string;
-      database?: string;
-      username?: string;
-      port?: number;
-      useIntegratedSecurity?: boolean;
-      connectionTimeout?: number;
-      commandTimeout?: number;
+    IsValid: boolean;
+    Message: string;
+    ParsedComponents?: {
+      Server?: string;
+      Database?: string;
+      Username?: string;
+      Port?: number;
+      UseIntegratedSecurity?: boolean;
+      ConnectionTimeout?: number;
+      CommandTimeout?: number;
     };
   }> {
-    return apiService.post('/databaseconnection/validate-connection-string', {
-      connectionString,
-      databaseType,
+    return apiService.post('/database-connections/validate-connection-string', {
+      ConnectionString: connectionString,
+      DatabaseType: databaseType,
     });
   },
 
   // Database type operations
   async getSupportedDatabaseTypes(): Promise<{
-    databaseTypes: Array<{
-      type: DatabaseType;
-      name: string;
-      description: string;
-      defaultPort: number;
-      supportsIntegratedSecurity: boolean;
+    DatabaseTypes: Array<{
+      Type: DatabaseType;
+      Name: string;
+      Description: string;
+      DefaultPort: number;
+      SupportsIntegratedSecurity: boolean;
     }>;
   }> {
-    return apiService.get('/databaseconnection/supported-types');
+    return apiService.get('/database-connections/types');
   },
 
   // Connection summary operations
   async getConnectionSummary(id: number): Promise<DatabaseConnectionSummary> {
-    return apiService.get(`/databaseconnection/${id}/summary`);
+    return apiService.get(`/database-connections/${id}/summary`);
   },
 
   async getConnectionsSummary(applicationId?: number): Promise<DatabaseConnectionSummary[]> {
     const params = applicationId ? { applicationId } : undefined;
-    return apiService.get('/databaseconnection/summary', params);
+    return apiService.get('/database-connections/summary', params);
   },
 
   // Connection health and monitoring
@@ -125,7 +115,7 @@ export const databaseConnectionService = {
     responseTime?: number;
     errorMessage?: string;
   }> {
-    return apiService.get(`/databaseconnection/${id}/health`);
+    return apiService.get(`/database-connections/${id}/health`);
   },
 
   async refreshConnectionHealth(id: number): Promise<{
@@ -135,7 +125,7 @@ export const databaseConnectionService = {
     responseTime?: number;
     errorMessage?: string;
   }> {
-    return apiService.post(`/databaseconnection/${id}/health/refresh`);
+    return apiService.post(`/database-connections/${id}/health/refresh`);
   },
 
   // Bulk operations
@@ -144,7 +134,7 @@ export const databaseConnectionService = {
     failed: Array<{ id: number; error: string }>;
     message: string;
   }> {
-    return apiService.post('/databaseconnection/bulk/toggle', {
+    return apiService.post('/database-connections/bulk/toggle', {
       connectionIds,
       isActive,
     });
@@ -155,7 +145,7 @@ export const databaseConnectionService = {
     failed: Array<{ id: number; error: string }>;
     message: string;
   }> {
-    return apiService.post('/databaseconnection/bulk/delete', {
+    return apiService.post('/database-connections/bulk/delete', {
       connectionIds,
     });
   },
@@ -172,6 +162,6 @@ export const databaseConnectionService = {
       monthly: number;
     };
   }> {
-    return apiService.get(`/databaseconnection/${id}/usage-stats`);
-  },
+    return apiService.get(`/database-connections/${id}/usage-stats`);
+  }
 };

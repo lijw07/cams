@@ -6,6 +6,7 @@ using cams.Backend.Helpers;
 using cams.Backend.Constants;
 using cams.Backend.Enums;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
 using cams.Backend.Hubs;
 
 namespace cams.Backend.Services
@@ -14,19 +15,19 @@ namespace cams.Backend.Services
     {
         private readonly ILogger<MigrationService> _logger;
         private readonly ILoggingService _loggingService;
-        private readonly IEmailService _emailService;
         private readonly IHubContext<MigrationHub> _hubContext;
+        private readonly ApplicationDbContext _context;
 
         public MigrationService(
             ILogger<MigrationService> logger,
             ILoggingService loggingService,
-            IEmailService emailService,
-            IHubContext<MigrationHub> hubContext)
+            IHubContext<MigrationHub> hubContext,
+            ApplicationDbContext context)
         {
             _logger = logger;
             _loggingService = loggingService;
-            _emailService = emailService;
             _hubContext = hubContext;
+            _context = context;
         }
 
         public async Task<MigrationValidationResult> ValidateBulkImportAsync(BulkMigrationRequest request)
@@ -187,8 +188,8 @@ namespace cams.Backend.Services
                     try
                     {
                         // Check if user already exists
-                        var existingUser = SharedUserRepository.GetUserByUsername(userDto.Username) ?? 
-                                         SharedUserRepository.GetUserByEmail(userDto.Email);
+                        var existingUser = await _context.Users.FirstOrDefaultAsync(u => 
+                            (u.Username == userDto.Username || u.Email == userDto.Email) && u.IsActive);
 
                         if (existingUser != null)
                         {
@@ -211,7 +212,7 @@ namespace cams.Backend.Services
                                 existingUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(userDto.Password);
                             }
 
-                            // Note: Update functionality not implemented in SharedUserRepository
+                            // Note: Update functionality not implemented yet
                             successCount++;
                             
                             await _loggingService.LogAuditAsync(
@@ -241,9 +242,26 @@ namespace cams.Backend.Services
                                 UpdatedAt = DateTime.UtcNow
                             };
 
+                            // Add user to database
+                            _context.Users.Add(newUser);
+                            await _context.SaveChangesAsync();
+                            
                             // Default to User role if no roles specified
-                            var defaultRoleId = userDto.Roles.Count == 0 ? 3 : 0;
-                            var createdUser = SharedUserRepository.CreateUser(newUser, defaultRoleId);
+                            if (userDto.Roles.Count == 0)
+                            {
+                                var userRole = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "User");
+                                if (userRole != null)
+                                {
+                                    var newUserRole = new UserRole
+                                    {
+                                        UserId = newUser.Id,
+                                        RoleId = userRole.Id,
+                                        IsActive = true,
+                                        AssignedAt = DateTime.UtcNow
+                                    };
+                                    _context.UserRoles.Add(newUserRole);
+                                }
+                            }
                             
                             // Note: Role assignment not implemented in this simplified version
                             if (userDto.Roles.Count > 0)
@@ -253,26 +271,17 @@ namespace cams.Backend.Services
 
                             successCount++;
 
-                            // Send welcome email if requested
+                            // Welcome email functionality has been removed
                             if (request.SendWelcomeEmails)
                             {
-                                try
-                                {
-                                    // Note: Welcome email not implemented - using generic email send
-                                    await _emailService.SendEmailAsync(createdUser.Email, "Welcome", "Welcome to CAMS", $"Welcome {createdUser.FirstName}!");
-                                }
-                                catch (Exception emailEx)
-                                {
-                                    _logger.LogWarning(emailEx, "Failed to send welcome email to {Email}", createdUser.Email);
-                                    warnings.Add($"Failed to send welcome email to {createdUser.Email}");
-                                }
+                                warnings.Add($"Welcome email functionality has been removed - {newUser.Email}");
                             }
 
                             await _loggingService.LogAuditAsync(
                                 currentUserId,
                                 AuditAction.Create.ToString(),
                                 AuditEntityTypes.USER,
-                                entityId: createdUser.Id,
+                                entityId: newUser.Id,
                                 description: $"User created via bulk migration: {userDto.Username}",
                                 newValues: $"Email: {userDto.Email}, FirstName: {userDto.FirstName}, LastName: {userDto.LastName}"
                             );
@@ -408,13 +417,13 @@ namespace cams.Backend.Services
                 }
 
                 // Check if username already exists in database
-                if (SharedUserRepository.IsUsernameTaken(user.Username))
+                if (await _context.Users.AnyAsync(u => u.Username.ToLower() == user.Username.ToLower() && u.IsActive))
                 {
                     warnings.Add($"Username '{user.Username}' already exists in database");
                 }
 
                 // Check if email already exists in database
-                if (SharedUserRepository.IsEmailTaken(user.Email))
+                if (await _context.Users.AnyAsync(u => u.Email.ToLower() == user.Email.ToLower() && u.IsActive))
                 {
                     warnings.Add($"Email '{user.Email}' already exists in database");
                 }
