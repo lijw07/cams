@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { X, Database, Server, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
-import { ApplicationRequest, DatabaseConnectionRequest, DatabaseConnection } from '../../types';
+import { X, Database, Server, Plus, Trash2, ToggleLeft, ToggleRight, Edit } from 'lucide-react';
+import { ApplicationRequest, DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseConnection } from '../../types';
 import { databaseConnectionService } from '../../services/databaseConnectionService';
 import DatabaseConnectionModal from './DatabaseConnectionModal';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface ApplicationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (data: ApplicationRequest) => Promise<void>;
-  application?: ApplicationRequest & { id?: number };
+  application?: ApplicationRequest & { id?: number; connections?: DatabaseConnection[] };
   mode?: 'create' | 'edit';
 }
 
@@ -23,7 +23,8 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
 }) => {
   const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const [isConnectionFormOpen, setIsConnectionFormOpen] = useState(false);
-  // const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
+  const [editingConnection, setEditingConnection] = useState<DatabaseConnection | null>(null);
+  const { addNotification } = useNotifications();
 
   const {
     register,
@@ -32,26 +33,32 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     formState: { errors, isSubmitting }
   } = useForm<ApplicationRequest>({
     defaultValues: {
-      name: '',
-      description: '',
-      version: '',
-      environment: 'Development',
-      tags: '',
-      isActive: true
+      Name: '',
+      Description: '',
+      Version: '',
+      Environment: 'Development',
+      Tags: '',
+      IsActive: true
     }
   });
 
   // Load connections when editing an existing application
   useEffect(() => {
-    if (mode === 'edit' && application?.id && isOpen) {
-      loadConnections();
+    if (mode === 'edit' && isOpen) {
+      // Use pre-loaded connections if available, otherwise fetch them
+      if (application?.connections) {
+        setConnections(application.connections);
+      } else if (application?.id) {
+        loadConnections();
+      }
     }
-  }, [mode, application?.id, isOpen]);
+  }, [mode, application?.id, application?.connections, isOpen]);
 
   const loadConnections = async () => {
-    if (!application?.id) return;
+    const appId = application?.id;
+    if (!appId) return;
     try {
-      const connectionData = await databaseConnectionService.getConnections(application.id);
+      const connectionData = await databaseConnectionService.getConnections(appId);
       setConnections(connectionData);
     } catch (error) {
       console.error('Error loading connections:', error);
@@ -63,12 +70,12 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
       reset(application);
     } else {
       reset({
-        name: '',
-        description: '',
-        version: '',
-        environment: 'Development',
-        tags: '',
-        isActive: true
+        Name: '',
+        Description: '',
+        Version: '',
+        Environment: 'Development',
+        Tags: '',
+        IsActive: true
       });
     }
   }, [application, reset]);
@@ -88,23 +95,53 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     
     try {
       await databaseConnectionService.deleteConnection(connectionId);
-      toast.success('Connection deleted successfully');
+      addNotification({
+        title: 'Connection Deleted',
+        message: 'Connection deleted successfully',
+        type: 'success',
+        source: 'Database Connection'
+      });
       loadConnections();
     } catch (error) {
       console.error('Error deleting connection:', error);
-      toast.error('Failed to delete connection');
+      addNotification({
+        title: 'Delete Failed',
+        message: 'Failed to delete connection',
+        type: 'error',
+        source: 'Database Connection'
+      });
     }
   };
 
   const toggleConnectionStatus = async (connectionId: number, currentStatus: boolean) => {
     try {
       await databaseConnectionService.toggleConnectionStatus(connectionId, !currentStatus);
-      toast.success(`Connection ${!currentStatus ? 'activated' : 'deactivated'} successfully`);
+      addNotification({
+        title: 'Connection Updated',
+        message: `Connection ${!currentStatus ? 'activated' : 'deactivated'} successfully`,
+        type: 'success',
+        source: 'Database Connection'
+      });
       loadConnections();
     } catch (error) {
       console.error('Error toggling connection status:', error);
-      toast.error('Failed to update connection status');
+      addNotification({
+        title: 'Update Failed',
+        message: 'Failed to update connection status',
+        type: 'error',
+        source: 'Database Connection'
+      });
     }
+  };
+
+  const handleEditConnection = (connection: DatabaseConnection) => {
+    setEditingConnection(connection);
+    setIsConnectionFormOpen(true);
+  };
+
+  const handleCloseConnectionModal = () => {
+    setIsConnectionFormOpen(false);
+    setEditingConnection(null);
   };
 
   if (!isOpen) return null;
@@ -142,11 +179,11 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
               
               <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
                 <div>
-                  <label htmlFor="name" className="label">
+                  <label htmlFor="Name" className="label">
                     Application Name *
                   </label>
                   <input
-                    {...register('name', {
+                    {...register('Name', {
                       required: 'Application name is required',
                       minLength: {
                         value: 3,
@@ -154,22 +191,22 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                       }
                     })}
                     type="text"
-                    id="name"
+                    id="Name"
                     className="input"
                     placeholder="e.g., E-commerce API"
                   />
-                  {errors.name && (
-                    <p className="mt-1 text-sm text-error-600">{errors.name.message}</p>
+                  {errors.Name && (
+                    <p className="mt-1 text-sm text-error-600">{errors.Name.message}</p>
                   )}
                 </div>
 
                 <div>
-                  <label htmlFor="description" className="label">
+                  <label htmlFor="Description" className="label">
                     Description
                   </label>
                   <textarea
-                    {...register('description')}
-                    id="description"
+                    {...register('Description')}
+                    id="Description"
                     rows={3}
                     className="input"
                     placeholder="Brief description of the application"
@@ -177,25 +214,25 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="version" className="label">
+                  <label htmlFor="Version" className="label">
                     Version
                   </label>
                   <input
-                    {...register('version')}
+                    {...register('Version')}
                     type="text"
-                    id="version"
+                    id="Version"
                     className="input"
                     placeholder="e.g., 1.0.0"
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="environment" className="label">
+                  <label htmlFor="Environment" className="label">
                     Environment
                   </label>
                   <select
-                    {...register('environment')}
-                    id="environment"
+                    {...register('Environment')}
+                    id="Environment"
                     className="input"
                   >
                     <option value="Development">Development</option>
@@ -206,13 +243,13 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 </div>
 
                 <div>
-                  <label htmlFor="tags" className="label">
+                  <label htmlFor="Tags" className="label">
                     Tags
                   </label>
                   <input
-                    {...register('tags')}
+                    {...register('Tags')}
                     type="text"
-                    id="tags"
+                    id="Tags"
                     className="input"
                     placeholder="e.g., api, microservice, backend (comma-separated)"
                   />
@@ -224,12 +261,12 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg border">
                   <div className="flex items-center">
                     <input
-                      {...register('isActive')}
+                      {...register('IsActive')}
                       type="checkbox"
-                      id="isActive"
+                      id="IsActive"
                       className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
-                    <label htmlFor="isActive" className="ml-2 block text-sm font-medium text-gray-900">
+                    <label htmlFor="IsActive" className="ml-2 block text-sm font-medium text-gray-900">
                       Active Application
                     </label>
                   </div>
@@ -283,37 +320,44 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                   </div>
                 ) : (
                   connections.map((connection) => (
-                    <div key={connection.id} className="border border-gray-200 rounded-lg p-4">
+                    <div key={connection.Id} className="border border-gray-200 rounded-lg p-4">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-2">
-                            <h4 className="font-medium text-gray-900">{connection.name}</h4>
-                            <span className={`badge ${connection.isActive ? 'badge-success' : 'badge-secondary'}`}>
-                              {connection.isActive ? 'Active' : 'Inactive'}
+                            <h4 className="font-medium text-gray-900">{connection.Name}</h4>
+                            <span className={`badge ${connection.IsActive ? 'badge-success' : 'badge-secondary'}`}>
+                              {connection.IsActive ? 'Active' : 'Inactive'}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 mb-2">{connection.typeName}</p>
-                          {connection.description && (
-                            <p className="text-sm text-gray-500 mb-2">{connection.description}</p>
+                          <p className="text-sm text-gray-600 mb-2">{connection.TypeName}</p>
+                          {connection.Description && (
+                            <p className="text-sm text-gray-500 mb-2">{connection.Description}</p>
                           )}
                           <div className="text-xs text-gray-400">
-                            Created: {new Date(connection.createdAt).toLocaleDateString()}
+                            Created: {new Date(connection.CreatedAt).toLocaleDateString()}
                           </div>
                         </div>
                         <div className="flex space-x-2 ml-4">
                           <button
-                            onClick={() => toggleConnectionStatus(connection.id, connection.isActive)}
+                            onClick={() => handleEditConnection(connection)}
                             className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                            title={connection.isActive ? 'Deactivate' : 'Activate'}
+                            title="Edit"
                           >
-                            {connection.isActive ? (
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => toggleConnectionStatus(connection.Id, connection.IsActive)}
+                            className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                            title={connection.IsActive ? 'Deactivate' : 'Activate'}
+                          >
+                            {connection.IsActive ? (
                               <ToggleRight className="w-4 h-4 text-success-600" />
                             ) : (
                               <ToggleLeft className="w-4 h-4" />
                             )}
                           </button>
                           <button
-                            onClick={() => handleDeleteConnection(connection.id)}
+                            onClick={() => handleDeleteConnection(connection.Id)}
                             className="p-1 rounded-md text-gray-400 hover:text-error-600 hover:bg-error-50"
                             title="Delete"
                           >
@@ -332,21 +376,45 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
           {isConnectionFormOpen && mode === 'edit' && application?.id && (
             <DatabaseConnectionModal
               isOpen={isConnectionFormOpen}
-              onClose={() => setIsConnectionFormOpen(false)}
-              onSubmit={async (data: DatabaseConnectionRequest) => {
+              onClose={handleCloseConnectionModal}
+              onSubmit={async (data: DatabaseConnectionRequest | DatabaseConnectionUpdateRequest) => {
                 try {
-                  await databaseConnectionService.createConnection(data);
-                  toast.success('Database connection created successfully');
+                  if (editingConnection) {
+                    // Edit mode
+                    await databaseConnectionService.updateConnection(editingConnection.Id, data as DatabaseConnectionUpdateRequest);
+                    addNotification({
+                      title: 'Connection Updated',
+                      message: 'Database connection updated successfully',
+                      type: 'success',
+                      source: 'Database Connection'
+                    });
+                  } else {
+                    // Create mode
+                    await databaseConnectionService.createConnection(data as DatabaseConnectionRequest);
+                    addNotification({
+                      title: 'Connection Created',
+                      message: 'Database connection created successfully',
+                      type: 'success',
+                      source: 'Database Connection'
+                    });
+                  }
                   loadConnections();
-                  setIsConnectionFormOpen(false);
+                  handleCloseConnectionModal();
                 } catch (error) {
-                  console.error('Error creating connection:', error);
-                  toast.error('Failed to create database connection');
+                  console.error('Error saving connection:', error);
+                  addNotification({
+                    title: editingConnection ? 'Update Failed' : 'Creation Failed',
+                    message: `Failed to ${editingConnection ? 'update' : 'create'} database connection`,
+                    type: 'error',
+                    source: 'Database Connection'
+                  });
                   throw error;
                 }
               }}
               applicationId={application.id}
-              applicationName={application.name}
+              applicationName={application.Name}
+              connection={editingConnection || undefined}
+              mode={editingConnection ? 'edit' : 'create'}
             />
           )}
         </div>

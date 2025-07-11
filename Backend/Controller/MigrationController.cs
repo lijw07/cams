@@ -9,7 +9,7 @@ using cams.Backend.Enums;
 namespace cams.Backend.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("migration")]
     [Authorize]
     public class MigrationController(
         IMigrationService migrationService,

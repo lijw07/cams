@@ -10,20 +10,20 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: ''
+    FirstName: '',
+    LastName: '',
+    PhoneNumber: ''
   });
   const [originalData, setOriginalData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: ''
+    FirstName: '',
+    LastName: '',
+    PhoneNumber: ''
   });
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmNewPassword: ''
+    CurrentPassword: '',
+    NewPassword: '',
+    ConfirmNewPassword: ''
   });
   const [showPasswords, setShowPasswords] = useState({
     current: false,
@@ -35,9 +35,9 @@ const Profile: React.FC = () => {
   useEffect(() => {
     if (user) {
       const data = {
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        phoneNumber: user.phoneNumber || ''
+        FirstName: user.FirstName || '',
+        LastName: user.LastName || '',
+        PhoneNumber: user.PhoneNumber || ''
       };
       setFormData(data);
       setOriginalData(data);
@@ -64,7 +64,14 @@ const Profile: React.FC = () => {
   const handleSaveClick = async () => {
     setIsLoading(true);
     try {
-      await profileService.updateProfile(formData);
+      // Clean up the data - convert empty strings to null for optional fields
+      const cleanedData = {
+        FirstName: formData.FirstName || null,
+        LastName: formData.LastName || null,
+        PhoneNumber: formData.PhoneNumber || null
+      };
+      
+      await profileService.updateProfile(cleanedData);
       setOriginalData(formData);
       setIsEditing(false);
       await refreshUserProfile();
@@ -76,6 +83,7 @@ const Profile: React.FC = () => {
         actionUrl: '/profile'
       });
     } catch (error: any) {
+      console.error('Profile update error:', error.response?.data);
       addNotification({
         title: 'Update Failed',
         message: error.response?.data?.message || 'Failed to update profile',
@@ -89,6 +97,13 @@ const Profile: React.FC = () => {
 
   const hasChanges = () => {
     return JSON.stringify(formData) !== JSON.stringify(originalData);
+  };
+
+  const isValidPhoneNumber = (phone: string): boolean => {
+    if (!phone) return true; // Empty is valid
+    // Basic phone number validation - matches backend pattern
+    const phonePattern = /^[\+]?[(]?[0-9]{1,3}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,4}[-\s\.]?[0-9]{1,9}$/;
+    return phonePattern.test(phone);
   };
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -124,7 +139,7 @@ const Profile: React.FC = () => {
   };
 
   const handlePasswordSubmit = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+    if (passwordForm.NewPassword !== passwordForm.ConfirmNewPassword) {
       addNotification({
         title: 'Password Mismatch',
         message: 'New passwords do not match',
@@ -134,7 +149,7 @@ const Profile: React.FC = () => {
       return;
     }
 
-    const validation = validatePassword(passwordForm.newPassword);
+    const validation = validatePassword(passwordForm.NewPassword);
     if (!validation.isValid) {
       addNotification({
         title: 'Invalid Password',
@@ -147,11 +162,16 @@ const Profile: React.FC = () => {
 
     setPasswordLoading(true);
     try {
+      console.log('Sending password change request with:', {
+        CurrentPassword: passwordForm.CurrentPassword ? '[REDACTED]' : 'empty',
+        NewPassword: passwordForm.NewPassword ? '[REDACTED]' : 'empty',
+        ConfirmNewPassword: passwordForm.ConfirmNewPassword ? '[REDACTED]' : 'empty'
+      });
       await profileService.changePassword(passwordForm);
       setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
+        CurrentPassword: '',
+        NewPassword: '',
+        ConfirmNewPassword: ''
       });
       setShowPasswordModal(false);
       addNotification({
@@ -162,9 +182,35 @@ const Profile: React.FC = () => {
         actionUrl: '/profile'
       });
     } catch (error: any) {
+      console.error('Password change error:', error.response?.data);
+      console.error('Full error object:', error);
+      // Handle validation errors
+      let errorMessage = 'Failed to change password';
+      if (error.response?.data?.errors) {
+        const errors = error.response.data.errors;
+        console.error('Validation errors:', errors);
+        // Check if it's the ASP.NET Core validation format
+        if (typeof errors === 'object') {
+          const errorMessages: string[] = [];
+          for (const [field, messages] of Object.entries(errors)) {
+            console.error(`Field '${field}' has errors:`, messages);
+            if (Array.isArray(messages)) {
+              errorMessages.push(`${field}: ${messages.join(', ')}`);
+            } else if (typeof messages === 'string') {
+              errorMessages.push(`${field}: ${messages}`);
+            }
+          }
+          errorMessage = errorMessages.length > 0 ? errorMessages.join('; ') : 'Validation failed';
+        }
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data) {
+        errorMessage = typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data);
+      }
+      
       addNotification({
         title: 'Password Change Failed',
-        message: error.response?.data?.message || 'Failed to change password',
+        message: errorMessage,
         type: 'error',
         source: 'Profile'
       });
@@ -175,9 +221,9 @@ const Profile: React.FC = () => {
 
   const handleClosePasswordModal = () => {
     setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmNewPassword: ''
+      CurrentPassword: '',
+      NewPassword: '',
+      ConfirmNewPassword: ''
     });
     setShowPasswords({
       current: false,
@@ -215,7 +261,7 @@ const Profile: React.FC = () => {
             <button 
               onClick={handleSaveClick}
               className="btn btn-primary"
-              disabled={isLoading || !hasChanges()}
+              disabled={isLoading || !hasChanges() || !isValidPhoneNumber(formData.PhoneNumber)}
             >
               <Save className="w-4 h-4 mr-2" />
               {isLoading ? 'Saving...' : 'Save Changes'}
@@ -231,12 +277,12 @@ const Profile: React.FC = () => {
           </div>
           <div>
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {user?.firstName && user?.lastName 
-                ? `${user.firstName} ${user.lastName}`
-                : user?.username || 'User'
+              {user?.FirstName && user?.LastName 
+                ? `${user.FirstName} ${user.LastName}`
+                : user?.Username || 'User'
               }
             </h2>
-            <p className="text-gray-600 dark:text-gray-300">{user?.email}</p>
+            <p className="text-gray-600 dark:text-gray-300">{user?.Email}</p>
           </div>
         </div>
 
@@ -245,13 +291,13 @@ const Profile: React.FC = () => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Username
             </label>
-            <div className="input bg-gray-50">{user?.username}</div>
+            <div className="input bg-gray-50">{user?.Username}</div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
-            <div className="input bg-gray-50">{user?.email}</div>
+            <div className="input bg-gray-50">{user?.Email}</div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -260,15 +306,15 @@ const Profile: React.FC = () => {
             {isEditing ? (
               <input
                 type="text"
-                name="firstName"
-                value={formData.firstName}
+                name="FirstName"
+                value={formData.FirstName}
                 onChange={handleInputChange}
                 className="input"
                 placeholder="Enter your first name"
                 maxLength={50}
               />
             ) : (
-              <div className="input bg-gray-50">{user?.firstName || 'Not set'}</div>
+              <div className="input bg-gray-50">{user?.FirstName || 'Not set'}</div>
             )}
           </div>
           <div>
@@ -278,15 +324,15 @@ const Profile: React.FC = () => {
             {isEditing ? (
               <input
                 type="text"
-                name="lastName"
-                value={formData.lastName}
+                name="LastName"
+                value={formData.LastName}
                 onChange={handleInputChange}
                 className="input"
                 placeholder="Enter your last name"
                 maxLength={50}
               />
             ) : (
-              <div className="input bg-gray-50">{user?.lastName || 'Not set'}</div>
+              <div className="input bg-gray-50">{user?.LastName || 'Not set'}</div>
             )}
           </div>
           <div>
@@ -294,17 +340,22 @@ const Profile: React.FC = () => {
               Phone Number
             </label>
             {isEditing ? (
-              <input
-                type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleInputChange}
-                className="input"
-                placeholder="Enter your phone number"
-                maxLength={15}
-              />
+              <div>
+                <input
+                  type="tel"
+                  name="PhoneNumber"
+                  value={formData.PhoneNumber}
+                  onChange={handleInputChange}
+                  className="input"
+                  placeholder="Enter your phone number (e.g., +1-234-567-8900)"
+                  maxLength={15}
+                />
+                {formData.PhoneNumber && !isValidPhoneNumber(formData.PhoneNumber) && (
+                  <p className="mt-1 text-xs text-red-600">Please enter a valid phone number</p>
+                )}
+              </div>
             ) : (
-              <div className="input bg-gray-50">{user?.phoneNumber || 'Not set'}</div>
+              <div className="input bg-gray-50">{user?.PhoneNumber || 'Not set'}</div>
             )}
           </div>
           <div>
@@ -326,7 +377,7 @@ const Profile: React.FC = () => {
               Member Since
             </label>
             <div className="input bg-gray-50">
-              {user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+              {user?.CreatedAt ? new Date(user.CreatedAt).toLocaleDateString() : 'Unknown'}
             </div>
           </div>
         </div>
@@ -367,8 +418,8 @@ const Profile: React.FC = () => {
                   <div className="relative">
                     <input
                       type={showPasswords.current ? "text" : "password"}
-                      name="currentPassword"
-                      value={passwordForm.currentPassword}
+                      name="CurrentPassword"
+                      value={passwordForm.CurrentPassword}
                       onChange={handlePasswordChange}
                       className="input pr-10"
                       placeholder="Enter your current password"
@@ -392,8 +443,8 @@ const Profile: React.FC = () => {
                   <div className="relative">
                     <input
                       type={showPasswords.new ? "text" : "password"}
-                      name="newPassword"
-                      value={passwordForm.newPassword}
+                      name="NewPassword"
+                      value={passwordForm.NewPassword}
                       onChange={handlePasswordChange}
                       className="input pr-10"
                       placeholder="Enter your new password"
@@ -409,10 +460,10 @@ const Profile: React.FC = () => {
                   </div>
                   
                   {/* Password Requirements */}
-                  {passwordForm.newPassword && (
+                  {passwordForm.NewPassword && (
                     <div className="mt-2 space-y-1">
                       {(() => {
-                        const validation = validatePassword(passwordForm.newPassword);
+                        const validation = validatePassword(passwordForm.NewPassword);
                         return (
                           <div className="text-xs space-y-1">
                             <div className={`flex items-center ${validation.minLength ? 'text-green-600' : 'text-red-600'}`}>
@@ -450,8 +501,8 @@ const Profile: React.FC = () => {
                   <div className="relative">
                     <input
                       type={showPasswords.confirm ? "text" : "password"}
-                      name="confirmNewPassword"
-                      value={passwordForm.confirmNewPassword}
+                      name="ConfirmNewPassword"
+                      value={passwordForm.ConfirmNewPassword}
                       onChange={handlePasswordChange}
                       className="input pr-10"
                       placeholder="Confirm your new password"
@@ -465,7 +516,7 @@ const Profile: React.FC = () => {
                       {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
-                  {passwordForm.confirmNewPassword && passwordForm.newPassword !== passwordForm.confirmNewPassword && (
+                  {passwordForm.ConfirmNewPassword && passwordForm.NewPassword !== passwordForm.ConfirmNewPassword && (
                     <p className="mt-1 text-xs text-red-600">Passwords do not match</p>
                   )}
                 </div>
@@ -484,11 +535,11 @@ const Profile: React.FC = () => {
                   className="btn btn-primary"
                   disabled={
                     passwordLoading ||
-                    !passwordForm.currentPassword ||
-                    !passwordForm.newPassword ||
-                    !passwordForm.confirmNewPassword ||
-                    passwordForm.newPassword !== passwordForm.confirmNewPassword ||
-                    !validatePassword(passwordForm.newPassword).isValid
+                    !passwordForm.CurrentPassword ||
+                    !passwordForm.NewPassword ||
+                    !passwordForm.ConfirmNewPassword ||
+                    passwordForm.NewPassword !== passwordForm.ConfirmNewPassword ||
+                    !validatePassword(passwordForm.NewPassword).isValid
                   }
                 >
                   {passwordLoading ? 'Changing...' : 'Change Password'}

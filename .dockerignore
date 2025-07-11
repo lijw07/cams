@@ -1,4 +1,4 @@
-﻿# Git
+# Git
 .git
 .gitignore
 README.md
@@ -12,6 +12,7 @@ docker-compose*.yml
 bin/
 obj/
 out/
+publish/
 .vs/
 .vscode/
 *.user
@@ -22,7 +23,7 @@ out/
 .dotnet/
 .nuget/
 
-# Node.js (for ClientApp)
+# Node.js
 node_modules/
 npm-debug.log*
 yarn-debug.log*
@@ -63,9 +64,12 @@ pids/
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
+# Testing
 coverage/
-
-# Test results
 TestResults/
 test-results.xml
+
+# Keep these (do not ignore)
+!CLAUDE.md
+!/Migrations
+!/frontend/dist/

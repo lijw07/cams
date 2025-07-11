@@ -10,7 +10,7 @@ using cams.Backend.Model;
 namespace cams.Backend.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("database-connections")]
     [Authorize]
     public class DatabaseConnectionController(
         IDatabaseConnectionService connectionService,
@@ -136,6 +136,20 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
+
+                // Log system event for database connection creation
+                await loggingService.LogSystemEventAsync(
+                    SystemEventType.ConfigurationChange.ToString(),
+                    SystemLogLevel.Information.ToString(),
+                    SystemLogSources.DATABASE,
+                    $"Database connection created: {connection.Name}",
+                    details: $"ConnectionId: {connection.Id}, Type: {request.Type}, ApplicationId: {request.ApplicationId}, UserId: {userId}",
+                    userId: userId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 201
+                );
                 
                 return CreatedAtAction(nameof(GetConnection), new { id = connection.Id }, connection);
             }
@@ -239,6 +253,20 @@ namespace cams.Backend.Controller
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
                 );
+
+                // Log system event for database connection deletion
+                await loggingService.LogSystemEventAsync(
+                    SystemEventType.ConfigurationChange.ToString(),
+                    SystemLogLevel.Information.ToString(),
+                    SystemLogSources.DATABASE,
+                    $"Database connection deleted",
+                    details: $"ConnectionId: {id}, UserId: {userId}",
+                    userId: userId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 204
+                );
                 
                 return NoContent();
             }
@@ -304,6 +332,42 @@ namespace cams.Backend.Controller
                     userAgent: Request.Headers.UserAgent.ToString(),
                     metadata: $"ConnectionId: {request.ConnectionId}, DatabaseType: {request.ConnectionDetails?.Type}"
                 );
+
+                // Log system event for failed connection tests
+                if (!testResult.IsSuccessful)
+                {
+                    await loggingService.LogSystemEventAsync(
+                        SystemEventType.DatabaseError.ToString(),
+                        SystemLogLevel.Warning.ToString(),
+                        SystemLogSources.DATABASE,
+                        $"Database connection test failed: {testResult.Message}",
+                        details: $"ConnectionId: {request.ConnectionId}, DatabaseType: {request.ConnectionDetails?.Type}, ErrorMessage: {testResult.Message}",
+                        userId: userId,
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        httpMethod: HttpContext.Request.Method,
+                        requestPath: HttpContext.Request.Path,
+                        statusCode: 500,
+                        duration: testResult.ResponseTime
+                    );
+                }
+
+                // Log system event for slow connection tests (performance degradation)
+                if (testResult.ResponseTime.TotalSeconds > 5)
+                {
+                    await loggingService.LogSystemEventAsync(
+                        SystemEventType.PerformanceAlert.ToString(),
+                        SystemLogLevel.Warning.ToString(),
+                        SystemLogSources.PERFORMANCE,
+                        $"Slow database connection detected: {testResult.ResponseTime.TotalSeconds:F2}s",
+                        details: $"ConnectionId: {request.ConnectionId}, DatabaseType: {request.ConnectionDetails?.Type}, ResponseTime: {testResult.ResponseTime.TotalMilliseconds}ms, Threshold: 5000ms",
+                        userId: userId,
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        httpMethod: HttpContext.Request.Method,
+                        requestPath: HttpContext.Request.Path,
+                        statusCode: 200,
+                        duration: testResult.ResponseTime
+                    );
+                }
                 
                 return Ok(testResult);
             }
@@ -320,7 +384,24 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Error testing database connection for user {UserId}", UserHelper.GetCurrentUserId(User));
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogError(ex, "Error testing database connection for user {UserId}", userId);
+                
+                // Log system event for connection test system error
+                await loggingService.LogSystemEventAsync(
+                    SystemEventType.DatabaseError.ToString(),
+                    SystemLogLevel.Error.ToString(),
+                    SystemLogSources.DATABASE,
+                    $"Database connection test system error: {ex.Message}",
+                    details: $"ConnectionId: {request?.ConnectionId}, DatabaseType: {request?.ConnectionDetails?.Type}",
+                    stackTrace: ex.StackTrace,
+                    userId: userId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 500
+                );
+                
                 return HttpResponseHelper.CreateErrorResponse("Error testing database connection");
             }
         }
@@ -401,6 +482,297 @@ namespace cams.Backend.Controller
             {
                 logger.LogError(ex, "Error building connection string");
                 return HttpResponseHelper.CreateErrorResponse("Error building connection string");
+            }
+        }
+
+        [HttpPost("validate-connection-string")]
+        public IActionResult ValidateConnectionString([FromBody] ValidateConnectionStringRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                        ModelState.Where(x => x.Value?.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                            ));
+                }
+
+                var validation = connectionService.ValidateConnectionString(request.ConnectionString, request.DatabaseType);
+                return Ok(validation);
+            }
+            catch (ArgumentException ex)
+            {
+                return HttpResponseHelper.CreateBadRequestResponse(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error validating connection string");
+                return HttpResponseHelper.CreateErrorResponse("Error validating connection string");
+            }
+        }
+
+        [HttpGet("{id}/summary")]
+        public async Task<IActionResult> GetConnectionSummary(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                var summary = await connectionService.GetConnectionSummaryAsync(id, userId);
+                
+                if (summary == null)
+                {
+                    return HttpResponseHelper.CreateNotFoundResponse("Connection");
+                }
+
+                return Ok(summary);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving connection summary for {ConnectionId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving connection summary");
+            }
+        }
+
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetConnectionsSummary([FromQuery] int? applicationId = null)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                var summaries = await connectionService.GetConnectionsSummaryAsync(userId, applicationId);
+                
+                return Ok(summaries);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving connections summary for user {UserId}", UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving connections summary");
+            }
+        }
+
+        [HttpGet("{id}/health")]
+        public async Task<IActionResult> GetConnectionHealth(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                var health = await connectionService.GetConnectionHealthAsync(id, userId);
+                
+                if (health == null)
+                {
+                    return HttpResponseHelper.CreateNotFoundResponse("Connection");
+                }
+
+                return Ok(health);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving connection health for {ConnectionId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving connection health");
+            }
+        }
+
+        [HttpPost("{id}/health/refresh")]
+        public async Task<IActionResult> RefreshConnectionHealth(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                var health = await connectionService.RefreshConnectionHealthAsync(id, userId);
+                
+                if (health == null)
+                {
+                    return HttpResponseHelper.CreateNotFoundResponse("Connection");
+                }
+
+                return Ok(health);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error refreshing connection health for {ConnectionId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error refreshing connection health");
+            }
+        }
+
+        [HttpPost("bulk/toggle")]
+        public async Task<IActionResult> BulkToggleStatus([FromBody] BulkToggleRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                        ModelState.Where(x => x.Value?.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                            ));
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                var result = await connectionService.BulkToggleStatusAsync(request.ConnectionIds, request.IsActive, userId);
+                
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error bulk toggling connection status for user {UserId}", UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error bulk toggling connection status");
+            }
+        }
+
+        [HttpPost("bulk/delete")]
+        public async Task<IActionResult> BulkDelete([FromBody] BulkDeleteRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                        ModelState.Where(x => x.Value?.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                            ));
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                var result = await connectionService.BulkDeleteAsync(request.ConnectionIds, userId);
+                
+                return Ok(result);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error bulk deleting connections for user {UserId}", UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error bulk deleting connections");
+            }
+        }
+
+        [HttpGet("{id}/usage-stats")]
+        public async Task<IActionResult> GetConnectionUsageStats(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                var stats = await connectionService.GetConnectionUsageStatsAsync(id, userId);
+                
+                if (stats == null)
+                {
+                    return HttpResponseHelper.CreateNotFoundResponse("Connection");
+                }
+
+                return Ok(stats);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving connection usage stats for {ConnectionId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving connection usage stats");
+            }
+        }
+
+        [HttpPost("{id}/test")]
+        public async Task<IActionResult> TestExistingConnection(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} testing existing database connection {ConnectionId}", userId, id);
+                
+                var request = new DatabaseConnectionTestRequest
+                {
+                    ConnectionId = id
+                };
+                
+                var testResult = await connectionService.TestConnectionAsync(request, userId);
+                
+                logger.LogInformation("Database connection test completed for connection {ConnectionId} and user {UserId} - Success: {IsSuccessful}", 
+                    id, userId, testResult.IsSuccessful);
+                
+                // Log audit event for connection test
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.ConnectionTest.ToString(),
+                    AuditEntityTypes.DATABASE_CONNECTION,
+                    entityId: id,
+                    description: $"Existing connection test - Success: {testResult.IsSuccessful}",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+                
+                return Ok(testResult);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                logger.LogWarning("Unauthorized access attempt to test database connection {ConnectionId}", id);
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (ArgumentException ex)
+            {
+                logger.LogWarning("Invalid database connection test request for connection {ConnectionId} from user {UserId}: {ErrorMessage}", 
+                    id, UserHelper.GetCurrentUserId(User), ex.Message);
+                return HttpResponseHelper.CreateBadRequestResponse(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error testing database connection {ConnectionId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error testing database connection");
+            }
+        }
+
+        [HttpPost("{id}/access")]
+        public async Task<IActionResult> UpdateLastAccessed(int id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                var updated = await connectionService.UpdateLastAccessedAsync(id, userId);
+                
+                if (!updated)
+                {
+                    return HttpResponseHelper.CreateNotFoundResponse("Connection");
+                }
+
+                return Ok(new { message = "Last accessed time updated successfully" });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error updating last accessed time for connection {ConnectionId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error updating last accessed time");
             }
         }
     }

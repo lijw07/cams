@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace cams.Backend.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("create-user")]
     [Authorize]
     [RequireRole(RoleConstants.PLATFORM_ADMIN)]
     public class CreateUserController(
@@ -216,7 +216,7 @@ namespace cams.Backend.Controller
         }
 
         [HttpPost("validate-email")]
-        public async Task<IActionResult> ValidateEmail([FromBody] ValidateEmailRequest request)
+        public async Task<IActionResult> ValidateEmail([FromBody] EmailValidationRequest request)
         {
             try
             {
@@ -240,5 +240,10 @@ namespace cams.Backend.Controller
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while validating the email");
             }
         }
+    }
+
+    public class EmailValidationRequest
+    {
+        public string Email { get; set; } = string.Empty;
     }
 }

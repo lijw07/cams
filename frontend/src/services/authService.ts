@@ -3,10 +3,10 @@ import { LoginRequest, LoginResponse, UserProfileResponse } from '../types';
 
 export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
-    const response = await apiService.post<LoginResponse>('/login/authenticate', credentials);
+    const response = await apiService.post<LoginResponse>('/auth/authenticate', credentials);
     
-    if (response.token) {
-      apiService.setToken(response.token);
+    if (response.Token) {
+      apiService.setToken(response.Token);
     }
     
     return response;
@@ -14,27 +14,27 @@ export const authService = {
 
   async logout(): Promise<void> {
     try {
-      await apiService.post('/login/logout');
+      await apiService.post('/auth/logout');
     } finally {
       apiService.removeToken();
     }
   },
 
   async refreshToken(username: string, refreshToken: string): Promise<LoginResponse> {
-    const response = await apiService.post<LoginResponse>('/login/refresh-token', {
-      username,
-      refreshToken,
+    const response = await apiService.post<LoginResponse>('/auth/refresh-token', {
+      Username: username,
+      RefreshToken: refreshToken,
     });
     
-    if (response.token) {
-      apiService.setToken(response.token);
+    if (response.Token) {
+      apiService.setToken(response.Token);
     }
     
     return response;
   },
 
   async validateToken(): Promise<{ isValid: boolean; username: string; message: string }> {
-    return apiService.get('/login/validate');
+    return apiService.get('/auth/validate');
   },
 
   async getUserProfile(): Promise<UserProfileResponse> {
@@ -42,24 +42,24 @@ export const authService = {
   },
 
   async updateProfile(data: {
-    firstName?: string;
-    lastName?: string;
-    phoneNumber?: string;
+    FirstName?: string;
+    LastName?: string;
+    PhoneNumber?: string;
   }): Promise<UserProfileResponse> {
     return apiService.put('/user/profile', data);
   },
 
   async changePassword(data: {
-    currentPassword: string;
-    newPassword: string;
-    confirmNewPassword: string;
+    CurrentPassword: string;
+    NewPassword: string;
+    ConfirmNewPassword: string;
   }): Promise<void> {
     return apiService.post('/user/change-password', data);
   },
 
   async changeEmail(data: {
-    newEmail: string;
-    password: string;
+    NewEmail: string;
+    CurrentPassword: string;
   }): Promise<void> {
     return apiService.post('/user/change-email', data);
   },

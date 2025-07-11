@@ -1,46 +1,66 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Package, Database } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { Package, Users, Shield } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
-import { applicationService } from '../services/applicationService';
-import { ApplicationWithConnectionRequest } from '../types';
-import toast from 'react-hot-toast';
+import { dashboardService } from '../services/dashboardService';
+import { useNotifications } from '../contexts/NotificationContext';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { addNotification } = useNotifications();
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalApplications: 0,
+    totalRoles: 0,
+    isLoading: true
+  });
 
-  const handleCreateApplicationWithConnection = async (data: ApplicationWithConnectionRequest) => {
-    try {
-      const response = await applicationService.createApplicationWithConnection(data);
-      toast.success('Application and connection created successfully');
-      if (response.connectionTestResult) {
-        toast.success('Database connection test passed');
-      } else if (response.connectionTestMessage) {
-        toast.error(`Connection test failed: ${response.connectionTestMessage}`);
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const data = await dashboardService.getDashboardStats();
+        setStats({
+          totalUsers: data.totalUsers,
+          totalApplications: data.totalApplications,
+          totalRoles: data.totalRoles,
+          isLoading: false
+        });
+      } catch (error) {
+        console.error('Error fetching dashboard stats:', error);
+        addNotification({
+          title: 'Error',
+          message: 'Failed to load dashboard statistics',
+          type: 'error',
+          source: 'Dashboard'
+        });
+        setStats(prev => ({ ...prev, isLoading: false }));
       }
-      navigate(`/applications/${response.application.id}`);
-    } catch (error) {
-      console.error('Error creating application with connection:', error);
-      toast.error('Failed to create application with connection');
-      throw error;
-    }
-  };
+    };
 
-  const stats = [
+    fetchStats();
+  }, [addNotification]);
+
+  const statCards = [
     {
-      name: 'Total Applications',
-      value: user?.applicationCount || 0,
-      icon: Package,
-      color: 'bg-blue-500'
+      name: 'Total Users',
+      value: stats.totalUsers,
+      icon: Users,
+      color: 'bg-purple-500',
+      link: '/management/users'
     },
     {
-      name: 'Database Connections',
-      value: user?.databaseConnectionCount || 0,
-      icon: Database,
-      color: 'bg-green-500'
+      name: 'Total Applications',
+      value: stats.totalApplications,
+      icon: Package,
+      color: 'bg-blue-500',
+      link: '/applications'
+    },
+    {
+      name: 'Total Roles',
+      value: stats.totalRoles,
+      icon: Shield,
+      color: 'bg-green-500',
+      link: '/management/roles'
     }
   ];
 
@@ -52,67 +72,39 @@ const Dashboard: React.FC = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Welcome back, {user?.firstName || user?.username}!
+              Welcome back, {user?.FirstName || user?.Username}!
             </h1>
             <p className="text-gray-600 dark:text-gray-300">
               Here's an overview of your applications and database connections.
             </p>
           </div>
-          <div className="flex space-x-3">
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="btn btn-primary"
-            >
-              <Package className="w-4 h-4 mr-2" />
-              New Application
-            </button>
-          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.name} className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.name}</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
-              </div>
-              <div className={`${stat.color} rounded-full p-3`}>
-                <stat.icon className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 gap-4">
-          <Link
-            to="/applications"
-            className="p-4 border border-gray-200 rounded-lg hover:border-primary-600 hover:shadow-md transition-all"
-          >
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Package className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-900">Manage Applications</p>
-                <p className="text-sm text-gray-500">View and configure your applications with their database connections</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {statCards.map((stat) => (
+          <Link key={stat.name} to={stat.link} className="block">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 hover:shadow-lg transition-shadow cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.name}</p>
+                  {stats.isLoading ? (
+                    <div className="h-9 w-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+                  ) : (
+                    <p className="text-3xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                  )}
+                </div>
+                <div className={`${stat.color} rounded-full p-3`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
               </div>
             </div>
           </Link>
-        </div>
+        ))}
       </div>
 
-      <ApplicationWithConnectionModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleCreateApplicationWithConnection}
-      />
+
     </div>
   );
 };

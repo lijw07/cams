@@ -1,114 +1,84 @@
-# ------------------------------------------
-# Node.js / React
-# ------------------------------------------
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-/node_modules
-/build
-/dist
-/.env.local
-/.env.development.local
-/.env.test.local
-/.env.production.local
-.env
-
-# ------------------------------------------
-# ASP.NET Core / .NET
-# ------------------------------------------
+# .NET
 bin/
 obj/
+out/
+publish/
+.scaffolding/
 *.user
 *.rsuser
 *.suo
 *.userosscache
 *.sln.docstates
-
-# ASP.NET Scaffolding
-.scaffolding/
-
-# Publish output
-publish/
-out/
-
-# User-specific files
-*.swp
 *.userprefs
-
-# Visual Studio temp files
 .vs/
-.vscode/
-
-# Rider
-.idea/
 *.sln.iml
+*.sln.DotSettings.user
 
-# ASP.NET Environment files (KEEP appsettings.json for base config)
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+/build
+/dist
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*
+!.env.example
 appsettings.*.json
 !appsettings.json
 secrets.json
 *.secrets.json
 
-# Environment variables
-.env
-.env.*
-!.env.example
+# IDE
+.vscode/
+.idea/
+*.swp
+*.code-workspace
 
-# ------------------------------------------
 # Docker
-# ------------------------------------------
+docker-compose.override.yml
+docker-data/
+volume-data/
 *.tar
 *.container
 *.pid
-.env
-docker-compose.override.yml
 
-# Docker volumes (if you persist volumes to a directory)
-docker-data/
-volume-data/
-
-# ------------------------------------------
 # Logs
-# ------------------------------------------
 *.log
 logs/
 log/
 
-# ------------------------------------------
-# System
-# ------------------------------------------
+# OS
 .DS_Store
 Thumbs.db
 
-# ------------------------------------------
-# Miscellaneous
-# ------------------------------------------
-# Optional: Ignore test coverage/other build artifacts
+# Testing
 coverage/
 coverage-final.json
 lcov-report/
 
-# ------------------------------------------
-# Ignore local tools/IDE
-# ------------------------------------------
-*.sln.DotSettings.user
-.idea/
-*.code-workspace
+# Security
+.github/secrets/
+*.pem
+*.p12
+*.key
+secrets/
+.secrets/
+certificates/
 
-# ------------------------------------------
-# Ignore React build output in ClientApp (if using ASP.NET template)
-# ------------------------------------------
-/Prototype/ClientApp/node_modules/
-/Prototype/ClientApp/build/
-/Prototype/ClientApp/dist/
-/Prototype/ClientApp/.env.local
-/Prototype/ClientApp/.env.development.local
-/Prototype/ClientApp/.env.test.local
-/Prototype/ClientApp/.env.production.local
-/Prototype/obj
-# Remove these - they should be included:
-# CLAUDE.md - project documentation should be in repo
-# Migrations - database migrations should be in repo
+# Temporary
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Misc
 CLAUDE.md
 /Migrations
+/frontend/dist

@@ -1,51 +1,100 @@
 using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Enums;
+using cams.Backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace cams.Backend.Services
 {
     public class ApplicationService : IApplicationService
     {
         private readonly ILogger<ApplicationService> _logger;
-        
-        // In a real application, this would be replaced with a database context
-        private static readonly List<Application> _applications = new();
-        private static readonly List<DatabaseConnection> _connections = new();
-        private static int _nextId = 1;
-        private static int _nextConnectionId = 1;
+        private readonly ApplicationDbContext _context;
 
-        public ApplicationService(ILogger<ApplicationService> logger)
+        public ApplicationService(ILogger<ApplicationService> logger, ApplicationDbContext context)
         {
             _logger = logger;
+            _context = context;
         }
 
         public async Task<IEnumerable<ApplicationSummaryResponse>> GetUserApplicationsAsync(int userId)
         {
-            await Task.CompletedTask;
-            
-            var applications = _applications
+            var applications = await _context.Applications
+                .Include(a => a.DatabaseConnections)
                 .Where(a => a.UserId == userId)
                 .OrderBy(a => a.Name)
-                .ToList();
+                .ToListAsync();
 
             return applications.Select(a => MapToSummaryResponse(a));
         }
 
+        public async Task<PagedResult<ApplicationSummaryResponse>> GetUserApplicationsPaginatedAsync(int userId, PaginationRequest request)
+        {
+            var query = _context.Applications
+                .Include(a => a.DatabaseConnections)
+                .Where(a => a.UserId == userId);
+
+            // Apply search filter
+            if (!string.IsNullOrWhiteSpace(request.SearchTerm))
+            {
+                var searchTerm = request.SearchTerm.ToLower();
+                query = query.Where(a => 
+                    a.Name.ToLower().Contains(searchTerm) ||
+                    a.Description!.ToLower().Contains(searchTerm) ||
+                    a.Environment!.ToLower().Contains(searchTerm) ||
+                    a.Tags!.ToLower().Contains(searchTerm));
+            }
+
+            // Apply sorting
+            query = request.SortBy?.ToLower() switch
+            {
+                "name" => request.SortDirection?.ToLower() == "desc" 
+                    ? query.OrderByDescending(a => a.Name)
+                    : query.OrderBy(a => a.Name),
+                "createdat" => request.SortDirection?.ToLower() == "desc"
+                    ? query.OrderByDescending(a => a.CreatedAt)
+                    : query.OrderBy(a => a.CreatedAt),
+                "updatedat" => request.SortDirection?.ToLower() == "desc"
+                    ? query.OrderByDescending(a => a.UpdatedAt)
+                    : query.OrderBy(a => a.UpdatedAt),
+                "environment" => request.SortDirection?.ToLower() == "desc"
+                    ? query.OrderByDescending(a => a.Environment)
+                    : query.OrderBy(a => a.Environment),
+                _ => query.OrderBy(a => a.Name) // Default sorting
+            };
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Apply pagination
+            var applications = await query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToListAsync();
+
+            var mappedApplications = applications.Select(a => MapToSummaryResponse(a));
+
+            return new PagedResult<ApplicationSummaryResponse>
+            {
+                Items = mappedApplications,
+                TotalCount = totalCount,
+                PageNumber = request.PageNumber,
+                PageSize = request.PageSize
+            };
+        }
+
         public async Task<ApplicationResponse?> GetApplicationByIdAsync(int id, int userId)
         {
-            await Task.CompletedTask;
-            
-            var application = _applications.FirstOrDefault(a => a.Id == id && a.UserId == userId);
+            var application = await _context.Applications
+                .Include(a => a.DatabaseConnections)
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             return application != null ? MapToResponse(application) : null;
         }
 
         public async Task<ApplicationResponse> CreateApplicationAsync(ApplicationRequest request, int userId)
         {
-            await Task.CompletedTask;
-            
             var application = new Application
             {
-                Id = _nextId++,
                 UserId = userId,
                 Name = request.Name,
                 Description = request.Description,
@@ -57,7 +106,8 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _applications.Add(application);
+            _context.Applications.Add(application);
+            await _context.SaveChangesAsync();
             
             _logger.LogInformation("Created application {ApplicationName} for user {UserId}", request.Name, userId);
             
@@ -66,9 +116,9 @@ namespace cams.Backend.Services
 
         public async Task<ApplicationResponse?> UpdateApplicationAsync(ApplicationUpdateRequest request, int userId)
         {
-            await Task.CompletedTask;
-            
-            var application = _applications.FirstOrDefault(a => a.Id == request.Id && a.UserId == userId);
+            var application = await _context.Applications
+                .Include(a => a.DatabaseConnections)
+                .FirstOrDefaultAsync(a => a.Id == request.Id && a.UserId == userId);
             if (application == null)
                 return null;
 
@@ -80,6 +130,7 @@ namespace cams.Backend.Services
             application.IsActive = request.IsActive;
             application.UpdatedAt = DateTime.UtcNow;
 
+            await _context.SaveChangesAsync();
             _logger.LogInformation("Updated application {ApplicationName} for user {UserId}", request.Name, userId);
             
             return MapToResponse(application);
@@ -87,37 +138,32 @@ namespace cams.Backend.Services
 
         public async Task<bool> DeleteApplicationAsync(int id, int userId)
         {
-            await Task.CompletedTask;
-            
-            var application = _applications.FirstOrDefault(a => a.Id == id && a.UserId == userId);
+            var application = await _context.Applications
+                .Include(a => a.DatabaseConnections)
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (application == null)
                 return false;
 
-            // Also delete all database connections for this application
-            var connectionsToDelete = _connections.Where(c => c.ApplicationId == id).ToList();
-            foreach (var connection in connectionsToDelete)
-            {
-                _connections.Remove(connection);
-            }
-
-            _applications.Remove(application);
+            var connectionCount = application.DatabaseConnections.Count;
+            _context.Applications.Remove(application); // Cascade delete will handle connections
+            await _context.SaveChangesAsync();
             
             _logger.LogInformation("Deleted application {ApplicationId} and {ConnectionCount} connections for user {UserId}", 
-                id, connectionsToDelete.Count, userId);
+                id, connectionCount, userId);
             
             return true;
         }
 
         public async Task<bool> ToggleApplicationStatusAsync(int id, int userId, bool isActive)
         {
-            await Task.CompletedTask;
-            
-            var application = _applications.FirstOrDefault(a => a.Id == id && a.UserId == userId);
+            var application = await _context.Applications
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (application == null)
                 return false;
 
             application.IsActive = isActive;
             application.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
             
             _logger.LogInformation("Toggled application {ApplicationId} status to {IsActive} for user {UserId}", 
                 id, isActive, userId);
@@ -127,30 +173,29 @@ namespace cams.Backend.Services
 
         public async Task<bool> UpdateLastAccessedAsync(int id, int userId)
         {
-            await Task.CompletedTask;
-            
-            var application = _applications.FirstOrDefault(a => a.Id == id && a.UserId == userId);
+            var application = await _context.Applications
+                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == userId);
             if (application == null)
                 return false;
 
             application.LastAccessedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
             
             return true;
         }
 
         public async Task<IEnumerable<DatabaseConnectionSummary>> GetApplicationConnectionsAsync(int applicationId, int userId)
         {
-            await Task.CompletedTask;
-            
             // Verify user has access to this application
-            var application = _applications.FirstOrDefault(a => a.Id == applicationId && a.UserId == userId);
+            var application = await _context.Applications
+                .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
             if (application == null)
                 return Enumerable.Empty<DatabaseConnectionSummary>();
 
-            var connections = _connections
+            var connections = await _context.DatabaseConnections
                 .Where(c => c.ApplicationId == applicationId)
                 .OrderBy(c => c.Name)
-                .ToList();
+                .ToListAsync();
 
             return connections.Select(c => new DatabaseConnectionSummary
             {
@@ -165,16 +210,13 @@ namespace cams.Backend.Services
 
         public async Task<bool> ValidateApplicationAccessAsync(int applicationId, int userId)
         {
-            await Task.CompletedTask;
-            
-            return _applications.Any(a => a.Id == applicationId && a.UserId == userId);
+            return await _context.Applications
+                .AnyAsync(a => a.Id == applicationId && a.UserId == userId);
         }
 
         private ApplicationResponse MapToResponse(Application application)
         {
-            var connections = _connections
-                .Where(c => c.ApplicationId == application.Id)
-                .ToList();
+            var connections = application.DatabaseConnections ?? new List<DatabaseConnection>();
 
             return new ApplicationResponse
             {
@@ -203,9 +245,7 @@ namespace cams.Backend.Services
 
         private ApplicationSummaryResponse MapToSummaryResponse(Application application)
         {
-            var connections = _connections
-                .Where(c => c.ApplicationId == application.Id)
-                .ToList();
+            var connections = application.DatabaseConnections ?? new List<DatabaseConnection>();
 
             return new ApplicationSummaryResponse
             {
@@ -226,12 +266,9 @@ namespace cams.Backend.Services
         // Combined application and database connection operations
         public async Task<ApplicationWithConnectionResponse> CreateApplicationWithConnectionAsync(ApplicationWithConnectionRequest request, int userId)
         {
-            await Task.CompletedTask;
-            
             // Create application
             var application = new Application
             {
-                Id = _nextId++,
                 UserId = userId,
                 Name = request.ApplicationName,
                 Description = request.ApplicationDescription,
@@ -243,10 +280,12 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
+            _context.Applications.Add(application);
+            await _context.SaveChangesAsync(); // Save to get the application ID
+
             // Create database connection
             var connection = new DatabaseConnection
             {
-                Id = _nextConnectionId++,
                 UserId = userId,
                 ApplicationId = application.Id,
                 Name = request.ConnectionName,
@@ -267,9 +306,8 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
             
-            // Add to collections
-            _applications.Add(application);
-            _connections.Add(connection);
+            _context.DatabaseConnections.Add(connection);
+            await _context.SaveChangesAsync();
             
             _logger.LogInformation("Created application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
                 application.Name, connection.Name, userId);
@@ -311,11 +349,11 @@ namespace cams.Backend.Services
 
         public async Task<ApplicationWithConnectionResponse?> UpdateApplicationWithConnectionAsync(ApplicationWithConnectionUpdateRequest request, int userId)
         {
-            await Task.CompletedTask;
-            
             // Find existing application and connection
-            var existingApp = _applications.FirstOrDefault(a => a.Id == request.ApplicationId && a.UserId == userId);
-            var existingConnection = _connections.FirstOrDefault(c => c.Id == request.ConnectionId && c.UserId == userId);
+            var existingApp = await _context.Applications
+                .FirstOrDefaultAsync(a => a.Id == request.ApplicationId && a.UserId == userId);
+            var existingConnection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == request.ConnectionId && c.UserId == userId);
             
             if (existingApp == null || existingConnection == null)
                 return null;
@@ -355,6 +393,7 @@ namespace cams.Backend.Services
             existingConnection.IsActive = request.IsConnectionActive;
             existingConnection.UpdatedAt = DateTime.UtcNow;
             
+            await _context.SaveChangesAsync();
             _logger.LogInformation("Updated application {ApplicationName} with connection {ConnectionName} for user {UserId}", 
                 existingApp.Name, existingConnection.Name, userId);
             
@@ -395,15 +434,15 @@ namespace cams.Backend.Services
 
         public async Task<ApplicationWithConnectionResponse?> GetApplicationWithPrimaryConnectionAsync(int applicationId, int userId)
         {
-            await Task.CompletedTask;
-            
             // Find application
-            var application = _applications.FirstOrDefault(a => a.Id == applicationId && a.UserId == userId);
+            var application = await _context.Applications
+                .FirstOrDefaultAsync(a => a.Id == applicationId && a.UserId == userId);
             if (application == null)
                 return null;
             
             // Get the first (primary) connection for this application
-            var primaryConnection = _connections.FirstOrDefault(c => c.ApplicationId == applicationId);
+            var primaryConnection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.ApplicationId == applicationId);
             if (primaryConnection == null)
                 return null;
             
@@ -431,7 +470,7 @@ namespace cams.Backend.Services
             {
                 Id = connection.Id,
                 ApplicationId = connection.ApplicationId,
-                ApplicationName = _applications.FirstOrDefault(a => a.Id == connection.ApplicationId)?.Name ?? "Unknown",
+                ApplicationName = connection.Application?.Name ?? "Unknown",
                 Name = connection.Name,
                 Description = connection.Description,
                 Type = connection.Type,

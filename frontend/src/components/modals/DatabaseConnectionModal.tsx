@@ -1,15 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { X, Database, Key, Settings } from 'lucide-react';
-import { DatabaseConnectionRequest, DatabaseType } from '../../types';
-// import toast from 'react-hot-toast';
+import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseConnection, DatabaseType } from '../../types';
+// import { useNotifications } from '../contexts/NotificationContext';
 
 interface DatabaseConnectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: DatabaseConnectionRequest) => Promise<void>;
+  onSubmit: (data: DatabaseConnectionRequest | DatabaseConnectionUpdateRequest) => Promise<void>;
   applicationId: number;
   applicationName: string;
+  connection?: DatabaseConnection;
+  mode?: 'create' | 'edit';
 }
 
 const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
@@ -17,7 +19,9 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
   onClose,
   onSubmit,
   applicationId,
-  applicationName
+  applicationName,
+  connection,
+  mode = 'create'
 }) => {
   const [selectedDbType, setSelectedDbType] = useState<DatabaseType>(DatabaseType.SqlServer);
 
@@ -28,26 +32,26 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
     watch,
     control,
     formState: { errors, isSubmitting }
-  } = useForm<DatabaseConnectionRequest>({
+  } = useForm<DatabaseConnectionRequest | DatabaseConnectionUpdateRequest>({
     defaultValues: {
-      applicationId,
-      name: '',
-      description: '',
-      type: DatabaseType.SqlServer,
-      server: '',
-      port: undefined,
-      database: '',
-      username: '',
-      password: '',
-      connectionString: '',
-      apiBaseUrl: '',
-      apiKey: '',
-      additionalSettings: '',
-      isActive: true
+      ApplicationId: applicationId,
+      Name: '',
+      Description: '',
+      Type: DatabaseType.SqlServer,
+      Server: '',
+      Port: undefined,
+      Database: '',
+      Username: '',
+      Password: '',
+      ConnectionString: '',
+      ApiBaseUrl: '',
+      ApiKey: '',
+      AdditionalSettings: '',
+      IsActive: true
     }
   });
 
-  const watchedDbType = watch('type');
+  const watchedDbType = watch('Type');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -55,32 +59,60 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      reset({
-        applicationId,
-        name: '',
-        description: '',
-        type: DatabaseType.SqlServer,
-        server: '',
-        port: undefined,
-        database: '',
-        username: '',
-        password: '',
-        connectionString: '',
-        apiBaseUrl: '',
-        apiKey: '',
-        additionalSettings: '',
-        isActive: true
-      });
+      if (mode === 'edit' && connection) {
+        reset({
+          ...(mode === 'edit' ? { Id: connection.Id } : {}),
+          ApplicationId: applicationId,
+          Name: connection.Name,
+          Description: connection.Description || '',
+          Type: connection.Type,
+          Server: connection.Server,
+          Port: connection.Port,
+          Database: connection.Database || '',
+          Username: connection.Username || '',
+          Password: '', // Don't populate password for security
+          ConnectionString: connection.ConnectionString || '',
+          ApiBaseUrl: connection.ApiBaseUrl || '',
+          ApiKey: '', // Don't populate API key for security
+          AdditionalSettings: connection.AdditionalSettings || '',
+          IsActive: connection.IsActive
+        });
+        setSelectedDbType(connection.Type);
+      } else {
+        reset({
+          ApplicationId: applicationId,
+          Name: '',
+          Description: '',
+          Type: DatabaseType.SqlServer,
+          Server: '',
+          Port: undefined,
+          Database: '',
+          Username: '',
+          Password: '',
+          ConnectionString: '',
+          ApiBaseUrl: '',
+          ApiKey: '',
+          AdditionalSettings: '',
+          IsActive: true
+        });
+        setSelectedDbType(DatabaseType.SqlServer);
+      }
     }
-  }, [isOpen, applicationId, reset]);
+  }, [isOpen, applicationId, connection, mode, reset]);
 
-  const handleFormSubmit = async (data: DatabaseConnectionRequest) => {
+  const handleFormSubmit = async (data: DatabaseConnectionRequest | DatabaseConnectionUpdateRequest) => {
     try {
       // Convert port from string to number if provided
       const submissionData = {
         ...data,
-        port: data.port ? parseInt(data.port.toString()) : undefined
+        Port: data.Port ? parseInt(data.Port.toString()) : undefined
       };
+      
+      // Add ID for edit mode
+      if (mode === 'edit' && connection) {
+        (submissionData as DatabaseConnectionUpdateRequest).Id = connection.Id;
+      }
+      
       await onSubmit(submissionData);
       reset();
       onClose();
@@ -132,10 +164,13 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-xl font-semibold text-gray-900">
-                Add Database Connection
+                {mode === 'edit' ? 'Edit Database Connection' : 'Add Database Connection'}
               </h2>
               <p className="text-sm text-gray-600 mt-1">
-                Adding connection to: <span className="font-medium">{applicationName}</span>
+                {mode === 'edit' 
+                  ? `Editing: ${connection?.Name}` 
+                  : `Adding connection to: ${applicationName}`
+                }
               </p>
             </div>
             <button
@@ -154,11 +189,11 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
               </h3>
 
               <div>
-                <label htmlFor="name" className="label">
+                <label htmlFor="Name" className="label">
                   Connection Name *
                 </label>
                 <input
-                  {...register('name', {
+                  {...register('Name', {
                     required: 'Connection name is required',
                     minLength: {
                       value: 3,
@@ -166,12 +201,12 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                     }
                   })}
                   type="text"
-                  id="name"
+                  id="Name"
                   className="input"
                   placeholder="e.g., Production Database"
                 />
-                {errors.name && (
-                  <p className="mt-1 text-sm text-error-600">{errors.name.message}</p>
+                {errors.Name && (
+                  <p className="mt-1 text-sm text-error-600">{errors.Name.message}</p>
                 )}
               </div>
 
@@ -180,7 +215,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                   Description
                 </label>
                 <textarea
-                  {...register('description')}
+                  {...register('Description')}
                   id="description"
                   rows={2}
                   className="input"
@@ -189,17 +224,17 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
               </div>
 
               <div>
-                <label htmlFor="type" className="label">
+                <label htmlFor="Type" className="label">
                   Database Type *
                 </label>
                 <Controller
-                  name="type"
+                  name="Type"
                   control={control}
                   rules={{ required: 'Database type is required' }}
                   render={({ field }) => (
                     <select
                       {...field}
-                      id="type"
+                      id="Type"
                       className="input"
                       onChange={(e) => {
                         const value = parseInt(e.target.value) as DatabaseType;
@@ -215,8 +250,8 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                     </select>
                   )}
                 />
-                {errors.type && (
-                  <p className="mt-1 text-sm text-error-600">{errors.type.message}</p>
+                {errors.Type && (
+                  <p className="mt-1 text-sm text-error-600">{errors.Type.message}</p>
                 )}
               </div>
 
@@ -226,7 +261,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                     Connection String *
                   </label>
                   <textarea
-                    {...register('connectionString', {
+                    {...register('ConnectionString', {
                       required: selectedDbType === DatabaseType.Custom ? 'Connection string is required' : false
                     })}
                     id="connectionString"
@@ -234,8 +269,8 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                     className="input"
                     placeholder="Enter your custom connection string"
                   />
-                  {errors.connectionString && (
-                    <p className="mt-1 text-sm text-error-600">{errors.connectionString.message}</p>
+                  {errors.ConnectionString && (
+                    <p className="mt-1 text-sm text-error-600">{errors.ConnectionString.message}</p>
                   )}
                 </div>
               ) : isApiType() ? (
@@ -245,7 +280,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                       API Base URL *
                     </label>
                     <input
-                      {...register('apiBaseUrl', {
+                      {...register('ApiBaseUrl', {
                         required: isApiType() ? 'API Base URL is required' : false
                       })}
                       type="url"
@@ -253,8 +288,8 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                       className="input"
                       placeholder="https://api.example.com"
                     />
-                    {errors.apiBaseUrl && (
-                      <p className="mt-1 text-sm text-error-600">{errors.apiBaseUrl.message}</p>
+                    {errors.ApiBaseUrl && (
+                      <p className="mt-1 text-sm text-error-600">{errors.ApiBaseUrl.message}</p>
                     )}
                   </div>
 
@@ -264,7 +299,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                       API Key
                     </label>
                     <input
-                      {...register('apiKey')}
+                      {...register('ApiKey')}
                       type="password"
                       id="apiKey"
                       className="input"
@@ -280,7 +315,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                         Server *
                       </label>
                       <input
-                        {...register('server', {
+                        {...register('Server', {
                           required: !isApiType() && !isConnectionStringType() ? 'Server is required' : false
                         })}
                         type="text"
@@ -288,8 +323,8 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                         className="input"
                         placeholder="localhost or server IP"
                       />
-                      {errors.server && (
-                        <p className="mt-1 text-sm text-error-600">{errors.server.message}</p>
+                      {errors.Server && (
+                        <p className="mt-1 text-sm text-error-600">{errors.Server.message}</p>
                       )}
                     </div>
 
@@ -298,7 +333,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                         Port
                       </label>
                       <input
-                        {...register('port', {
+                        {...register('Port', {
                           validate: (value: number | undefined) => {
                             if (!value) return true; // Optional field
                             const port = Number(value);
@@ -313,8 +348,8 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                         className="input"
                         placeholder="1433"
                       />
-                      {errors.port && (
-                        <p className="mt-1 text-sm text-error-600">{errors.port.message}</p>
+                      {errors.Port && (
+                        <p className="mt-1 text-sm text-error-600">{errors.Port.message}</p>
                       )}
                     </div>
                   </div>
@@ -324,7 +359,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                       Database Name
                     </label>
                     <input
-                      {...register('database')}
+                      {...register('Database')}
                       type="text"
                       id="database"
                       className="input"
@@ -338,7 +373,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                         Username
                       </label>
                       <input
-                        {...register('username')}
+                        {...register('Username')}
                         type="text"
                         id="username"
                         className="input"
@@ -351,7 +386,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                         Password
                       </label>
                       <input
-                        {...register('password')}
+                        {...register('Password')}
                         type="password"
                         id="password"
                         className="input"
@@ -368,7 +403,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                   Additional Settings
                 </label>
                 <textarea
-                  {...register('additionalSettings')}
+                  {...register('AdditionalSettings')}
                   id="additionalSettings"
                   rows={2}
                   className="input"
@@ -378,7 +413,7 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
 
               <div className="flex items-center">
                 <input
-                  {...register('isActive')}
+                  {...register('IsActive')}
                   type="checkbox"
                   id="isActive"
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
@@ -404,7 +439,10 @@ const DatabaseConnectionModal: React.FC<DatabaseConnectionModalProps> = ({
                 className="btn btn-primary"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Creating...' : 'Add Connection'}
+                {isSubmitting 
+                  ? (mode === 'edit' ? 'Updating...' : 'Creating...') 
+                  : (mode === 'edit' ? 'Update Connection' : 'Add Connection')
+                }
               </button>
             </div>
           </form>

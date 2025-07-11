@@ -8,7 +8,6 @@ import {
   X,
   Users,
   Shield,
-  Mail,
   FileText,
   Activity,
   AlertTriangle,
@@ -26,10 +25,10 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
   const { user } = useAuth();
   
   // Check if user has admin privileges (for management sections)
-  const isAdmin = user?.roles?.some(role => role === 'Admin' || role === 'PlatformAdmin') ?? false;
+  const isAdmin = user?.Roles?.some((role: string) => role === 'Admin' || role === 'PlatformAdmin') ?? false;
   
   // Check if user has platform admin privileges (for logs)
-  const isPlatformAdmin = user?.roles?.some(role => role === 'PlatformAdmin') ?? false;
+  const isPlatformAdmin = user?.Roles?.some((role: string) => role === 'PlatformAdmin') ?? false;
 
   const navigationItems = [
     {
@@ -85,12 +84,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       href: '/management/roles',
       icon: Shield,
       current: location.pathname.startsWith('/management/roles')
-    },
-    {
-      name: 'Email Management',
-      href: '/management/emails',
-      icon: Mail,
-      current: location.pathname.startsWith('/management/emails')
     },
     {
       name: 'Bulk Migration',
@@ -174,7 +167,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                     if (item.name === 'User Management' || item.name === 'Role Management') {
                       return isAdmin;
                     }
-                    // Email Management can be shown to all users in management section
                     return true;
                   })
                   .map((item) => (

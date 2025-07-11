@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Database, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
 import { authService } from '../../services/authService';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 interface RegisterFormData {
   username: string;
@@ -17,6 +17,7 @@ interface RegisterFormData {
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const { addNotification } = useNotifications();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -79,7 +80,12 @@ const Register: React.FC = () => {
     try {
       // Here you would call your register API
       // For now, we'll just show success and redirect to login
-      toast.success('Account created successfully! Please sign in.');
+      addNotification({ 
+        title: 'Success', 
+        message: 'Account created successfully! Please sign in.', 
+        type: 'success', 
+        source: 'Register' 
+      });
       navigate('/login');
     } catch (error) {
       console.error('Registration failed:', error);
@@ -102,7 +108,7 @@ const Register: React.FC = () => {
             Create your account
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
-            Join the Connection & Application Management System
+            Join the Centralized Application Management System
           </p>
         </div>
         

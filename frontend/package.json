@@ -1,7 +1,7 @@
 {
   "name": "cams-frontend",
   "version": "1.0.0",
-  "description": "CAMS - Connection & Application Management System Frontend",
+  "description": "CAMS - Centralized Application Management System Frontend",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "axios": "^1.6.2",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
+    "gtag": "^1.0.1",
     "lucide-react": "^0.294.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

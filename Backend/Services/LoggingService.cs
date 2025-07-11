@@ -71,6 +71,44 @@ namespace cams.Backend.Services
             return result;
         }
 
+        public async Task<(IEnumerable<AuditLog> data, int totalCount)> GetAuditLogsWithCountAsync(int? userId = null, 
+            string? entityType = null, DateTime? fromDate = null, DateTime? toDate = null, 
+            int pageSize = 100, int pageNumber = 1)
+        {
+            var query = _context.AuditLogs.Include(a => a.User).AsQueryable();
+
+            if (userId.HasValue)
+                query = query.Where(log => log.UserId == userId.Value);
+
+            if (!string.IsNullOrEmpty(entityType))
+                query = query.Where(log => log.EntityType == entityType);
+
+            if (fromDate.HasValue)
+                query = query.Where(log => log.Timestamp >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(log => log.Timestamp <= toDate.Value);
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Get paginated data
+            var data = await query
+                .OrderByDescending(log => log.Timestamp)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (data, totalCount);
+        }
+
+        public async Task<AuditLog?> GetAuditLogByIdAsync(int id)
+        {
+            return await _context.AuditLogs
+                .Include(a => a.User)
+                .FirstOrDefaultAsync(a => a.Id == id);
+        }
+
         // Security Log methods
         public async Task LogSecurityEventAsync(string eventType, string status, int? userId = null,
             string? username = null, string? description = null, string? ipAddress = null,
@@ -130,6 +168,47 @@ namespace cams.Backend.Services
                 .ToListAsync();
 
             return result;
+        }
+
+        public async Task<(IEnumerable<SecurityLog> data, int totalCount)> GetSecurityLogsWithCountAsync(string? eventType = null, string? status = null,
+            int? userId = null, DateTime? fromDate = null, DateTime? toDate = null,
+            int pageSize = 100, int pageNumber = 1)
+        {
+            var query = _context.SecurityLogs.Include(s => s.User).AsQueryable();
+
+            if (!string.IsNullOrEmpty(eventType))
+                query = query.Where(log => log.EventType == eventType);
+
+            if (!string.IsNullOrEmpty(status))
+                query = query.Where(log => log.Status == status);
+
+            if (userId.HasValue)
+                query = query.Where(log => log.UserId == userId.Value);
+
+            if (fromDate.HasValue)
+                query = query.Where(log => log.Timestamp >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(log => log.Timestamp <= toDate.Value);
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Get paginated data using OFFSET/LIMIT pattern
+            var data = await query
+                .OrderByDescending(log => log.Timestamp)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (data, totalCount);
+        }
+
+        public async Task<SecurityLog?> GetSecurityLogByIdAsync(int id)
+        {
+            return await _context.SecurityLogs
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.Id == id);
         }
 
         public async Task<IEnumerable<SecurityLog>> GetFailedLoginAttemptsAsync(string? ipAddress = null,
@@ -221,6 +300,47 @@ namespace cams.Backend.Services
             return result;
         }
 
+        public async Task<(IEnumerable<SystemLog> data, int totalCount)> GetSystemLogsWithCountAsync(string? level = null, string? source = null,
+            DateTime? fromDate = null, DateTime? toDate = null, bool? isResolved = null,
+            int pageSize = 100, int pageNumber = 1)
+        {
+            var query = _context.SystemLogs.Include(s => s.User).AsQueryable();
+
+            if (!string.IsNullOrEmpty(level))
+                query = query.Where(log => log.Level == level);
+
+            if (!string.IsNullOrEmpty(source))
+                query = query.Where(log => log.Source == source);
+
+            if (fromDate.HasValue)
+                query = query.Where(log => log.Timestamp >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(log => log.Timestamp <= toDate.Value);
+
+            if (isResolved.HasValue)
+                query = query.Where(log => log.IsResolved == isResolved.Value);
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Get paginated data using OFFSET/LIMIT pattern
+            var data = await query
+                .OrderByDescending(log => log.Timestamp)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (data, totalCount);
+        }
+
+        public async Task<SystemLog?> GetSystemLogByIdAsync(int id)
+        {
+            return await _context.SystemLogs
+                .Include(s => s.User)
+                .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
         public async Task MarkSystemLogResolvedAsync(int logId, string? resolutionNotes = null)
         {
             var log = await _context.SystemLogs.FirstOrDefaultAsync(l => l.Id == logId);
@@ -310,6 +430,47 @@ namespace cams.Backend.Services
                 .ToListAsync();
 
             return result;
+        }
+
+        public async Task<(IEnumerable<PerformanceLog> data, int totalCount)> GetPerformanceLogsWithCountAsync(string? operation = null,
+            string? performanceLevel = null, DateTime? fromDate = null, DateTime? toDate = null,
+            bool? isSlowQuery = null, int pageSize = 100, int pageNumber = 1)
+        {
+            var query = _context.PerformanceLogs.Include(p => p.User).AsQueryable();
+
+            if (!string.IsNullOrEmpty(operation))
+                query = query.Where(log => log.Operation == operation);
+
+            if (!string.IsNullOrEmpty(performanceLevel))
+                query = query.Where(log => log.PerformanceLevel == performanceLevel);
+
+            if (fromDate.HasValue)
+                query = query.Where(log => log.Timestamp >= fromDate.Value);
+
+            if (toDate.HasValue)
+                query = query.Where(log => log.Timestamp <= toDate.Value);
+
+            if (isSlowQuery.HasValue)
+                query = query.Where(log => log.IsSlowQuery == isSlowQuery.Value);
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Get paginated data using OFFSET/LIMIT pattern
+            var data = await query
+                .OrderByDescending(log => log.Timestamp)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (data, totalCount);
+        }
+
+        public async Task<PerformanceLog?> GetPerformanceLogByIdAsync(int id)
+        {
+            return await _context.PerformanceLogs
+                .Include(p => p.User)
+                .FirstOrDefaultAsync(p => p.Id == id);
         }
 
         public async Task<PerformanceMetrics> GetPerformanceMetricsAsync(DateTime? fromDate = null,

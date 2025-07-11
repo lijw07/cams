@@ -13,5 +13,7 @@ namespace cams.Backend.View
         public DateTime UpdatedAt { get; set; }
         public DateTime? LastLoginAt { get; set; }
         public ICollection<RoleResponse> Roles { get; set; } = new List<RoleResponse>();
+        public int ApplicationCount { get; set; }
+        public int DatabaseConnectionCount { get; set; }
     }
 }

@@ -38,7 +38,6 @@ namespace cams.Backend.View
         public string? ConnectionString { get; set; }
         
         [StringLength(500, ErrorMessage = "API base URL cannot exceed 500 characters")]
-        [Url(ErrorMessage = "Invalid API base URL format")]
         public string? ApiBaseUrl { get; set; }
         
         [StringLength(255, ErrorMessage = "API key cannot exceed 255 characters")]

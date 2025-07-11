@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useNotifications } from '../contexts/NotificationContext';
 import { profileService } from '../services/profileService';
+import ConnectionTestScheduling from '../components/settings/ConnectionTestScheduling';
 
 const Settings: React.FC = () => {
   const { logout } = useAuth();
@@ -89,7 +90,7 @@ const Settings: React.FC = () => {
 
     setIsDeleting(true);
     try {
-      await profileService.deactivateAccount({ currentPassword: deletePassword });
+      await profileService.deactivateAccount({ CurrentPassword: deletePassword });
       addNotification({
         title: 'Account Deleted',
         message: 'Your account has been successfully deleted',
@@ -285,6 +286,9 @@ const Settings: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Connection Test Scheduling */}
+      <ConnectionTestScheduling />
 
       {/* Testing Section */}
       <div className="bg-white dark:bg-secondary-800 rounded-lg shadow p-6 border-l-4 border-blue-500">
