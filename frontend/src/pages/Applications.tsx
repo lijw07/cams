@@ -1,16 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-<<<<<<< Updated upstream
-
 import { Link } from 'react-router-dom';
-
-import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search } from 'lucide-react';
-
-import Pagination from '../components/common/Pagination';
-=======
 import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug, TestTube } from 'lucide-react';
-import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
-import { applicationService } from '../services/applicationService';
->>>>>>> Stashed changes
+import Pagination from '../components/common/Pagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
 import { useNotifications } from '../contexts/NotificationContext';
