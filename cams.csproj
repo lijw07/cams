@@ -24,6 +24,7 @@
         <PackageReference Include="MailKit" Version="4.13.0" />
         <PackageReference Include="MimeKit" Version="4.13.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
         <PackageReference Include="NCrontab" Version="3.3.3" />
     </ItemGroup>
 
