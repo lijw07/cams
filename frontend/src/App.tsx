@@ -25,10 +25,10 @@ import RoleManagement from './pages/management/RoleManagement';
 import BulkMigration from './pages/migration/BulkMigration';
 
 // Log pages
-import AuditLogs from './pages/logs/AuditLogs';
-import SystemLogs from './pages/logs/SystemLogs';
-import SecurityLogs from './pages/logs/SecurityLogs';
-import PerformanceLogs from './pages/logs/PerformanceLogs';
+import AuditLogs from './pages/logs/AuditLogs.tsx';
+import SystemLogs from './pages/logs/SystemLogs.tsx';
+import SecurityLogs from './pages/logs/SecurityLogs.tsx';
+import PerformanceLogs from './pages/logs/PerformanceLogs.tsx';
 
 // Protected route component
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {

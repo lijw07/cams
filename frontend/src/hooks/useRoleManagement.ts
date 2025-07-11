@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { roleService, Role, CreateRoleRequest, UpdateRoleRequest, PaginationRequest } from '../services/roleService';
 import { useNotifications } from '../contexts/NotificationContext';
 
@@ -23,7 +23,7 @@ export const useRoleManagement = () => {
     sortDirection: 'asc' as 'asc' | 'desc',
   });
 
-  const loadRoles = async () => {
+  const loadRoles = useCallback(async () => {
     try {
       setLoading(true);
       const request: PaginationRequest = {
@@ -55,11 +55,11 @@ export const useRoleManagement = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [pagination.currentPage, pagination.perPage, filters.sortBy, filters.sortDirection, searchTerm, addNotification]);
 
   useEffect(() => {
     loadRoles();
-  }, [pagination.currentPage, pagination.perPage, filters, searchTerm]);
+  }, [loadRoles]);
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, currentPage: page }));

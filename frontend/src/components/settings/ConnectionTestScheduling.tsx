@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Clock, PlayCircle, AlertCircle, CheckCircle, XCircle, HelpCircle } from 'lucide-react';
 import { Application, ConnectionTestSchedule, ConnectionTestScheduleRequest } from '../../types';
 import { applicationService } from '../../services/applicationService';
@@ -22,9 +22,9 @@ const ConnectionTestScheduling: React.FC = () => {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
       const [appsData, schedulesData] = await Promise.all([
@@ -49,7 +49,7 @@ const ConnectionTestScheduling: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [addNotification]);
 
   const handlePresetChange = (preset: string) => {
     setSelectedPreset(preset);

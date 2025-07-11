@@ -1,6 +1,6 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { ApplicationRequest, DatabaseConnectionRequest, DatabaseConnectionUpdateRequest } from '../../types';
+import { ApplicationRequest } from '../../types';
 import { useApplicationModal } from '../../hooks/useApplicationModal';
 import { ApplicationForm } from '../application/ApplicationForm';
 import { ApplicationConnections } from '../application/ApplicationConnections';

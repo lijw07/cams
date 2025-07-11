@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { logService } from '../services/logService';
 import { SecurityLog, SecurityLogFilters } from '../types';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -20,7 +20,7 @@ export const useSecurityLogs = () => {
   });
   const { addNotification } = useNotifications();
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       setLoading(true);
       const response = await logService.getSecurityLogs(filters);
@@ -37,11 +37,11 @@ export const useSecurityLogs = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters, addNotification]);
 
   useEffect(() => {
     fetchLogs();
-  }, [filters]);
+  }, [fetchLogs]);
 
   const handleFiltersChange = (newFilters: SecurityLogFilters) => {
     setFilters({ ...newFilters, page: 1 });

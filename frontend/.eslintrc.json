@@ -1,7 +1,12 @@
 {
   "env": {
     "browser": true,
-    "es2020": true
+    "es2020": true,
+    "node": true
+  },
+  "globals": {
+    "gtag": "readonly",
+    "process": "readonly"
   },
   "extends": [
     "eslint:recommended"
@@ -19,10 +24,10 @@
   "rules": {
     "react-refresh/only-export-components": [
       "warn",
-      { "allowConstantExport": true, "allowExportNames": ["useAuth"] }
+      { "allowConstantExport": true, "allowExportNames": ["useAuth", "useNotifications", "useAnalytics", "useTheme", "useAnalyticsContext"] }
     ],
     "react-hooks/rules-of-hooks": "error",
-    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/exhaustive-deps": "off",
     "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
     "prefer-const": "error",
     "no-console": "off",

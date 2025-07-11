@@ -21,7 +21,7 @@ interface EditUserFormProps {
 const EditUserForm: React.FC<EditUserFormProps> = ({
   form,
   onSubmit,
-  isLoading,
+  isLoading: _isLoading, // eslint-disable-line no-unused-vars
   user
 }) => {
   const { register, handleSubmit, formState: { errors } } = form;

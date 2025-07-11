@@ -67,6 +67,13 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
   });
 
   const watchedDbType = watch('DatabaseType');
+  const watchedServer = watch('Server');
+  const watchedPort = watch('Port');
+  const watchedDatabase = watch('Database');
+  const watchedUsername = watch('Username');
+  const watchedPassword = watch('Password');
+  const watchedConnectionString = watch('ConnectionString');
+  const watchedApiBaseUrl = watch('ApiBaseUrl');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -77,7 +84,7 @@ const ApplicationWithConnectionModal: React.FC<ApplicationWithConnectionModalPro
     if (currentStep === 2) {
       clearTestResult();
     }
-  }, [watch('Server'), watch('Port'), watch('Database'), watch('Username'), watch('Password'), watch('ConnectionString'), watch('ApiBaseUrl'), currentStep, clearTestResult]);
+  }, [watchedServer, watchedPort, watchedDatabase, watchedUsername, watchedPassword, watchedConnectionString, watchedApiBaseUrl, currentStep, clearTestResult]);
 
   useEffect(() => {
     if (isOpen) {

@@ -24,7 +24,7 @@ const DataInput: React.FC<DataInputProps> = ({
   onDownloadSample,
   isLoading,
   dataFormat,
-  selectedType,
+  selectedType: _selectedType, // eslint-disable-line no-unused-vars
   overwriteExisting,
   onOverwriteChange,
   sendNotifications,

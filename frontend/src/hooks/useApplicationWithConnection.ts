@@ -58,6 +58,13 @@ export const useApplicationWithConnection = ({
   } = form;
 
   const watchedDbType = watch('DatabaseType');
+  const watchedServer = watch('Server');
+  const watchedPort = watch('Port');
+  const watchedDatabase = watch('Database');
+  const watchedUsername = watch('Username');
+  const watchedPassword = watch('Password');
+  const watchedConnectionString = watch('ConnectionString');
+  const watchedApiBaseUrl = watch('ApiBaseUrl');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -69,7 +76,7 @@ export const useApplicationWithConnection = ({
     if (currentStep === 2) {
       setTestResult(null);
     }
-  }, [watch('Server'), watch('Port'), watch('Database'), watch('Username'), watch('Password'), watch('ConnectionString'), watch('ApiBaseUrl'), currentStep]);
+  }, [watchedServer, watchedPort, watchedDatabase, watchedUsername, watchedPassword, watchedConnectionString, watchedApiBaseUrl, currentStep]);
 
   // Clear errors when modal opens
   useEffect(() => {

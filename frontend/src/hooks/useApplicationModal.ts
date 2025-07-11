@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { ApplicationRequest, DatabaseConnection, DatabaseConnectionRequest, DatabaseConnectionUpdateRequest } from '../types';
 import { databaseConnectionService } from '../services/databaseConnectionService';
@@ -45,7 +45,7 @@ export const useApplicationModal = ({
         loadConnections();
       }
     }
-  }, [mode, application?.id, application?.connections, isOpen]);
+  }, [mode, application?.id, application?.connections, isOpen, loadConnections]);
 
   useEffect(() => {
     if (application) {
@@ -62,7 +62,7 @@ export const useApplicationModal = ({
     }
   }, [application, reset]);
 
-  const loadConnections = async () => {
+  const loadConnections = useCallback(async () => {
     const appId = application?.id;
     if (!appId) return;
     try {
@@ -71,7 +71,7 @@ export const useApplicationModal = ({
     } catch (error) {
       console.error('Error loading connections:', error);
     }
-  };
+  }, [application?.id]);
 
   const handleFormSubmit = async (data: ApplicationRequest) => {
     try {
