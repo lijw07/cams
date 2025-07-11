@@ -12,12 +12,16 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true, // Allow external connections
+    hmr: {
+      overlay: false // Disable error overlay if needed
+    },
     proxy: {
+      // Proxy all API requests to backend
       '/api': {
         target: process.env.VITE_PROXY_TARGET || 'http://localhost:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },

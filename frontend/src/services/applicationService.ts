@@ -5,56 +5,70 @@ import {
   ApplicationWithConnectionRequest,
   ApplicationWithConnectionResponse,
   DatabaseConnectionSummary,
+  PaginationRequest,
+  PagedResult,
 } from '../types';
 
 export const applicationService = {
   // Regular application CRUD
   async getApplications(): Promise<Application[]> {
-    return apiService.get('/application');
+    return apiService.get('/applications');
+  },
+
+  async getApplicationsPaginated(pagination: PaginationRequest): Promise<PagedResult<Application>> {
+    const params = new URLSearchParams();
+    if (pagination.PageNumber) params.append('page-number', pagination.PageNumber.toString());
+    if (pagination.PageSize) params.append('page-size', pagination.PageSize.toString());
+    if (pagination.SearchTerm) params.append('search-term', pagination.SearchTerm);
+    if (pagination.SortBy) params.append('sort-by', pagination.SortBy);
+    if (pagination.SortDirection) params.append('sort-direction', pagination.SortDirection);
+    
+    const url = `/applications${params.toString() ? `?${params.toString()}` : ''}`;
+    return apiService.get(url);
   },
 
   async getApplication(id: number): Promise<Application> {
-    return apiService.get(`/application/${id}`);
+    return apiService.get(`/applications/${id}`);
   },
 
   async createApplication(data: ApplicationRequest): Promise<Application> {
-    return apiService.post('/application', data);
+    return apiService.post('/applications', data);
   },
 
-  async updateApplication(id: number, data: ApplicationRequest & { id: number }): Promise<Application> {
-    return apiService.put(`/application/${id}`, data);
+  async updateApplication(id: number, data: ApplicationRequest & { Id: number }): Promise<Application> {
+    return apiService.put(`/applications/${id}`, data);
   },
 
   async deleteApplication(id: number): Promise<void> {
-    return apiService.delete(`/application/${id}`);
+    return apiService.delete(`/applications/${id}`);
   },
 
   async toggleApplicationStatus(id: number, isActive: boolean): Promise<{ message: string }> {
-    return apiService.patch(`/application/${id}/toggle`, { isActive });
+    return apiService.patch(`/applications/${id}/toggle`, { IsActive: isActive });
   },
 
   async updateLastAccessed(id: number): Promise<{ message: string }> {
-    return apiService.post(`/application/${id}/access`);
+    return apiService.post(`/applications/${id}/access`);
   },
 
   async getApplicationConnections(id: number): Promise<DatabaseConnectionSummary[]> {
-    return apiService.get(`/application/${id}/connections`);
+    return apiService.get(`/applications/${id}/connections`);
   },
 
   // Combined application + connection operations
   async createApplicationWithConnection(data: ApplicationWithConnectionRequest): Promise<ApplicationWithConnectionResponse> {
-    console.log('Sending application with connection data:', data);
-    return apiService.post('/application/with-connection', data);
+    console.log('API Request data:', data);
+    return await apiService.post('/applications/with-connection', data);
   },
 
   async updateApplicationWithConnection(
     id: number,
-    data: ApplicationWithConnectionRequest & { applicationId: number; connectionId: number }
+    data: ApplicationWithConnectionRequest & { ApplicationId: number; ConnectionId: number }
   ): Promise<ApplicationWithConnectionResponse> {
-    return apiService.put(`/application/${id}/with-connection`, data);
+    return apiService.put(`/applications/${id}/with-connection`, data);
   },
 
   async getApplicationWithPrimaryConnection(id: number): Promise<ApplicationWithConnectionResponse> {
-    return apiService.get(`/application/${id}/with-primary-connection`);
-  },
+    return apiService.get(`/applications/${id}/with-primary-connection`);
+  }
 };

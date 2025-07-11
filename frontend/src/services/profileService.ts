@@ -2,28 +2,28 @@ import { apiService } from './api';
 import { User, UserProfileResponse } from '../types';
 
 export interface UserProfileUpdateRequest {
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
+  FirstName?: string | null;
+  LastName?: string | null;
+  PhoneNumber?: string | null;
 }
 
 export interface ChangePasswordRequest {
-  currentPassword: string;
-  newPassword: string;
-  confirmNewPassword: string;
+  CurrentPassword: string;
+  NewPassword: string;
+  ConfirmNewPassword: string;
 }
 
 export interface ChangeEmailRequest {
-  currentPassword: string;
-  newEmail: string;
+  CurrentPassword: string;
+  NewEmail: string;
 }
 
 export interface ValidatePasswordRequest {
-  password: string;
+  Password: string;
 }
 
 export interface DeactivateAccountRequest {
-  currentPassword: string;
+  CurrentPassword: string;
 }
 
 export const profileService = {
@@ -44,6 +44,11 @@ export const profileService = {
 
   // Change password
   async changePassword(data: ChangePasswordRequest): Promise<{ success: boolean; message: string }> {
+    console.log('ProfileService - Sending password change request:', {
+      CurrentPassword: data.CurrentPassword ? '[REDACTED]' : undefined,
+      NewPassword: data.NewPassword ? '[REDACTED]' : undefined,
+      ConfirmNewPassword: data.ConfirmNewPassword ? '[REDACTED]' : undefined
+    });
     return apiService.post('/user/change-password', data);
   },
 
@@ -65,5 +70,5 @@ export const profileService = {
   // Deactivate account
   async deactivateAccount(data: DeactivateAccountRequest): Promise<{ message: string }> {
     return apiService.post('/user/deactivate', data);
-  },
+  }
 };

@@ -1,69 +1,89 @@
 import { apiService } from './api';
 
-export interface PaginationRequest {
-  page: number;
-  pageSize: number;
-  sortBy?: string;
-  sortDirection?: 'asc' | 'desc';
-  searchTerm?: string;
+export interface PaginationRequest extends Record<string, unknown> {
+  PageNumber: number;
+  PageSize: number;
+  SortBy?: string;
+  SortDirection?: 'asc' | 'desc';
+  SearchTerm?: string;
 }
 
 export interface PaginatedResponse<T> {
-  data: T[];
-  totalCount: number;
-  pageCount: number;
-  currentPage: number;
-  pageSize: number;
-  hasNextPage: boolean;
-  hasPreviousPage: boolean;
+  Data: T[];
+  Pagination: {
+    CurrentPage: number;
+    PerPage: number;
+    TotalItems: number;
+    TotalPages: number;
+    HasNext: boolean;
+    HasPrevious: boolean;
+  };
 }
 
 export interface UserManagement {
-  id: number;
-  username: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  lastLoginAt?: string;
-  roles: string[];
-  applicationCount: number;
-  databaseConnectionCount: number;
+  Id: number;
+  Username: string;
+  Email: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
+  IsActive: boolean;
+  CreatedAt: string;
+  UpdatedAt: string;
+  LastLoginAt?: string;
+  Roles: Array<{ Id: number; Name: string; Description: string; IsActive: boolean; CreatedAt: string; UpdatedAt: string }>;
+  ApplicationCount: number;
+  DatabaseConnectionCount: number;
 }
 
 export interface CreateUserRequest {
-  username: string;
-  email: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  isActive: boolean;
-  sendWelcomeEmail: boolean;
+  Username: string;
+  Email: string;
+  Password: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
+  IsActive: boolean;
+  SendWelcomeEmail?: boolean;
+  RoleIds?: number[];
 }
 
 export interface UpdateUserRequest {
-  id: number;
-  username: string;
-  email: string;
-  firstName?: string;
-  lastName?: string;
-  phoneNumber?: string;
-  isActive: boolean;
+  Id: number;
+  Username: string;
+  Email: string;
+  FirstName?: string;
+  LastName?: string;
+  PhoneNumber?: string;
+  IsActive: boolean;
 }
 
 export interface UserRoleAssignment {
-  userId: number;
-  roleIds: number[];
+  UserId: number;
+  RoleIds: number[];
 }
 
 export const usersService = {
   // User management CRUD
   async getUsers(request: PaginationRequest): Promise<PaginatedResponse<UserManagement>> {
-    return apiService.get('/management/users', request);
+    const params: Record<string, unknown> = {};
+    if (request.PageNumber) params['page-number'] = request.PageNumber;
+    if (request.PageSize) params['page-size'] = request.PageSize;
+    if (request.SortBy) params['sort-by'] = request.SortBy;
+    if (request.SortDirection) params['sort-direction'] = request.SortDirection;
+    if (request.SearchTerm) params['search-term'] = request.SearchTerm;
+    
+    return apiService.get('/management/users', params);
+  },
+
+  // Get all users (without pagination) for dropdowns and role management
+  async getAllUsers(): Promise<UserManagement[]> {
+    const response = await apiService.get<PaginatedResponse<UserManagement>>('/management/users', {
+      'page-number': 1,
+      'page-size': 1000, // Large page size to get all users
+      'sort-by': 'Username'
+    });
+    return response.Data || [];
   },
 
   async getUser(id: number): Promise<UserManagement> {
@@ -83,7 +103,7 @@ export const usersService = {
   },
 
   async toggleUserStatus(id: number, isActive: boolean): Promise<{ message: string }> {
-    return apiService.patch(`/management/users/${id}/toggle`, { isActive });
+    return apiService.patch(`/management/users/${id}/toggle`, { IsActive: isActive });
   },
 
   // User role management
@@ -97,6 +117,14 @@ export const usersService = {
 
   async removeRoles(data: UserRoleAssignment): Promise<{ message: string }> {
     return apiService.post('/management/users/remove-roles', data);
+  },
+
+  async updateUserRoles(userId: number, roleIds: number[]): Promise<{ message: string }> {
+    // Use the assign-roles endpoint to update user roles
+    return apiService.post('/management/users/assign-roles', { 
+      UserId: userId, 
+      RoleIds: roleIds 
+    });
   },
 
   // User statistics
@@ -114,7 +142,10 @@ export const usersService = {
     newPassword: string;
     sendEmailNotification: boolean;
   }): Promise<{ message: string }> {
-    return apiService.post(`/management/users/${id}/reset-password`, data);
+    return apiService.post(`/management/users/${id}/reset-password`, {
+      NewPassword: data.newPassword,
+      SendEmailNotification: data.sendEmailNotification
+    });
   },
 
   async forcePasswordChange(id: number): Promise<{ message: string }> {
@@ -128,8 +159,8 @@ export const usersService = {
     message: string;
   }> {
     return apiService.post('/management/users/bulk/toggle', {
-      userIds,
-      isActive,
+      UserIds: userIds,
+      IsActive: isActive,
     });
   },
 
@@ -139,7 +170,7 @@ export const usersService = {
     message: string;
   }> {
     return apiService.post('/management/users/bulk/delete', {
-      userIds,
+      UserIds: userIds,
     });
   },
 

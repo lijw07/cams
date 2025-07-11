@@ -4,7 +4,7 @@ import { migrationService } from '../../services/migrationService';
 import { signalRService } from '../../services/signalRService';
 import { BulkMigrationRequest, MigrationResult, MigrationValidationResult, MigrationProgress } from '../../types';
 import ProgressTracker from '../../components/ui/ProgressTracker';
-import toast from 'react-hot-toast';
+import { useNotifications } from '../../contexts/NotificationContext';
 
 const BulkMigration: React.FC = () => {
   const [selectedType, setSelectedType] = useState<'Users' | 'Roles' | 'Applications'>('Users');
@@ -19,6 +19,7 @@ const BulkMigration: React.FC = () => {
   const [currentProgress, setCurrentProgress] = useState<MigrationProgress | null>(null);
   const [showProgress, setShowProgress] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const { addNotification } = useNotifications();
 
   const migrationTypes = [
     { value: 'Users' as const, label: 'Users', icon: Users, description: 'Import user accounts with roles and permissions' },
@@ -34,9 +35,19 @@ const BulkMigration: React.FC = () => {
       setIsImporting(false);
       setShowProgress(false);
       if (progress.isSuccessful) {
-        toast.success('Migration completed successfully!');
+        addNotification({ 
+          title: 'Success', 
+          message: 'Migration completed successfully!', 
+          type: 'success', 
+          source: 'BulkMigration' 
+        });
       } else {
-        toast.error('Migration completed with errors');
+        addNotification({ 
+          title: 'Error', 
+          message: 'Migration completed with errors', 
+          type: 'error', 
+          source: 'BulkMigration' 
+        });
       }
     }
   }, []);
@@ -76,10 +87,20 @@ const BulkMigration: React.FC = () => {
         if (migrationService.validateJSON(content)) {
           setImportData(content);
         } else {
-          toast.error('Invalid JSON format');
+          addNotification({ 
+            title: 'Error', 
+            message: 'Invalid JSON format', 
+            type: 'error', 
+            source: 'BulkMigration' 
+          });
         }
       } else {
-        toast.error('Please upload a CSV or JSON file');
+        addNotification({ 
+          title: 'Error', 
+          message: 'Please upload a CSV or JSON file', 
+          type: 'error', 
+          source: 'BulkMigration' 
+        });
       }
     };
     reader.readAsText(file);
@@ -106,15 +127,30 @@ const BulkMigration: React.FC = () => {
     try {
       const template = await migrationService.getTemplate(selectedType.toLowerCase() as any);
       migrationService.downloadJSON(template, `${selectedType.toLowerCase()}-template.json`);
-      toast.success('Template downloaded successfully');
+      addNotification({ 
+        title: 'Success', 
+        message: 'Template downloaded successfully', 
+        type: 'success', 
+        source: 'BulkMigration' 
+      });
     } catch (error) {
-      toast.error('Failed to download template');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to download template', 
+        type: 'error', 
+        source: 'BulkMigration' 
+      });
     }
   };
 
   const handleValidate = async () => {
     if (!importData.trim()) {
-      toast.error('Please provide data to validate');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Please provide data to validate', 
+        type: 'error', 
+        source: 'BulkMigration' 
+      });
       return;
     }
 
@@ -136,12 +172,27 @@ const BulkMigration: React.FC = () => {
       setValidationResult(result);
 
       if (result.isValid) {
-        toast.success('Validation completed successfully');
+        addNotification({ 
+          title: 'Success', 
+          message: 'Validation completed successfully', 
+          type: 'success', 
+          source: 'BulkMigration' 
+        });
       } else {
-        toast.error(`Validation failed with ${result.errors.length} errors`);
+        addNotification({ 
+          title: 'Error', 
+          message: `Validation failed with ${result.errors.length} errors`, 
+          type: 'error', 
+          source: 'BulkMigration' 
+        });
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Validation failed');
+      addNotification({ 
+        title: 'Error', 
+        message: error.response?.data?.message || 'Validation failed', 
+        type: 'error', 
+        source: 'BulkMigration' 
+      });
     } finally {
       setIsLoading(false);
     }
@@ -149,12 +200,22 @@ const BulkMigration: React.FC = () => {
 
   const handleImport = async () => {
     if (!importData.trim()) {
-      toast.error('Please provide data to import');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Please provide data to import', 
+        type: 'error', 
+        source: 'BulkMigration' 
+      });
       return;
     }
 
     if (!validationResult?.isValid) {
-      toast.error('Please validate the data first');
+      addNotification({ 
+        title: 'Error', 
+        message: 'Please validate the data first', 
+        type: 'error', 
+        source: 'BulkMigration' 
+      });
       return;
     }
 
@@ -187,12 +248,27 @@ const BulkMigration: React.FC = () => {
       }
 
       if (result.success) {
-        toast.success(`Successfully imported ${result.successfulRecords} ${selectedType.toLowerCase()}`);
+        addNotification({ 
+          title: 'Success', 
+          message: `Successfully imported ${result.successfulRecords} ${selectedType.toLowerCase()}`, 
+          type: 'success', 
+          source: 'BulkMigration' 
+        });
       } else {
-        toast.error(`Import completed with ${result.errors.length} errors`);
+        addNotification({ 
+          title: 'Error', 
+          message: `Import completed with ${result.errors.length} errors`, 
+          type: 'error', 
+          source: 'BulkMigration' 
+        });
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Import failed');
+      addNotification({ 
+        title: 'Error', 
+        message: error.response?.data?.message || 'Import failed', 
+        type: 'error', 
+        source: 'BulkMigration' 
+      });
       setIsImporting(false);
       setShowProgress(false);
     } finally {

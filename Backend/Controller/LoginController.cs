@@ -9,7 +9,7 @@ using cams.Backend.Enums;
 namespace cams.Backend.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("auth")]
     public class LoginController(IAuthenticationService authenticationService, ILogger<LoginController> logger, ILoggingService loggingService)
         : ControllerBase
     {

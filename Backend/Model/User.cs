@@ -37,7 +37,5 @@ namespace cams.Backend.Model
         
         // Navigation properties
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
-        
-        public virtual ICollection<EmailMessage> SentEmails { get; set; } = new List<EmailMessage>();
     }
 }

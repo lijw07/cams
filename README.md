@@ -1,18 +1,49 @@
-# 🔧 CAMS - Centralized Application Management System
+# 🚀 CAMS - Centralized Application Management System
 
 <div align="center">
 
+[![Build Status](https://github.com/jaili/cams/workflows/CI/badge.svg)](https://github.com/jaili/cams/actions)
+[![Frontend Build](https://github.com/jaili/cams/workflows/Frontend%20CI/badge.svg)](https://github.com/jaili/cams/actions)
+[![Backend Build](https://github.com/jaili/cams/workflows/Backend%20CI/badge.svg)](https://github.com/jaili/cams/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?style=for-the-badge&logo=dotnet)](https://dotnet.microsoft.com/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react)](https://reactjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Latest-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED?style=for-the-badge&logo=docker)](https://www.docker.com/)
-[![Entity Framework](https://img.shields.io/badge/Entity_Framework-Core_8.0-512BD4?style=for-the-badge&logo=dotnet)](https://docs.microsoft.com/en-us/ef/)
-[![JWT](https://img.shields.io/badge/JWT-Authentication-000000?style=for-the-badge&logo=jsonwebtokens)](https://jwt.io/)
-[![SQL Server](https://img.shields.io/badge/SQL_Server-Database-CC2927?style=for-the-badge&logo=microsoftsqlserver)](https://www.microsoft.com/en-us/sql-server)
+[![SQL Server](https://img.shields.io/badge/SQL_Server-2022-CC2927?style=for-the-badge&logo=microsoftsqlserver)](https://www.microsoft.com/en-us/sql-server)
 
-*A robust, enterprise-grade API for managing database connections and applications with comprehensive security, logging, and monitoring.*
+*A modern, full-stack application for centralized management of applications and database connections with comprehensive security, real-time updates, and analytics.*
 
-[🚀 Quick Start](#-quick-start) • [📖 API Documentation](#-api-documentation) • [🏗️ Architecture](#️-architecture) • [🔐 Security](#-security-features) • [🐳 Docker](#-docker-configuration)
+[🚀 Quick Start](#-quick-start) • [📱 Features](#-features) • [📖 API Documentation](#-api-documentation) • [🏗️ Architecture](#️-architecture) • [🚀 Deployment](#-deployment) • [🔐 Security](#-security-features) • [📊 Monitoring](#-monitoring--maintenance) • [🚀 Deployment](#-deployment)
 
 </div>
+
+---
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Quick Start](#-quick-start)
+- [Deployment](#-deployment)
+  - [Prerequisites](#prerequisites)
+  - [1-Minute Deploy](#1-minute-deploy)
+  - [Environment Setup](#environment-setup)
+  - [Docker Deployment](#docker-deployment)
+  - [Manual Deployment](#manual-deployment)
+  - [CI/CD Deployment](#cicd-deployment)
+  - [Cloud Deployment](#cloud-deployment)
+- [API Documentation](#-api-documentation)
+- [Architecture](#️-architecture)
+- [Security Features](#-security-features)
+- [Configuration](#-configuration)
+- [Testing](#-testing)
+- [Monitoring & Logging](#-monitoring--logging)
+- [Maintenance](#-maintenance)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
+- [Support](#-support)
 
 ---
 
@@ -83,15 +114,50 @@
 
 ---
 
+### 📱 **Frontend Features**
+- **Modern React 18** with TypeScript and Vite
+- **Responsive Design** with Tailwind CSS
+- **Dark/Light Theme** support
+- **Real-time Updates** via SignalR
+- **Google Analytics 4** integration
+- **Advanced Search & Filtering**
+- **Interactive Dashboards**
+- **Comprehensive Form Validation**
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) (for containerized deployment)
-- [SQL Server](https://www.microsoft.com/en-us/sql-server) (or Docker SQL Server)
 
-### 🔧 Local Development
+- **Docker & Docker Compose** (recommended)
+- **Node.js 18+** and npm
+- **.NET 8.0 SDK**
+- **SQL Server** (or use Docker version)
+- **Git** for cloning the repository
 
+### 🚀 1-Minute Deploy
+
+```bash
+# Clone the repository
+git clone https://github.com/jaili/cams.git
+cd cams
+
+# Copy environment configuration
+cp .env.example .env
+
+# Deploy with Docker Compose
+docker-compose up --build
+
+# Access the application
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8080
+# Database: localhost:1433
+```
+
+### 🔧 Manual Setup
+
+#### Backend Setup
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -111,7 +177,7 @@ dotnet build
 dotnet run
 ```
 
-### 🐳 Docker Deployment
+### 🐳 Docker Quick Start
 
 ```bash
 # Copy environment variables
@@ -135,6 +201,338 @@ docker-compose up -d
 | **Swagger UI** | http://localhost:8080/swagger | Interactive API documentation |
 | **Health Check** | http://localhost:8080/health | Application health status |
 | **SQL Server** | localhost:1433 | Database server (Docker) |
+
+---
+
+## 🚀 Deployment
+
+### Prerequisites
+
+- **Docker & Docker Compose** installed
+- **Git** for cloning the repository
+- **Domain name** (for production)
+- **SSL certificates** (for HTTPS)
+
+### 1-Minute Deploy
+
+```bash
+# Clone the repository
+git clone https://github.com/jaili/cams.git
+cd cams
+
+# Copy environment configuration
+cp .env.example .env
+
+# Edit environment variables
+nano .env
+
+# Deploy with Docker Compose
+docker-compose -f docker-compose.prod.yml up -d
+
+# Check deployment status
+docker-compose -f docker-compose.prod.yml ps
+```
+
+### Environment Setup
+
+Copy `.env.example` to `.env` and configure:
+
+#### Required Variables
+```bash
+# Database
+DB_PASSWORD=YourStrong!Passw0rd
+
+# Security
+JWT_SECRET_KEY=your-super-secret-jwt-key-that-is-at-least-32-characters-long!
+
+# Email (Mailtrap.io)
+MAILTRAP_USERNAME=your_username
+MAILTRAP_PASSWORD=your_password
+MAILTRAP_FROM_EMAIL=noreply@yourcompany.com
+
+# Analytics
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+#### Optional Variables
+```bash
+# Domain & SSL
+DOMAIN=your-domain.com
+SSL_CERT_PATH=/path/to/cert.pem
+SSL_KEY_PATH=/path/to/private.key
+
+# Monitoring
+GRAFANA_PASSWORD=secure_password
+REDIS_PASSWORD=redis_password
+```
+
+### Docker Deployment
+
+#### Development Environment
+
+```bash
+# Start development environment
+docker-compose up --build
+
+# View logs
+docker-compose logs -f
+
+# Stop environment
+docker-compose down
+```
+
+**Services:**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8080
+- Database: localhost:1433
+
+#### Production Environment
+
+```bash
+# Deploy to production
+docker-compose -f docker-compose.prod.yml up -d
+
+# Scale services
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+
+# Update services
+docker-compose -f docker-compose.prod.yml pull
+docker-compose -f docker-compose.prod.yml up -d
+
+# Backup database
+docker-compose -f docker-compose.prod.yml exec db \
+  sqlcmd -S localhost -U sa -P $DB_PASSWORD \
+  -Q "BACKUP DATABASE CamsDb TO DISK = '/var/opt/mssql/backup/cams_backup.bak'"
+```
+
+**Production Services:**
+- Frontend: http://localhost:80
+- Backend API: http://localhost:8080
+- Database: localhost:1433
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3001
+
+#### Docker Health Checks
+
+All services include health checks:
+
+```bash
+# Check service health
+docker-compose -f docker-compose.prod.yml ps
+
+# View health check logs
+docker inspect cams-backend-prod --format='{{.State.Health.Status}}'
+```
+
+### Manual Deployment
+
+#### Backend (.NET 8)
+
+```bash
+# Prerequisites
+sudo apt-get update
+sudo apt-get install -y dotnet-sdk-8.0
+
+# Clone and build
+git clone https://github.com/jaili/cams.git
+cd cams/Backend
+
+# Restore dependencies
+dotnet restore
+
+# Build for production
+dotnet build -c Release
+
+# Run migrations
+dotnet ef database update
+
+# Start application
+dotnet run -c Release --urls "http://0.0.0.0:8080"
+```
+
+#### Frontend (React + TypeScript)
+
+```bash
+# Prerequisites
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Build frontend
+cd cams/frontend
+npm ci
+npm run build
+
+# Serve with nginx
+sudo cp -r dist/* /var/www/html/
+sudo systemctl restart nginx
+```
+
+#### Database Setup
+
+```bash
+# Install SQL Server on Ubuntu
+wget -qO- https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+sudo add-apt-repository "$(wget -qO- https://packages.microsoft.com/config/ubuntu/20.04/mssql-server-2022.list)"
+sudo apt-get update
+sudo apt-get install -y mssql-server
+
+# Configure SQL Server
+sudo /opt/mssql/bin/mssql-conf setup
+
+# Install SQL Server tools
+sudo apt-get install -y mssql-tools unixodbc-dev
+echo 'export PATH="$PATH:/opt/mssql-tools/bin"' >> ~/.bashrc
+```
+
+### CI/CD Deployment
+
+#### GitHub Actions Setup
+
+1. **Fork/Clone the repository**
+2. **Configure repository secrets:**
+
+```bash
+# Required secrets
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+DOCKER_REGISTRY_TOKEN=ghp_xxxxxxxxxxxx
+MAILTRAP_USERNAME=your_username
+MAILTRAP_PASSWORD=your_password
+```
+
+3. **Enable GitHub Actions**
+4. **Push to main branch to trigger deployment**
+
+#### GitHub Actions Workflows
+
+- **`ci.yml`**: Full CI/CD pipeline
+- **`frontend-ci.yml`**: Frontend-specific testing
+- **`backend-ci.yml`**: Backend-specific testing
+
+#### Manual Deployment Trigger
+
+```bash
+# Trigger deployment via GitHub CLI
+gh workflow run ci.yml --ref main
+
+# Check workflow status
+gh run list --workflow=ci.yml
+```
+
+### Cloud Deployment
+
+#### AWS Deployment
+
+##### Using AWS ECS
+
+```bash
+# Install AWS CLI
+pip install awscli
+
+# Configure AWS credentials
+aws configure
+
+# Create ECS cluster
+aws ecs create-cluster --cluster-name cams-cluster
+
+# Deploy using CloudFormation
+aws cloudformation create-stack \
+  --stack-name cams-stack \
+  --template-body file://aws-cloudformation.yml \
+  --parameters ParameterKey=Environment,ParameterValue=production
+```
+
+##### Using AWS App Runner
+
+```yaml
+# apprunner.yaml
+version: 1.0
+runtime: docker
+build:
+  commands:
+    build:
+      - echo "Building CAMS application"
+run:
+  runtime-version: latest
+  command: docker-compose -f docker-compose.prod.yml up
+  network:
+    port: 80
+```
+
+#### Azure Deployment
+
+##### Using Azure Container Instances
+
+```bash
+# Install Azure CLI
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+# Login to Azure
+az login
+
+# Create resource group
+az group create --name cams-rg --location eastus
+
+# Deploy container
+az container create \
+  --resource-group cams-rg \
+  --name cams-app \
+  --image ghcr.io/jaili/cams:latest \
+  --ports 80 8080 \
+  --environment-variables \
+    ASPNETCORE_ENVIRONMENT=Production \
+    DB_PASSWORD=$DB_PASSWORD
+```
+
+#### Google Cloud Deployment
+
+##### Using Cloud Run
+
+```bash
+# Install Google Cloud SDK
+curl https://sdk.cloud.google.com | bash
+
+# Authenticate
+gcloud auth login
+
+# Set project
+gcloud config set project your-project-id
+
+# Deploy to Cloud Run
+gcloud run deploy cams \
+  --image ghcr.io/jaili/cams:latest \
+  --platform managed \
+  --region us-central1 \
+  --allow-unauthenticated
+```
+
+#### DigitalOcean Deployment
+
+##### Using App Platform
+
+```yaml
+# .do/app.yaml
+name: cams
+services:
+- name: frontend
+  source_dir: frontend
+  github:
+    repo: jaili/cams
+    branch: main
+  run_command: npm start
+  environment_slug: node-js
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  
+- name: backend
+  source_dir: Backend
+  github:
+    repo: jaili/cams
+    branch: main
+  run_command: dotnet run
+  environment_slug: docker
+  instance_count: 1
+  instance_size_slug: basic-xxs
+```
 
 ---
 
@@ -811,6 +1209,154 @@ The application implements a multi-layered logging system:
 - **Configurable log levels** (Trace, Debug, Information, Warning, Error, Critical, Fatal)
 - **Performance thresholds** with automatic alerting
 
+### Health Monitoring
+
+```bash
+# Check application health
+curl http://localhost:8080/health
+
+# Check all services
+docker-compose -f docker-compose.prod.yml ps
+
+# View service logs
+docker-compose -f docker-compose.prod.yml logs -f backend
+```
+
+### Log Management
+
+```bash
+# View application logs
+docker-compose -f docker-compose.prod.yml logs --tail=100 backend
+
+# Export logs
+docker-compose -f docker-compose.prod.yml logs --no-color > cams.log
+
+# Rotate logs
+docker-compose -f docker-compose.prod.yml exec backend \
+  find /app/logs -name "*.log" -mtime +7 -delete
+```
+
+### Performance Monitoring
+
+Access monitoring dashboards:
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3001 (admin/admin)
+
+---
+
+## 🛠️ Maintenance
+
+### Database Backup
+
+```bash
+# Create backup
+docker-compose -f docker-compose.prod.yml exec db \
+  sqlcmd -S localhost -U sa -P $DB_PASSWORD \
+  -Q "BACKUP DATABASE CamsDb TO DISK = '/var/opt/mssql/backup/cams_$(date +%Y%m%d_%H%M%S).bak'"
+
+# Restore backup
+docker-compose -f docker-compose.prod.yml exec db \
+  sqlcmd -S localhost -U sa -P $DB_PASSWORD \
+  -Q "RESTORE DATABASE CamsDb FROM DISK = '/var/opt/mssql/backup/cams_backup.bak'"
+```
+
+### SSL Certificate Renewal
+
+```bash
+# Using Let's Encrypt with Certbot
+sudo certbot renew --nginx
+
+# Manual certificate update
+sudo cp new-cert.pem /path/to/ssl/cert.pem
+sudo cp new-key.pem /path/to/ssl/private.key
+docker-compose -f docker-compose.prod.yml restart nginx
+```
+
+---
+
+## 🔧 Troubleshooting
+
+### Common Issues
+
+#### Database Connection Issues
+
+```bash
+# Check database connectivity
+docker-compose -f docker-compose.prod.yml exec backend \
+  curl -f http://localhost:8080/health
+
+# Restart database
+docker-compose -f docker-compose.prod.yml restart db
+
+# Check database logs
+docker-compose -f docker-compose.prod.yml logs db
+```
+
+#### Frontend Build Failures
+
+```bash
+# Clear npm cache
+npm cache clean --force
+
+# Rebuild frontend
+docker-compose -f docker-compose.prod.yml build frontend --no-cache
+
+# Check build logs
+docker-compose -f docker-compose.prod.yml logs frontend
+```
+
+#### Performance Issues
+
+```bash
+# Check resource usage
+docker stats
+
+# Scale backend services
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+
+# Optimize database
+docker-compose -f docker-compose.prod.yml exec db \
+  sqlcmd -S localhost -U sa -P $DB_PASSWORD \
+  -Q "DBCC CHECKDB('CamsDb')"
+```
+
+### Debug Mode
+
+```bash
+# Enable debug logging
+export DEBUG_LOGGING=true
+
+# Start with debug
+docker-compose -f docker-compose.prod.yml up backend
+
+# View detailed logs
+docker-compose -f docker-compose.prod.yml logs -f backend | grep DEBUG
+```
+
+### Recovery Procedures
+
+#### Application Recovery
+
+```bash
+# Stop all services
+docker-compose -f docker-compose.prod.yml down
+
+# Remove all containers and volumes (DESTRUCTIVE)
+docker-compose -f docker-compose.prod.yml down -v
+
+# Rebuild and restart
+docker-compose -f docker-compose.prod.yml up --build -d
+```
+
+#### Database Recovery
+
+```bash
+# Restore from backup
+docker-compose -f docker-compose.prod.yml exec db \
+  sqlcmd -S localhost -U sa -P $DB_PASSWORD \
+  -Q "RESTORE DATABASE CamsDb FROM DISK = '/var/opt/mssql/backup/latest_backup.bak' WITH REPLACE"
+```
+
 ---
 
 ## 🤝 Contributing
@@ -859,6 +1405,7 @@ This project is licensed under the [MIT License](LICENSE) - see the LICENSE file
 ### 📞 Getting Help
 - **Issues**: Create an issue in the repository for bugs or feature requests
 - **Health Check**: Visit `/health` endpoint to verify application status
+- **API Documentation**: Visit `/swagger` for interactive API documentation
 
 ### 🏥 Health Monitoring
 ```bash
@@ -877,4 +1424,146 @@ For development and testing purposes (seeded automatically):
 
 **Note**: These accounts are automatically created with proper role assignments during application startup.
 
+### Emergency Contacts
+
+- **System Admin**: admin@yourcompany.com
+- **DevOps Team**: devops@yourcompany.com
+- **On-call Engineer**: +1-XXX-XXX-XXXX
+
 ---
+
+## 🚀 Deployment
+
+### 🛠️ Environment Setup
+
+Copy `.env.example` to `.env` and configure:
+
+#### Required Variables
+```bash
+# Database
+DB_PASSWORD=YourStrong!Passw0rd
+
+# Security
+JWT_SECRET_KEY=your-super-secret-jwt-key-that-is-at-least-32-characters-long!
+
+# Email (Mailtrap.io)
+MAILTRAP_USERNAME=your_username
+MAILTRAP_PASSWORD=your_password
+MAILTRAP_FROM_EMAIL=noreply@yourcompany.com
+
+# Analytics
+VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+```
+
+### 🐳 Docker Deployment
+
+#### Development Environment
+```bash
+# Start development environment
+docker-compose up --build
+
+# View logs
+docker-compose logs -f
+
+# Stop environment
+docker-compose down
+```
+
+#### Production Environment
+```bash
+# Deploy to production
+docker-compose -f docker-compose.prod.yml up -d
+
+# Scale services
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+
+# Update services
+docker-compose -f docker-compose.prod.yml pull
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### 🔄 CI/CD with GitHub Actions
+
+The project includes automated CI/CD pipelines:
+
+1. **Main Pipeline** (`ci.yml`): Full CI/CD workflow
+2. **Frontend CI** (`frontend-ci.yml`): React/TypeScript testing
+3. **Backend CI** (`backend-ci.yml`): .NET testing and security scanning
+
+#### Required GitHub Secrets
+- `VITE_GA_MEASUREMENT_ID`: Google Analytics ID
+- `MAILTRAP_USERNAME`: Email service username
+- `MAILTRAP_PASSWORD`: Email service password
+
+### ☁️ Cloud Deployment Options
+
+#### AWS (ECS/App Runner)
+```bash
+aws ecs create-cluster --cluster-name cams-cluster
+# Deploy using provided CloudFormation templates
+```
+
+#### Azure (Container Instances)
+```bash
+az container create \
+  --resource-group cams-rg \
+  --name cams-app \
+  --image ghcr.io/jaili/cams:latest
+```
+
+#### Google Cloud (Cloud Run)
+```bash
+gcloud run deploy cams \
+  --image ghcr.io/jaili/cams:latest \
+  --platform managed
+```
+
+### 📊 Monitoring & Maintenance
+
+#### Health Monitoring
+```bash
+# Check application health
+curl http://localhost:8080/health
+
+# View service logs
+docker-compose -f docker-compose.prod.yml logs -f backend
+```
+
+#### Database Backup
+```bash
+# Create backup
+docker-compose -f docker-compose.prod.yml exec db \
+  sqlcmd -S localhost -U sa -P $DB_PASSWORD \
+  -Q "BACKUP DATABASE CamsDb TO DISK = '/var/opt/mssql/backup/cams_$(date +%Y%m%d_%H%M%S).bak'"
+```
+
+#### Performance Monitoring
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3001 (admin/admin)
+
+### 🔧 Troubleshooting
+
+#### Common Issues
+
+**Database Connection Issues:**
+```bash
+docker-compose -f docker-compose.prod.yml restart db
+docker-compose -f docker-compose.prod.yml logs db
+```
+
+**Frontend Build Failures:**
+```bash
+npm cache clean --force
+docker-compose -f docker-compose.prod.yml build frontend --no-cache
+```
+
+**Performance Issues:**
+```bash
+docker stats
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+```
+
+---
+
+**Last Updated**: 2025-07-11
+**Documentation Version**: 1.0.0

@@ -9,7 +9,7 @@ using cams.Backend.Enums;
 namespace cams.Backend.Controller
 {
     [ApiController]
-    [Route("[controller]")]
+    [Route("applications")]
     [Authorize]
     public class ApplicationController(
         IApplicationService applicationService,
@@ -18,28 +18,52 @@ namespace cams.Backend.Controller
         : ControllerBase
     {
         [HttpGet]
-        public async Task<IActionResult> GetApplications()
+        public async Task<IActionResult> GetApplications([FromQuery] PaginationRequest? pagination)
         {
             try
             {
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} requested applications list", userId);
                 
-                var applications = await applicationService.GetUserApplicationsAsync(userId);
-                
-                logger.LogInformation("Retrieved {ApplicationCount} applications for user {UserId}", applications.Count(), userId);
-                
-                // Log audit event for application list retrieval
-                await loggingService.LogAuditAsync(
-                    userId,
-                    AuditAction.Read.ToString(),
-                    AuditEntityTypes.APPLICATION,
-                    description: $"Retrieved {applications.Count()} applications",
-                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
-                    userAgent: Request.Headers.UserAgent.ToString()
-                );
-                
-                return Ok(applications);
+                if (pagination != null)
+                {
+                    // Return paginated results
+                    var paginatedApplications = await applicationService.GetUserApplicationsPaginatedAsync(userId, pagination);
+                    
+                    logger.LogInformation("Retrieved {ApplicationCount} of {TotalCount} applications for user {UserId} (page {PageNumber})", 
+                        paginatedApplications.Items.Count(), paginatedApplications.TotalCount, userId, pagination.PageNumber);
+                    
+                    // Log audit event for application list retrieval
+                    await loggingService.LogAuditAsync(
+                        userId,
+                        AuditAction.Read.ToString(),
+                        AuditEntityTypes.APPLICATION,
+                        description: $"Retrieved {paginatedApplications.Items.Count()} of {paginatedApplications.TotalCount} applications (page {pagination.PageNumber})",
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        userAgent: Request.Headers.UserAgent.ToString()
+                    );
+                    
+                    return Ok(paginatedApplications);
+                }
+                else
+                {
+                    // Return all applications (backward compatibility)
+                    var applications = await applicationService.GetUserApplicationsAsync(userId);
+                    
+                    logger.LogInformation("Retrieved {ApplicationCount} applications for user {UserId}", applications.Count(), userId);
+                    
+                    // Log audit event for application list retrieval
+                    await loggingService.LogAuditAsync(
+                        userId,
+                        AuditAction.Read.ToString(),
+                        AuditEntityTypes.APPLICATION,
+                        description: $"Retrieved {applications.Count()} applications",
+                        ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                        userAgent: Request.Headers.UserAgent.ToString()
+                    );
+                    
+                    return Ok(applications);
+                }
             }
             catch (Exception ex)
             {
@@ -124,6 +148,20 @@ namespace cams.Backend.Controller
                     description: "Created new application",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                // Log system event for application creation
+                await loggingService.LogSystemEventAsync(
+                    "ApplicationCreated",
+                    "Information",
+                    "Application",
+                    $"New application created: {application.Name}",
+                    details: $"ApplicationId: {application.Id}, Name: {application.Name}, Environment: {request.Environment}, IsActive: {request.IsActive}, CreatedBy: {userId}",
+                    userId: userId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 201
                 );
                 
                 return CreatedAtAction(nameof(GetApplication), new { id = application.Id }, application);
@@ -218,6 +256,20 @@ namespace cams.Backend.Controller
                     description: "Deleted application",
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
                     userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                // Log system event for application deletion
+                await loggingService.LogSystemEventAsync(
+                    "ApplicationDeleted",
+                    "Information",
+                    "Application",
+                    $"Application deleted",
+                    details: $"ApplicationId: {id}, DeletedBy: {userId}",
+                    userId: userId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 204
                 );
                 
                 return NoContent();
@@ -361,20 +413,22 @@ namespace cams.Backend.Controller
             {
                 if (!ModelState.IsValid)
                 {
-                    logger.LogWarning("Invalid model state for CreateApplicationWithConnection. Errors: {Errors}", 
-                        string.Join(", ", ModelState.Where(x => x.Value?.Errors.Count > 0)
-                            .SelectMany(x => x.Value.Errors.Select(e => $"{x.Key}: {e.ErrorMessage}"))));
-                    
-                    return HttpResponseHelper.CreateValidationErrorResponse(
-                    ModelState.Where(x => x.Value?.Errors.Count > 0)
+                    var errors = ModelState.Where(x => x.Value?.Errors.Count > 0)
                         .ToDictionary(
                             kvp => kvp.Key,
-                            kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
-                        ));
+                            kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? []
+                        );
+                    
+                    logger.LogWarning("Invalid model state for CreateApplicationWithConnection. Errors: {Errors}", 
+                        System.Text.Json.JsonSerializer.Serialize(errors));
+                    
+                    return HttpResponseHelper.CreateValidationErrorResponse(errors);
                 }
 
                 var userId = UserHelper.GetCurrentUserId(User);
                 logger.LogInformation("User {UserId} creating new application with connection: {ApplicationName}", userId, request.ApplicationName);
+                logger.LogInformation("Request data: ApplicationName={ApplicationName}, ConnectionName={ConnectionName}, DatabaseType={DatabaseType}, Server={Server}", 
+                    request.ApplicationName, request.ConnectionName, request.DatabaseType, request.Server);
                 
                 var response = await applicationService.CreateApplicationWithConnectionAsync(request, userId);
                 

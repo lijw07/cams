@@ -5,6 +5,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { NotificationProvider } from './contexts/NotificationContext'
+import { AnalyticsProvider } from './contexts/AnalyticsContext'
 import App from './App'
 import './index.css'
 
@@ -25,7 +26,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <ThemeProvider>
           <NotificationProvider>
             <AuthProvider>
-              <App />
+              <AnalyticsProvider>
+                <App />
+              </AnalyticsProvider>
             </AuthProvider>
           </NotificationProvider>
         </ThemeProvider>

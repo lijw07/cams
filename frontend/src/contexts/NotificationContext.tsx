@@ -96,6 +96,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     addNotification,
     markAsRead,
     markAllAsRead,
+    removeNotification: deleteNotification,
     deleteNotification,
     clearAllNotifications,
   };

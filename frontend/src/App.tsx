@@ -1,21 +1,25 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
+import { usePageTracking } from './hooks/usePageTracking';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import Layout from './components/layout/Layout';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import ContactSales from './pages/ContactSales';
 import Dashboard from './pages/Dashboard';
 import Applications from './pages/Applications';
 import ApplicationDetail from './pages/ApplicationDetail';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import NotFound from './pages/NotFound';
+import HomePage from './pages/HomePage';
 
 // Management pages
 import UserManagement from './pages/management/UserManagement';
+import CreateUser from './pages/management/CreateUser';
+import EditUser from './pages/management/EditUser';
 import RoleManagement from './pages/management/RoleManagement';
-import EmailManagement from './pages/management/EmailManagement';
 import BulkMigration from './pages/migration/BulkMigration';
 
 // Log pages
@@ -47,9 +51,15 @@ const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 };
 
 const App: React.FC = () => {
+  // Enable automatic page tracking
+  usePageTracking();
+
   return (
     <div className="min-h-screen">
       <Routes>
+        {/* Home page - accessible to all */}
+        <Route path="/" element={<HomePage />} />
+        
         {/* Public routes */}
         <Route
           path="/login"
@@ -67,17 +77,16 @@ const App: React.FC = () => {
             </PublicRoute>
           }
         />
+        <Route path="/contact-sales" element={<ContactSales />} />
         
-        {/* Protected routes */}
+        {/* Protected routes with layout */}
         <Route
-          path="/"
           element={
             <ProtectedRoute>
               <Layout />
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
           
           {/* Application routes */}
@@ -90,8 +99,9 @@ const App: React.FC = () => {
           
           {/* Management routes */}
           <Route path="management/users" element={<UserManagement />} />
+          <Route path="management/users/create" element={<CreateUser />} />
+          <Route path="management/users/:id/edit" element={<EditUser />} />
           <Route path="management/roles" element={<RoleManagement />} />
-          <Route path="management/emails" element={<EmailManagement />} />
           
           {/* Migration routes */}
           <Route path="migration" element={<BulkMigration />} />

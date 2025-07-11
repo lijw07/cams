@@ -2,10 +2,12 @@ using Microsoft.Data.SqlClient;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 using cams.Backend.Configuration;
 using cams.Backend.Model;
 using cams.Backend.View;
 using cams.Backend.Enums;
+using cams.Backend.Data;
 
 namespace cams.Backend.Services
 {
@@ -14,36 +16,42 @@ namespace cams.Backend.Services
         private readonly ILogger<DatabaseConnectionService> _logger;
         private readonly JwtSettings _jwtSettings;
         private readonly IApplicationService _applicationService;
-        
-        // In a real application, this would be replaced with a database context
-        private static readonly List<DatabaseConnection> _connections = new();
-        private static int _nextId = 1;
+        private readonly ApplicationDbContext _context;
 
-        public DatabaseConnectionService(ILogger<DatabaseConnectionService> logger, IOptions<JwtSettings> jwtSettings, IApplicationService applicationService)
+        public DatabaseConnectionService(
+            ILogger<DatabaseConnectionService> logger, 
+            IOptions<JwtSettings> jwtSettings, 
+            IApplicationService applicationService,
+            ApplicationDbContext context)
         {
             _logger = logger;
             _jwtSettings = jwtSettings.Value;
             _applicationService = applicationService;
+            _context = context;
         }
 
         public async Task<IEnumerable<DatabaseConnectionResponse>> GetUserConnectionsAsync(int userId, int? applicationId = null)
         {
-            await Task.CompletedTask;
+            var query = _context.DatabaseConnections
+                .Include(c => c.Application)
+                .Where(c => c.UserId == userId);
             
-            var connections = _connections
-                .Where(c => c.UserId == userId)
-                .Where(c => applicationId == null || c.ApplicationId == applicationId)
+            if (applicationId.HasValue)
+                query = query.Where(c => c.ApplicationId == applicationId.Value);
+            
+            var connections = await query
                 .OrderBy(c => c.Name)
-                .ToList();
+                .ToListAsync();
 
             return connections.Select(c => MapToResponse(c));
         }
 
         public async Task<DatabaseConnectionResponse?> GetConnectionByIdAsync(int id, int userId)
         {
-            await Task.CompletedTask;
+            var connection = await _context.DatabaseConnections
+                .Include(c => c.Application)
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
             
-            var connection = _connections.FirstOrDefault(c => c.Id == id && c.UserId == userId);
             return connection != null ? MapToResponse(connection, includeSensitiveData: true) : null;
         }
 
@@ -58,7 +66,6 @@ namespace cams.Backend.Services
             
             var connection = new DatabaseConnection
             {
-                Id = _nextId++,
                 UserId = userId,
                 ApplicationId = request.ApplicationId,
                 Name = request.Name,
@@ -78,7 +85,13 @@ namespace cams.Backend.Services
                 UpdatedAt = DateTime.UtcNow
             };
 
-            _connections.Add(connection);
+            _context.DatabaseConnections.Add(connection);
+            await _context.SaveChangesAsync();
+            
+            // Load the application for the response
+            await _context.Entry(connection)
+                .Reference(c => c.Application)
+                .LoadAsync();
             
             _logger.LogInformation("Created database connection {ConnectionName} for user {UserId}", request.Name, userId);
             
@@ -87,9 +100,10 @@ namespace cams.Backend.Services
 
         public async Task<DatabaseConnectionResponse?> UpdateConnectionAsync(DatabaseConnectionUpdateRequest request, int userId)
         {
-            await Task.CompletedTask;
+            var connection = await _context.DatabaseConnections
+                .Include(c => c.Application)
+                .FirstOrDefaultAsync(c => c.Id == request.Id && c.UserId == userId);
             
-            var connection = _connections.FirstOrDefault(c => c.Id == request.Id && c.UserId == userId);
             if (connection == null)
                 return null;
 
@@ -116,6 +130,8 @@ namespace cams.Backend.Services
             connection.IsActive = request.IsActive;
             connection.UpdatedAt = DateTime.UtcNow;
 
+            await _context.SaveChangesAsync();
+
             _logger.LogInformation("Updated database connection {ConnectionName} for user {UserId}", request.Name, userId);
             
             return MapToResponse(connection);
@@ -123,13 +139,14 @@ namespace cams.Backend.Services
 
         public async Task<bool> DeleteConnectionAsync(int id, int userId)
         {
-            await Task.CompletedTask;
+            var connection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
             
-            var connection = _connections.FirstOrDefault(c => c.Id == id && c.UserId == userId);
             if (connection == null)
                 return false;
 
-            _connections.Remove(connection);
+            _context.DatabaseConnections.Remove(connection);
+            await _context.SaveChangesAsync();
             
             _logger.LogInformation("Deleted database connection {ConnectionId} for user {UserId}", id, userId);
             
@@ -147,7 +164,8 @@ namespace cams.Backend.Services
 
                 if (request.ConnectionId.HasValue)
                 {
-                    connection = _connections.FirstOrDefault(c => c.Id == request.ConnectionId.Value && c.UserId == userId);
+                    connection = await _context.DatabaseConnections
+                        .FirstOrDefaultAsync(c => c.Id == request.ConnectionId.Value && c.UserId == userId);
                     if (connection == null)
                     {
                         return new DatabaseConnectionTestResponse
@@ -181,6 +199,7 @@ namespace cams.Backend.Services
                     connection.LastTestedAt = DateTime.UtcNow;
                     connection.Status = testResult.IsSuccessful ? ConnectionStatus.Connected : ConnectionStatus.Failed;
                     connection.LastTestResult = testResult.Message;
+                    await _context.SaveChangesAsync();
                 }
 
                 return testResult;
@@ -202,14 +221,16 @@ namespace cams.Backend.Services
 
         public async Task<bool> ToggleConnectionStatusAsync(int id, int userId, bool isActive)
         {
-            await Task.CompletedTask;
+            var connection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
             
-            var connection = _connections.FirstOrDefault(c => c.Id == id && c.UserId == userId);
             if (connection == null)
                 return false;
 
             connection.IsActive = isActive;
             connection.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
             
             _logger.LogInformation("Toggled connection {ConnectionId} status to {IsActive} for user {UserId}", id, isActive, userId);
             
@@ -408,7 +429,7 @@ namespace cams.Backend.Services
             {
                 Id = connection.Id,
                 ApplicationId = connection.ApplicationId,
-                ApplicationName = GetApplicationName(connection.ApplicationId),
+                ApplicationName = connection.Application?.Name ?? $"App-{connection.ApplicationId}",
                 Name = connection.Name,
                 Description = connection.Description,
                 Type = connection.Type,
@@ -435,11 +456,270 @@ namespace cams.Backend.Services
             return response;
         }
         
-        private string GetApplicationName(int applicationId)
+
+        // New methods implementation
+        public ConnectionStringValidationResponse ValidateConnectionString(string connectionString, DatabaseType databaseType)
         {
-            // In a real application, this would be a proper database lookup
-            // For now, we'll use a simple approach to get the application name
-            return $"App-{applicationId}";
+            try
+            {
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    return new ConnectionStringValidationResponse
+                    {
+                        IsValid = false,
+                        Message = "Connection string cannot be empty"
+                    };
+                }
+
+                var components = new ConnectionStringComponents();
+                
+                switch (databaseType)
+                {
+                    case DatabaseType.SqlServer:
+                        var builder = new SqlConnectionStringBuilder(connectionString);
+                        components.Server = builder.DataSource;
+                        components.Database = builder.InitialCatalog;
+                        components.Username = builder.UserID;
+                        components.UseIntegratedSecurity = builder.IntegratedSecurity;
+                        components.ConnectionTimeout = builder.ConnectTimeout;
+                        components.CommandTimeout = builder.CommandTimeout;
+                        break;
+                    default:
+                        // For other database types, basic validation
+                        break;
+                }
+
+                return new ConnectionStringValidationResponse
+                {
+                    IsValid = true,
+                    Message = "Connection string is valid",
+                    ParsedComponents = components
+                };
+            }
+            catch (Exception ex)
+            {
+                return new ConnectionStringValidationResponse
+                {
+                    IsValid = false,
+                    Message = $"Invalid connection string: {ex.Message}"
+                };
+            }
+        }
+
+        public async Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(int id, int userId)
+        {
+            var connection = await _context.DatabaseConnections
+                .Include(c => c.Application)
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            
+            if (connection == null)
+                return null;
+
+            return new DatabaseConnectionSummary
+            {
+                Id = connection.Id,
+                Name = connection.Name,
+                Type = connection.Type,
+                IsActive = connection.IsActive,
+                Status = connection.Status,
+                LastTestedAt = connection.LastTestedAt,
+                ApplicationId = connection.ApplicationId,
+                ApplicationName = connection.Application?.Name ?? $"App-{connection.ApplicationId}"
+            };
+        }
+
+        public async Task<IEnumerable<DatabaseConnectionSummary>> GetConnectionsSummaryAsync(int userId, int? applicationId = null)
+        {
+            var query = _context.DatabaseConnections
+                .Include(c => c.Application)
+                .Where(c => c.UserId == userId);
+            
+            if (applicationId.HasValue)
+                query = query.Where(c => c.ApplicationId == applicationId.Value);
+            
+            var connections = await query
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            return connections.Select(c => new DatabaseConnectionSummary
+            {
+                Id = c.Id,
+                Name = c.Name,
+                Type = c.Type,
+                IsActive = c.IsActive,
+                Status = c.Status,
+                LastTestedAt = c.LastTestedAt,
+                ApplicationId = c.ApplicationId,
+                ApplicationName = c.Application?.Name ?? $"App-{c.ApplicationId}"
+            });
+        }
+
+        public async Task<ConnectionHealthResponse?> GetConnectionHealthAsync(int id, int userId)
+        {
+            var connection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            
+            if (connection == null)
+                return null;
+
+            var isHealthy = connection.Status == ConnectionStatus.Connected;
+            
+            return new ConnectionHealthResponse
+            {
+                ConnectionId = id,
+                IsHealthy = isHealthy,
+                LastChecked = connection.LastTestedAt ?? connection.UpdatedAt,
+                ResponseTime = TimeSpan.FromMilliseconds(Random.Shared.Next(50, 500)), // Simulated
+                ErrorMessage = !isHealthy ? connection.LastTestResult : null
+            };
+        }
+
+        public async Task<ConnectionHealthResponse?> RefreshConnectionHealthAsync(int id, int userId)
+        {
+            var connection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            
+            if (connection == null)
+                return null;
+
+            // Perform a quick health check
+            var testRequest = new DatabaseConnectionTestRequest { ConnectionId = id };
+            var testResult = await TestConnectionAsync(testRequest, userId);
+            
+            return new ConnectionHealthResponse
+            {
+                ConnectionId = id,
+                IsHealthy = testResult.IsSuccessful,
+                LastChecked = DateTime.UtcNow,
+                ResponseTime = testResult.ResponseTime,
+                ErrorMessage = testResult.IsSuccessful ? null : testResult.Message
+            };
+        }
+
+        public async Task<BulkOperationResponse> BulkToggleStatusAsync(int[] connectionIds, bool isActive, int userId)
+        {
+            await Task.CompletedTask;
+            
+            var successful = new List<int>();
+            var failed = new List<BulkOperationError>();
+
+            foreach (var id in connectionIds)
+            {
+                try
+                {
+                    var success = await ToggleConnectionStatusAsync(id, userId, isActive);
+                    if (success)
+                    {
+                        successful.Add(id);
+                    }
+                    else
+                    {
+                        failed.Add(new BulkOperationError
+                        {
+                            Id = id,
+                            Error = "Connection not found or access denied"
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failed.Add(new BulkOperationError
+                    {
+                        Id = id,
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            return new BulkOperationResponse
+            {
+                Successful = successful.ToArray(),
+                Failed = failed.ToArray(),
+                Message = $"Bulk toggle completed: {successful.Count} successful, {failed.Count} failed"
+            };
+        }
+
+        public async Task<BulkOperationResponse> BulkDeleteAsync(int[] connectionIds, int userId)
+        {
+            await Task.CompletedTask;
+            
+            var successful = new List<int>();
+            var failed = new List<BulkOperationError>();
+
+            foreach (var id in connectionIds)
+            {
+                try
+                {
+                    var success = await DeleteConnectionAsync(id, userId);
+                    if (success)
+                    {
+                        successful.Add(id);
+                    }
+                    else
+                    {
+                        failed.Add(new BulkOperationError
+                        {
+                            Id = id,
+                            Error = "Connection not found or access denied"
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failed.Add(new BulkOperationError
+                    {
+                        Id = id,
+                        Error = ex.Message
+                    });
+                }
+            }
+
+            return new BulkOperationResponse
+            {
+                Successful = successful.ToArray(),
+                Failed = failed.ToArray(),
+                Message = $"Bulk delete completed: {successful.Count} successful, {failed.Count} failed"
+            };
+        }
+
+        public async Task<ConnectionUsageStatsResponse?> GetConnectionUsageStatsAsync(int id, int userId)
+        {
+            var connection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            
+            if (connection == null)
+                return null;
+
+            // In a real implementation, this would query actual usage data
+            return new ConnectionUsageStatsResponse
+            {
+                ConnectionId = id,
+                TotalApplications = 1, // Simplified - one app per connection in this model
+                ActiveApplications = connection.IsActive ? 1 : 0,
+                LastUsed = connection.LastTestedAt ?? connection.UpdatedAt,
+                UsageFrequency = new UsageFrequency
+                {
+                    Daily = Random.Shared.Next(1, 10),
+                    Weekly = Random.Shared.Next(5, 50),
+                    Monthly = Random.Shared.Next(20, 200)
+                }
+            };
+        }
+
+        public async Task<bool> UpdateLastAccessedAsync(int id, int userId)
+        {
+            var connection = await _context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == id && c.UserId == userId);
+            
+            if (connection == null)
+                return false;
+
+            connection.LastAccessedAt = DateTime.UtcNow;
+            connection.UpdatedAt = DateTime.UtcNow;
+            
+            await _context.SaveChangesAsync();
+            
+            return true;
         }
     }
 }

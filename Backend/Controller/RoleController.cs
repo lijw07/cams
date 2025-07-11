@@ -11,43 +11,64 @@ namespace cams.Backend.Controller
     [ApiController]
     [Route("management/roles")]
     [Authorize]
-    public class RoleController : ControllerBase
+    public class RoleController(
+        IRoleService roleService,
+        ILoggingService loggingService,
+        ILogger<RoleController> logger)
+        : ControllerBase
     {
-        private readonly IRoleService _roleService;
-        private readonly ILoggingService _loggingService;
-        private readonly ILogger<RoleController> _logger;
-
-        public RoleController(
-            IRoleService roleService,
-            ILoggingService loggingService,
-            ILogger<RoleController> logger)
+        [HttpGet]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> GetRoles([FromQuery] PaginationRequest request)
         {
-            _roleService = roleService;
-            _loggingService = loggingService;
-            _logger = logger;
+            try
+            {
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                var result = await roleService.GetRolesAsync(request);
+
+                await loggingService.LogAuditAsync(
+                    currentUserId,
+                    "View",
+                    "Role",
+                    description: $"Retrieved roles list - Page: {request.PageNumber}, Size: {request.PageSize}, Total: {result.Pagination.TotalItems}"
+                );
+
+                logger.LogInformation("User {UserId} retrieved {RoleCount} roles (Page: {PageNumber}, Size: {PageSize})",
+                    currentUserId, result.Data.Count(), request.PageNumber, request.PageSize);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving roles");
+                return HttpResponseHelper.CreateErrorResponse("An error occurred while retrieving roles");
+            }
         }
 
-        [HttpGet]
+        [HttpGet("all")]
         [RequireRole(RoleConstants.PLATFORM_ADMIN)]
         public async Task<IActionResult> GetAllRoles()
         {
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var roles = await _roleService.GetAllRolesAsync();
+                var roles = await roleService.GetAllRolesAsync();
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "View",
                     "Role",
                     description: $"Retrieved all roles - {roles.Count()} roles found"
                 );
 
+                logger.LogInformation("User {UserId} retrieved {RoleCount} roles",
+                    currentUserId, roles.Count());
+
                 return Ok(roles);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving roles");
+                logger.LogError(ex, "Error retrieving roles");
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while retrieving roles");
             }
         }
@@ -59,14 +80,14 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var role = await _roleService.GetRoleByIdAsync(id);
+                var role = await roleService.GetRoleByIdAsync(id);
 
                 if (role == null)
                 {
                     return NotFound($"Role with ID {id} not found");
                 }
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "View",
                     "Role",
@@ -75,11 +96,14 @@ namespace cams.Backend.Controller
                     description: $"Retrieved role {role.Name}"
                 );
 
+                logger.LogInformation("User {UserId} retrieved role {RoleId} ({RoleName})",
+                    currentUserId, id, role.Name);
+
                 return Ok(role);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving role {RoleId}", id);
+                logger.LogError(ex, "Error retrieving role {RoleId}", id);
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while retrieving the role");
             }
         }
@@ -96,9 +120,9 @@ namespace cams.Backend.Controller
                 }
 
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var role = await _roleService.CreateRoleAsync(request);
+                var role = await roleService.CreateRoleAsync(request);
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "Create",
                     "Role",
@@ -107,6 +131,23 @@ namespace cams.Backend.Controller
                     description: $"Created new role: {role.Name}",
                     newValues: $"Name: {role.Name}, Description: {role.Description}"
                 );
+
+                // Log system event for role creation
+                await loggingService.LogSystemEventAsync(
+                    "RoleCreated",
+                    "Information",
+                    "Authorization",
+                    $"New role created: {role.Name}",
+                    details: $"RoleId: {role.Id}, RoleName: {role.Name}, Description: {role.Description}, CreatedBy: {currentUserId}",
+                    userId: currentUserId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 201
+                );
+
+                logger.LogInformation("User {UserId} created role {RoleId} ({RoleName})",
+                    currentUserId, role.Id, role.Name);
 
                 return CreatedAtAction(
                     nameof(GetRoleById),
@@ -119,7 +160,7 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating role");
+                logger.LogError(ex, "Error creating role");
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while creating the role");
             }
         }
@@ -136,14 +177,14 @@ namespace cams.Backend.Controller
                 }
 
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var role = await _roleService.UpdateRoleAsync(id, request);
+                var role = await roleService.UpdateRoleAsync(id, request);
 
                 if (role == null)
                 {
                     return NotFound($"Role with ID {id} not found");
                 }
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "Update",
                     "Role",
@@ -153,6 +194,9 @@ namespace cams.Backend.Controller
                     newValues: $"Name: {role.Name}, Description: {role.Description}"
                 );
 
+                logger.LogInformation("User {UserId} updated role {RoleId} ({RoleName})",
+                    currentUserId, id, role.Name);
+
                 return Ok(role);
             }
             catch (InvalidOperationException ex)
@@ -161,8 +205,42 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating role {RoleId}", id);
+                logger.LogError(ex, "Error updating role {RoleId}", id);
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while updating the role");
+            }
+        }
+
+        [HttpPatch("{id}/toggle-status")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> ToggleRoleStatus(int id)
+        {
+            try
+            {
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                var success = await roleService.ToggleRoleStatusAsync(id);
+
+                if (!success)
+                {
+                    return NotFound($"Role with ID {id} not found");
+                }
+
+                await loggingService.LogAuditAsync(
+                    currentUserId,
+                    "ToggleStatus",
+                    "Role",
+                    entityId: id,
+                    description: $"Toggled status for role with ID {id}"
+                );
+
+                logger.LogInformation("User {UserId} toggled status for role {RoleId}",
+                    currentUserId, id);
+
+                return Ok(new { message = "Role status toggled successfully" });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error toggling role status {RoleId}", id);
+                return HttpResponseHelper.CreateErrorResponse("An error occurred while toggling the role status");
             }
         }
 
@@ -173,26 +251,47 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var success = await _roleService.DeleteRoleAsync(id);
+                var success = await roleService.DeleteRoleAsync(id);
 
                 if (!success)
                 {
                     return NotFound($"Role with ID {id} not found");
                 }
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "Delete",
                     "Role",
                     entityId: id,
-                    description: $"Deleted role with ID {id}"
+                    description: $"Permanently deleted role with ID {id}"
                 );
 
-                return NoContent();
+                // Log system event for role deletion
+                await loggingService.LogSystemEventAsync(
+                    "RoleDeleted",
+                    "Information",
+                    "Authorization",
+                    $"Role permanently deleted",
+                    details: $"RoleId: {id}, DeletedBy: {currentUserId}",
+                    userId: currentUserId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    httpMethod: HttpContext.Request.Method,
+                    requestPath: HttpContext.Request.Path,
+                    statusCode: 200
+                );
+
+                logger.LogInformation("User {UserId} permanently deleted role {RoleId}",
+                    currentUserId, id);
+
+                return Ok(new { message = "Role permanently deleted successfully" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting role {RoleId}", id);
+                logger.LogError(ex, "Error deleting role {RoleId}", id);
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while deleting the role");
             }
         }
@@ -204,19 +303,22 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var success = await _roleService.AssignRoleToUserAsync(userId, roleId, currentUserId);
+                var success = await roleService.AssignRoleToUserAsync(userId, roleId, currentUserId);
 
                 if (!success)
                 {
                     return BadRequest("User already has this role or role assignment failed");
                 }
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "Assign",
                     "UserRole",
                     description: $"Assigned role {roleId} to user {userId}"
                 );
+
+                logger.LogInformation("User {UserId} assigned role {RoleId} to user {TargetUserId}",
+                    currentUserId, roleId, userId);
 
                 return Ok(new { message = "Role assigned successfully" });
             }
@@ -226,7 +328,7 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error assigning role {RoleId} to user {UserId}", roleId, userId);
+                logger.LogError(ex, "Error assigning role {RoleId} to user {UserId}", roleId, userId);
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while assigning the role");
             }
         }
@@ -238,25 +340,28 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var success = await _roleService.RemoveRoleFromUserAsync(userId, roleId);
+                var success = await roleService.RemoveRoleFromUserAsync(userId, roleId);
 
                 if (!success)
                 {
                     return NotFound("User role assignment not found");
                 }
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "Remove",
                     "UserRole",
                     description: $"Removed role {roleId} from user {userId}"
                 );
 
+                logger.LogInformation("User {UserId} removed role {RoleId} from user {TargetUserId}",
+                    currentUserId, roleId, userId);
+
                 return Ok(new { message = "Role removed successfully" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing role {RoleId} from user {UserId}", roleId, userId);
+                logger.LogError(ex, "Error removing role {RoleId} from user {UserId}", roleId, userId);
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while removing the role");
             }
         }
@@ -268,9 +373,9 @@ namespace cams.Backend.Controller
             try
             {
                 var currentUserId = UserHelper.GetCurrentUserId(User);
-                var userRoles = await _roleService.GetUserRolesAsync(userId);
+                var userRoles = await roleService.GetUserRolesAsync(userId);
 
-                await _loggingService.LogAuditAsync(
+                await loggingService.LogAuditAsync(
                     currentUserId,
                     "View",
                     "UserRole",
@@ -282,8 +387,214 @@ namespace cams.Backend.Controller
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving roles for user {UserId}", userId);
+                logger.LogError(ex, "Error retrieving roles for user {UserId}", userId);
                 return HttpResponseHelper.CreateErrorResponse("An error occurred while retrieving user roles");
+            }
+        }
+
+        /// <summary>
+        /// Check role name availability
+        /// </summary>
+        [HttpGet("check-name")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> CheckRoleNameAvailability([FromQuery] string name, [FromQuery] int? excludeId = null)
+        {
+            try
+            {
+                var isAvailable = await roleService.CheckRoleNameAvailabilityAsync(name, excludeId);
+                return Ok(new
+                {
+                    IsAvailable = isAvailable,
+                    Message = isAvailable ? "Role name is available" : "Role name is already taken"
+                });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error checking role name availability");
+                return HttpResponseHelper.CreateErrorResponse("Error checking role name availability");
+            }
+        }
+
+        /// <summary>
+        /// Get system roles
+        /// </summary>
+        [HttpGet("system")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> GetSystemRoles()
+        {
+            try
+            {
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                var systemRoles = await roleService.GetSystemRolesAsync();
+
+                await loggingService.LogAuditAsync(
+                    currentUserId,
+                    "View",
+                    "Role",
+                    description: $"Retrieved system roles - {systemRoles.Count()} roles found"
+                );
+
+                return Ok(systemRoles);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving system roles");
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving system roles");
+            }
+        }
+
+        /// <summary>
+        /// Bulk delete roles
+        /// </summary>
+        [HttpPost("bulk/delete")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> BulkDeleteRoles([FromBody] BulkDeleteRolesRequest request)
+        {
+            try
+            {
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                var result = await roleService.BulkDeleteRolesAsync(request.RoleIds, currentUserId);
+
+                await loggingService.LogAuditAsync(
+                    currentUserId,
+                    "Delete",
+                    "Role",
+                    description: $"Bulk deleted {result.SuccessfulCount} roles, {result.FailedCount} failed"
+                );
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error bulk deleting roles");
+                return HttpResponseHelper.CreateErrorResponse("Error bulk deleting roles");
+            }
+        }
+
+        /// <summary>
+        /// Get role hierarchy
+        /// </summary>
+        [HttpGet("hierarchy")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> GetRoleHierarchy()
+        {
+            try
+            {
+                var hierarchy = await roleService.GetRoleHierarchyAsync();
+                return Ok(hierarchy);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving role hierarchy");
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving role hierarchy");
+            }
+        }
+
+        /// <summary>
+        /// Get role statistics
+        /// </summary>
+        [HttpGet("{id}/stats")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> GetRoleStats(int id)
+        {
+            try
+            {
+                var stats = await roleService.GetRoleStatsAsync(id);
+                return Ok(stats);
+            }
+            catch (ArgumentException)
+            {
+                return HttpResponseHelper.CreateNotFoundResponse("Role");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving role stats for {RoleId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving role statistics");
+            }
+        }
+
+        /// <summary>
+        /// Assign users to role
+        /// </summary>
+        [HttpPost("{roleId}/assign-users")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> AssignUsersToRole(int roleId, [FromBody] AssignUsersToRoleRequest request)
+        {
+            try
+            {
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                var success = await roleService.AssignUsersToRoleAsync(roleId, request.UserIds, currentUserId);
+
+                if (!success)
+                {
+                    return HttpResponseHelper.CreateBadRequestResponse("Failed to assign users to role");
+                }
+
+                await loggingService.LogAuditAsync(
+                    currentUserId,
+                    "Assign",
+                    "UserRole",
+                    description: $"Assigned {request.UserIds.Count} users to role {roleId}"
+                );
+
+                return Ok(new { Message = "Users assigned to role successfully" });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error assigning users to role {RoleId}", roleId);
+                return HttpResponseHelper.CreateErrorResponse("Error assigning users to role");
+            }
+        }
+
+        /// <summary>
+        /// Remove users from role
+        /// </summary>
+        [HttpPost("{roleId}/remove-users")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> RemoveUsersFromRole(int roleId, [FromBody] RemoveUsersFromRoleRequest request)
+        {
+            try
+            {
+                var currentUserId = UserHelper.GetCurrentUserId(User);
+                var success = await roleService.RemoveUsersFromRoleAsync(roleId, request.UserIds);
+
+                if (!success)
+                {
+                    return HttpResponseHelper.CreateBadRequestResponse("Failed to remove users from role");
+                }
+
+                await loggingService.LogAuditAsync(
+                    currentUserId,
+                    "Remove",
+                    "UserRole",
+                    description: $"Removed {request.UserIds.Count} users from role {roleId}"
+                );
+
+                return Ok(new { Message = "Users removed from role successfully" });
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error removing users from role {RoleId}", roleId);
+                return HttpResponseHelper.CreateErrorResponse("Error removing users from role");
+            }
+        }
+
+        /// <summary>
+        /// Get users assigned to role
+        /// </summary>
+        [HttpGet("{id}/users")]
+        [RequireRole(RoleConstants.PLATFORM_ADMIN)]
+        public async Task<IActionResult> GetRoleUsers(int id)
+        {
+            try
+            {
+                var users = await roleService.GetRoleUsersAsync(id);
+                return Ok(users);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving users for role {RoleId}", id);
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving role users");
             }
         }
     }
