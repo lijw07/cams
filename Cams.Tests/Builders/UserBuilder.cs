@@ -18,9 +18,12 @@ public class UserBuilder
             LastName = "User",
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            UpdatedAt = DateTime.UtcNow,
+            UserRoles = new List<UserRole>()
         };
     }
+
+    public static UserBuilder Create() => new UserBuilder();
 
     public UserBuilder WithId(Guid id)
     {
@@ -50,6 +53,24 @@ public class UserBuilder
     {
         _user.FirstName = firstName;
         _user.LastName = lastName;
+        return this;
+    }
+
+    public UserBuilder WithFirstName(string firstName)
+    {
+        _user.FirstName = firstName;
+        return this;
+    }
+
+    public UserBuilder WithLastName(string lastName)
+    {
+        _user.LastName = lastName;
+        return this;
+    }
+
+    public UserBuilder WithActive(bool isActive)
+    {
+        _user.IsActive = isActive;
         return this;
     }
 

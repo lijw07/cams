@@ -24,6 +24,8 @@ public class ApplicationBuilder
         };
     }
 
+    public static ApplicationBuilder Create() => new ApplicationBuilder();
+
     public ApplicationBuilder WithId(Guid id)
     {
         _application.Id = id;

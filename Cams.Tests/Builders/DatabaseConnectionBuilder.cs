@@ -29,6 +29,8 @@ public class DatabaseConnectionBuilder
         };
     }
 
+    public static DatabaseConnectionBuilder Create() => new DatabaseConnectionBuilder();
+
     public DatabaseConnectionBuilder WithId(Guid id)
     {
         _connection.Id = id;
