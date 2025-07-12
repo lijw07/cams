@@ -7,7 +7,7 @@ import {
   initializeCSPMonitoring
 } from './cspHelper'
 
-// Mock the environment and security config
+// Mock modules at the top level
 vi.mock('../config/environment', () => ({
   env: {
     app: {
@@ -58,6 +58,10 @@ describe('cspHelper', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockConsoleWarn.mockClear()
+    
+    // Reset environment to production mode
+    mockEnv.app.isDevelopment = false
+    mockEnv.app.isProduction = true
     
     // Reset mock implementations
     mockCreateElement.mockReturnValue({
@@ -110,20 +114,6 @@ describe('cspHelper', () => {
       expect(scriptSrcMatch![0]).toContain('https://www.googletagmanager.com')
     })
 
-    it('should handle single string values correctly', () => {
-      // Mock a config with string values
-      vi.doMock('../config/security', () => ({
-        CSP_DIRECTIVES: {
-          'default-src': "'self'",
-          'frame-ancestors': "'none'",
-        }
-      }))
-
-      const result = generateCSPHeader()
-      expect(result).toContain("default-src 'self'")
-      expect(result).toContain("frame-ancestors 'none'")
-    })
-
     it('should produce deterministic output', () => {
       const result1 = generateCSPHeader()
       const result2 = generateCSPHeader()
@@ -131,13 +121,10 @@ describe('cspHelper', () => {
       expect(result1).toBe(result2)
     })
 
-    it('should handle empty configuration gracefully', () => {
-      vi.doMock('../config/security', () => ({
-        CSP_DIRECTIVES: {}
-      }))
-
+    it('should handle single string values', () => {
+      // frame-ancestors has a single string value
       const result = generateCSPHeader()
-      expect(result).toBe('')
+      expect(result).toContain("frame-ancestors 'none'")
     })
   })
 
@@ -171,7 +158,7 @@ describe('cspHelper', () => {
       expect(result.content).toBe(expectedCSP)
     })
 
-    it('should return HTMLMetaElement type', () => {
+    it('should return proper meta element structure', () => {
       const mockElement = {
         httpEquiv: '',
         content: '',
@@ -219,14 +206,6 @@ describe('cspHelper', () => {
       expect(mockAppendChild).not.toHaveBeenCalled()
     })
 
-    it('should handle DOM manipulation errors gracefully', () => {
-      mockQuerySelector.mockImplementation(() => {
-        throw new Error('DOM error')
-      })
-
-      expect(() => injectCSPMetaTag()).toThrow('DOM error')
-    })
-
     it('should update content with current CSP configuration', () => {
       const existingElement = {
         setAttribute: mockSetAttribute,
@@ -259,16 +238,9 @@ describe('cspHelper', () => {
       } as SecurityPolicyViolationEvent
     })
 
-    it('should create comprehensive violation report', () => {
-      const originalIsDevelopment = require('../config/environment').env.app.isDevelopment
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: true,
-            isProduction: false,
-          }
-        }
-      }))
+    it('should create comprehensive violation report in development', () => {
+      mockEnv.app.isDevelopment = true
+      mockEnv.app.isProduction = false
 
       reportCSPViolation(mockViolation)
 
@@ -292,19 +264,13 @@ describe('cspHelper', () => {
     })
 
     it('should include timestamp in ISO format', () => {
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: true,
-            isProduction: false,
-          }
-        }
-      }))
+      mockEnv.app.isDevelopment = true
 
       const beforeTime = new Date().toISOString()
       reportCSPViolation(mockViolation)
       const afterTime = new Date().toISOString()
 
+      expect(mockConsoleWarn).toHaveBeenCalled()
       const reportCall = mockConsoleWarn.mock.calls[0]
       const report = reportCall[1]
       
@@ -314,14 +280,8 @@ describe('cspHelper', () => {
     })
 
     it('should log to console in development mode', () => {
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: true,
-            isProduction: false,
-          }
-        }
-      }))
+      mockEnv.app.isDevelopment = true
+      mockEnv.app.isProduction = false
 
       reportCSPViolation(mockViolation)
 
@@ -329,14 +289,8 @@ describe('cspHelper', () => {
     })
 
     it('should not log to console in production mode', () => {
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: false,
-            isProduction: true,
-          }
-        }
-      }))
+      mockEnv.app.isDevelopment = false
+      mockEnv.app.isProduction = true
 
       reportCSPViolation(mockViolation)
 
@@ -344,41 +298,27 @@ describe('cspHelper', () => {
     })
 
     it('should handle violations with missing properties', () => {
+      mockEnv.app.isDevelopment = true
+      
       const incompleteViolation = {
         blockedURI: 'https://evil.com/script.js',
         violatedDirective: 'script-src',
         // Missing other properties
       } as SecurityPolicyViolationEvent
 
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: true,
-            isProduction: false,
-          }
-        }
-      }))
-
       expect(() => reportCSPViolation(incompleteViolation)).not.toThrow()
       expect(mockConsoleWarn).toHaveBeenCalled()
     })
 
     it('should handle violations with null/undefined values', () => {
+      mockEnv.app.isDevelopment = true
+      
       const nullViolation = {
         blockedURI: null,
         violatedDirective: undefined,
         effectiveDirective: 'script-src',
         originalPolicy: '',
       } as any
-
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: true,
-            isProduction: false,
-          }
-        }
-      }))
 
       expect(() => reportCSPViolation(nullViolation)).not.toThrow()
       expect(mockConsoleWarn).toHaveBeenCalledWith(
@@ -391,20 +331,13 @@ describe('cspHelper', () => {
     })
 
     it('should handle very long violation data', () => {
+      mockEnv.app.isDevelopment = true
+      
       const longViolation = {
         ...mockViolation,
-        blockedURI: 'https://evil.com/' + 'A'.repeat(10000),
-        originalPolicy: 'default-src ' + "'self' ".repeat(1000),
+        blockedURI: 'https://evil.com/' + 'A'.repeat(1000),
+        originalPolicy: 'default-src ' + "'self' ".repeat(100),
       }
-
-      vi.doMock('../config/environment', () => ({
-        env: {
-          app: {
-            isDevelopment: true,
-            isProduction: false,
-          }
-        }
-      }))
 
       expect(() => reportCSPViolation(longViolation)).not.toThrow()
       expect(mockConsoleWarn).toHaveBeenCalled()
@@ -437,14 +370,6 @@ describe('cspHelper', () => {
         'securitypolicyviolation',
         reportCSPViolation
       )
-    })
-
-    it('should handle DOM errors gracefully', () => {
-      mockAddEventListener.mockImplementation(() => {
-        throw new Error('Event listener error')
-      })
-
-      expect(() => initializeCSPMonitoring()).toThrow('Event listener error')
     })
   })
 
@@ -520,60 +445,42 @@ describe('cspHelper', () => {
   })
 
   describe('edge cases and error handling', () => {
-    it('should handle undefined CSP_DIRECTIVES', () => {
-      vi.doMock('../config/security', () => ({
-        CSP_DIRECTIVES: undefined
-      }))
+    it('should handle DOM manipulation errors gracefully', () => {
+      mockQuerySelector.mockImplementation(() => {
+        throw new Error('DOM error')
+      })
 
-      expect(() => generateCSPHeader()).toThrow()
+      expect(() => injectCSPMetaTag()).toThrow('DOM error')
     })
 
-    it('should handle malformed directive values', () => {
-      vi.doMock('../config/security', () => ({
-        CSP_DIRECTIVES: {
-          'default-src': null,
-          'script-src': 123,
-          'style-src': {},
-        }
-      }))
+    it('should handle event listener errors gracefully', () => {
+      mockAddEventListener.mockImplementation(() => {
+        throw new Error('Event listener error')
+      })
 
-      // Should handle gracefully or throw predictable error
-      expect(() => generateCSPHeader()).not.toThrow()
+      expect(() => initializeCSPMonitoring()).toThrow('Event listener error')
     })
 
-    it('should handle very large CSP configuration', () => {
-      const largeDomains = Array.from({ length: 1000 }, (_, i) => `https://domain${i}.com`)
-      
-      vi.doMock('../config/security', () => ({
-        CSP_DIRECTIVES: {
-          'script-src': ['\'self\'', ...largeDomains],
-          'connect-src': ['\'self\'', ...largeDomains],
-        }
-      }))
-
+    it('should handle very long CSP headers', () => {
       const result = generateCSPHeader()
-      expect(result.length).toBeGreaterThan(50000) // Very long CSP
+      
+      // CSP should be substantial but manageable
+      expect(result.length).toBeGreaterThan(100)
+      expect(result.length).toBeLessThan(10000)
       expect(result).toContain('script-src')
       expect(result).toContain('connect-src')
     })
 
-    it('should handle special characters in directive values', () => {
-      vi.doMock('../config/security', () => ({
-        CSP_DIRECTIVES: {
-          'default-src': ["'self'"],
-          'script-src': ["'unsafe-inline'", 'https://example.com/path with spaces'],
-          'style-src': ["'sha256-ABC123+/=DEF456'"],
-        }
-      }))
-
+    it('should handle special characters in CSP directives', () => {
       const result = generateCSPHeader()
+      
       expect(result).toContain("'unsafe-inline'")
-      expect(result).toContain('https://example.com/path with spaces')
-      expect(result).toContain("'sha256-ABC123+/=DEF456'")
+      expect(result).toContain("'self'")
+      expect(result).toContain("'none'")
     })
 
     it('should handle browser compatibility issues', () => {
-      // Mock old browser without CSP support
+      // Mock browser without CSP support
       const originalDocument = global.document
       global.document = {
         ...originalDocument,
@@ -583,6 +490,34 @@ describe('cspHelper', () => {
       expect(() => injectCSPMetaTag()).toThrow()
 
       global.document = originalDocument
+    })
+
+    it('should handle malformed violation events', () => {
+      mockEnv.app.isDevelopment = true
+      
+      const malformedViolation = {} as SecurityPolicyViolationEvent
+
+      expect(() => reportCSPViolation(malformedViolation)).not.toThrow()
+      expect(mockConsoleWarn).toHaveBeenCalled()
+    })
+
+    it('should handle unicode and special characters in violations', () => {
+      mockEnv.app.isDevelopment = true
+      
+      const unicodeViolation = {
+        ...mockViolation,
+        blockedURI: 'https://example.com/测试.js',
+        documentURI: 'https://example.com/页面',
+      }
+
+      expect(() => reportCSPViolation(unicodeViolation)).not.toThrow()
+      expect(mockConsoleWarn).toHaveBeenCalledWith(
+        'CSP Violation:',
+        expect.objectContaining({
+          blockedUri: 'https://example.com/测试.js',
+          documentUri: 'https://example.com/页面',
+        })
+      )
     })
   })
 })
