@@ -7,6 +7,9 @@ on:
     branches: [ master, develop ]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 env:
   DOTNET_VERSION: '8.0.x'
   NODE_VERSION: '20.x'
@@ -18,6 +21,9 @@ jobs:
   backend:
     name: Backend Build & Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     
     steps:
     - uses: actions/checkout@v4
@@ -59,6 +65,9 @@ jobs:
   frontend:
     name: Frontend Build & Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
     
     defaults:
       run:
@@ -97,6 +106,8 @@ jobs:
   security:
     name: Security Scanning
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - uses: actions/checkout@v4
