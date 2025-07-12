@@ -190,7 +190,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare-release, deploy-backend, deploy-frontend]
     if: success()
-    
+    permissions:
+      contents: write
+      actions: read
     steps:
     - uses: actions/checkout@v4
     
