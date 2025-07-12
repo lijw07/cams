@@ -232,6 +232,8 @@ jobs:
     runs-on: ubuntu-latest
     if: failure() && github.event_name == 'workflow_dispatch'
     needs: [deploy-backend, deploy-frontend]
+    permissions:
+      contents: none
     
     steps:
     - name: Rollback to previous version
