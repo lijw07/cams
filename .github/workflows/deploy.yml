@@ -25,6 +25,8 @@ jobs:
   prepare-release:
     name: Prepare Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.version.outputs.version }}
       release_notes: ${{ steps.release_notes.outputs.notes }}
@@ -64,6 +66,9 @@ jobs:
     name: Deploy Backend
     runs-on: ubuntu-latest
     needs: prepare-release
+    permissions:
+      contents: read
+      packages: write
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
       url: ${{ steps.deploy.outputs.url }}
@@ -124,6 +129,8 @@ jobs:
     name: Deploy Frontend
     runs-on: ubuntu-latest
     needs: prepare-release
+    permissions:
+      contents: read
     environment:
       name: ${{ github.event.inputs.environment || 'production' }}
       url: ${{ steps.deploy.outputs.url }}
@@ -183,7 +190,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [prepare-release, deploy-backend, deploy-frontend]
     if: success()
-    
+    permissions:
+      contents: write
+      actions: read
     steps:
     - uses: actions/checkout@v4
     
@@ -225,6 +234,8 @@ jobs:
     runs-on: ubuntu-latest
     if: failure() && github.event_name == 'workflow_dispatch'
     needs: [deploy-backend, deploy-frontend]
+    permissions:
+      contents: none
     
     steps:
     - name: Rollback to previous version
