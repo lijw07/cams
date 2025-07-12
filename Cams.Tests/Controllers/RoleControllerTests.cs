@@ -876,8 +876,9 @@ public class RoleControllerTests : ControllerTestBase
         notFoundResult.Value.Should().NotBeNull();
         
         // The value should contain a message property with "Role not found"
-        var valueType = notFoundResult.Value.GetType();
-        var messageProperty = valueType.GetProperty("message");
+        var valueType = notFoundResult.Value?.GetType();
+        valueType.Should().NotBeNull();
+        var messageProperty = valueType!.GetProperty("message");
         messageProperty.Should().NotBeNull();
         var message = messageProperty!.GetValue(notFoundResult.Value) as string;
         message.Should().Be("Role not found");
@@ -936,8 +937,9 @@ public class RoleControllerTests : ControllerTestBase
         badRequestResult.Value.Should().NotBeNull();
         
         // The value should contain a message property with "Failed to assign users to role"
-        var valueType = badRequestResult.Value.GetType();
-        var messageProperty = valueType.GetProperty("message");
+        var valueType = badRequestResult.Value?.GetType();
+        valueType.Should().NotBeNull();
+        var messageProperty = valueType!.GetProperty("message");
         messageProperty.Should().NotBeNull();
         var message = messageProperty!.GetValue(badRequestResult.Value) as string;
         message.Should().Be("Failed to assign users to role");
