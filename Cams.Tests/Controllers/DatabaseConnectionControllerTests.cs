@@ -654,12 +654,36 @@ public class DatabaseConnectionControllerTests : ControllerTestBase
             DatabaseType = DatabaseType.SqlServer
         };
 
+        var validationResponse = new ConnectionStringValidationResponse
+        {
+            IsValid = true,
+            Message = "Connection string is valid",
+            ParsedComponents = new ConnectionStringComponents
+            {
+                Server = "localhost",
+                Database = "TestDB",
+                UseIntegratedSecurity = true
+            }
+        };
+
+        _connectionServiceMock
+            .Setup(x => x.ValidateConnectionString(request.ConnectionString, request.DatabaseType))
+            .Returns(validationResponse);
+
         // Act
         var result = _controller.ValidateConnectionString(request);
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
-        okResult.Value.Should().NotBeNull();
+        var returnedValidation = okResult.Value.Should().BeOfType<ConnectionStringValidationResponse>().Subject;
+        returnedValidation.IsValid.Should().BeTrue();
+        returnedValidation.Message.Should().Be("Connection string is valid");
+        returnedValidation.ParsedComponents.Should().NotBeNull();
+        returnedValidation.ParsedComponents!.Server.Should().Be("localhost");
+        returnedValidation.ParsedComponents.Database.Should().Be("TestDB");
+        returnedValidation.ParsedComponents.UseIntegratedSecurity.Should().BeTrue();
+
+        _connectionServiceMock.Verify(x => x.ValidateConnectionString(request.ConnectionString, request.DatabaseType), Times.Once);
     }
 
     [Fact]
@@ -948,8 +972,8 @@ public class DatabaseConnectionControllerTests : ControllerTestBase
         var result = await _controller.CreateConnection(request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(500);
+        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.Value.Should().BeEquivalentTo(new { message = "Invalid input detected" });
     }
 
     #endregion

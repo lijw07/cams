@@ -9,6 +9,7 @@ using cams.Backend.View;
 using cams.Backend.Enums;
 using cams.Backend.Data;
 using Backend.Helpers;
+using cams.Backend.Helpers;
 
 namespace cams.Backend.Services
 {
@@ -48,11 +49,14 @@ namespace cams.Backend.Services
 
         public async Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, Guid userId)
         {
-            // Validate that the user has access to the specified application
-            var hasAccess = await applicationService.ValidateApplicationAccessAsync(request.ApplicationId, userId);
-            if (!hasAccess)
+            // Validate that the user has access to the specified application (if provided)
+            if (request.ApplicationId.HasValue)
             {
-                throw new UnauthorizedAccessException("User does not have access to the specified application");
+                var hasAccess = await applicationService.ValidateApplicationAccessAsync(request.ApplicationId.Value, userId);
+                if (!hasAccess)
+                {
+                    throw new UnauthorizedAccessException("User does not have access to the specified application");
+                }
             }
 
             var connection = new DatabaseConnection
@@ -432,7 +436,7 @@ namespace cams.Backend.Services
             {
                 Id = connection.Id,
                 ApplicationId = connection.ApplicationId,
-                ApplicationName = connection.Application?.Name ?? $"App-{connection.ApplicationId}",
+                ApplicationName = connection.Application?.Name ?? (connection.ApplicationId.HasValue ? $"App-{connection.ApplicationId}" : null),
                 Name = connection.Name,
                 Description = connection.Description,
                 Type = connection.Type,
@@ -718,6 +722,86 @@ namespace cams.Backend.Services
                 return false;
 
             connection.LastAccessedAt = DateTime.UtcNow;
+            connection.UpdatedAt = DateTime.UtcNow;
+
+            await context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<IEnumerable<DatabaseConnectionSummary>> GetUnassignedConnectionsAsync(Guid userId)
+        {
+            var connections = await context.DatabaseConnections
+                .Include(c => c.Application)
+                .Where(c => c.UserId == userId && !c.ApplicationId.HasValue)
+                .OrderBy(c => c.Name)
+                .Select(c => new DatabaseConnectionSummary
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    Type = c.Type,
+                    TypeName = DatabaseTypeHelper.GetDatabaseTypeName(c.Type),
+                    Server = c.Server,
+                    Port = c.Port,
+                    Database = c.Database,
+                    IsActive = c.IsActive,
+                    Status = c.Status,
+                    StatusName = c.Status.ToString(),
+                    LastTestedAt = c.LastTestedAt,
+                    CreatedAt = c.CreatedAt,
+                    UpdatedAt = c.UpdatedAt,
+                    ApplicationId = c.ApplicationId,
+                    ApplicationName = null // No application assigned
+                })
+                .ToListAsync();
+
+            return connections;
+        }
+
+        public async Task<bool> AssignConnectionToApplicationAsync(Guid connectionId, Guid applicationId, Guid userId)
+        {
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                // Verify user owns the connection
+                var connection = await context.DatabaseConnections
+                    .FirstOrDefaultAsync(c => c.Id == connectionId && c.UserId == userId);
+
+                if (connection == null)
+                    return false;
+
+                // Verify user has access to the application  
+                var hasAppAccess = await applicationService.ValidateApplicationAccessAsync(applicationId, userId);
+                if (!hasAppAccess)
+                    return false;
+
+                // Assign the connection to the application
+                connection.ApplicationId = applicationId;
+                connection.UpdatedAt = DateTime.UtcNow;
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
+
+        public async Task<bool> UnassignConnectionFromApplicationAsync(Guid connectionId, Guid userId)
+        {
+            var connection = await context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == connectionId && c.UserId == userId);
+
+            if (connection == null)
+                return false;
+
+            // Remove the application assignment
+            connection.ApplicationId = null;
             connection.UpdatedAt = DateTime.UtcNow;
 
             await context.SaveChangesAsync();

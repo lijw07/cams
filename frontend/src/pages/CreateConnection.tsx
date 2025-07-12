@@ -38,7 +38,8 @@ const CreateConnection: React.FC = () => {
   const { addNotification } = useNotifications();
   
   // Form state
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<DatabaseConnectionRequest>({
+  const { register, handleSubmit, watch, setValue, getValues, formState: { errors } } = useForm<DatabaseConnectionRequest>({
+    mode: 'onSubmit',  // Only validate when form is submitted
     defaultValues: {
       Type: DatabaseType.SqlServer,
       IsActive: true,
@@ -56,13 +57,8 @@ const CreateConnection: React.FC = () => {
   const [testResult, setTestResult] = useState<DatabaseTestResponse | null>(null);
   const [supportedTypes, setSupportedTypes] = useState<{ [key: number]: string }>({});
 
-  // Watch form values
+  // Only watch the type since it's used for conditional rendering
   const selectedType = watch('Type');
-  const connectionString = watch('ConnectionString');
-  const server = watch('Server');
-  const database = watch('Database');
-  const username = watch('Username');
-  const password = watch('Password');
 
   // Load initial data
   useEffect(() => {
@@ -80,7 +76,13 @@ const CreateConnection: React.FC = () => {
         }, {}) || {});
       } catch (error) {
         console.error('Error loading data:', error);
-        addNotification('Failed to load form data', 'error');
+        addNotification({
+          title: 'Loading Error',
+          message: 'Failed to load form data',
+          type: 'error',
+          source: 'Create Connection',
+          details: 'Unable to load applications and database types. Please refresh and try again.'
+        });
       }
     };
 
@@ -110,29 +112,104 @@ const CreateConnection: React.FC = () => {
       setTesting(true);
       setTestResult(null);
 
-      const testRequest: DatabaseTestRequest = {
-        DatabaseType: selectedType,
-        Server: server,
-        Port: watch('Port'),
-        Database: database,
-        Username: username,
-        Password: password,
-        ConnectionString: connectionString,
-        ApiBaseUrl: watch('ApiBaseUrl'),
-        ApiKey: watch('ApiKey')
+      // Show immediate notification that test is starting
+      addNotification({
+        title: 'Testing Connection',
+        message: 'Attempting to connect to the database...',
+        type: 'info',
+        source: 'Database Connection',
+        details: 'This process may take a few seconds depending on your network and database configuration.',
+        isPersistent: true
+      });
+
+      // Get current form values without causing re-renders
+      const formValues = getValues();
+      
+      const testRequest = {
+        ConnectionDetails: {
+          ApplicationId: formValues.ApplicationId,
+          Name: formValues.Name || 'Test Connection',
+          Description: formValues.Description,
+          Type: selectedType,
+          Server: formValues.Server,
+          Port: formValues.Port,
+          Database: formValues.Database,
+          Username: formValues.Username,
+          Password: formValues.Password,
+          ConnectionString: formValues.ConnectionString,
+          ApiBaseUrl: formValues.ApiBaseUrl,
+          ApiKey: formValues.ApiKey,
+          AdditionalSettings: formValues.AdditionalSettings,
+          IsActive: true
+        }
       };
 
       const result = await databaseConnectionService.testConnection(testRequest);
       setTestResult(result);
 
       if (result.IsSuccessful) {
-        addNotification('Connection test successful!', 'success');
+        addNotification({
+          title: 'Connection Test Successful',
+          message: 'Successfully connected to the database',
+          type: 'success',
+          source: 'Database Connection',
+          details: `Connection established in ${result.Duration || 'unknown'} ms. ${result.AdditionalInfo ? JSON.stringify(result.AdditionalInfo) : ''}`,
+          suggestions: [
+            'You can now save this connection configuration',
+            'Consider testing the connection periodically to monitor its status'
+          ]
+        });
       } else {
-        addNotification(`Connection test failed: ${result.Message}`, 'error');
+        // Extract error code from result
+        const errorCode = result.ErrorCode || 'UNKNOWN_ERROR';
+        const errorMessage = result.Message || 'Connection failed';
+        
+        addNotification({
+          title: `Connection Test Failed (${errorCode})`,
+          message: errorMessage,
+          type: 'error',
+          source: 'Database Connection',
+          details: `The connection test failed with error code: ${errorCode}. Please verify your connection parameters and try again.`,
+          technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nError Details: ${result.ErrorDetails || 'No additional error details available'}`,
+          suggestions: [
+            'Verify that the server address and port are correct',
+            'Check that the database name exists',
+            'Ensure your username and password are valid',
+            'Verify that the database server is running and accessible',
+            'Check firewall settings that might block the connection'
+          ]
+        });
       }
     } catch (error) {
       console.error('Error testing connection:', error);
-      addNotification('Failed to test connection', 'error');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to test connection';
+      
+      // Try to extract error code from the error response
+      let errorCode = 'NETWORK_ERROR';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as any).response;
+        if (response?.data?.ErrorCode) {
+          errorCode = response.data.ErrorCode;
+        } else if (response?.status) {
+          errorCode = `HTTP_${response.status}`;
+        }
+      }
+      
+      addNotification({
+        title: `Connection Test Failed (${errorCode})`,
+        message: 'Network or system error occurred',
+        type: 'error',
+        source: 'Database Connection',
+        details: `The connection test could not be completed due to a system error (${errorCode}).`,
+        technical: `Error Code: ${errorCode}\nError: ${errorMessage}\n\nThis could be due to network issues, server problems, or invalid request data.`,
+        suggestions: [
+          'Check your internet connection',
+          'Verify that the CAMS backend server is running',
+          'Try again in a few moments',
+          'Contact your system administrator if the problem persists'
+        ]
+      });
+      
       setTestResult({
         IsSuccessful: false,
         Message: 'Connection test failed due to network error',
@@ -146,23 +223,39 @@ const CreateConnection: React.FC = () => {
   // Build connection string
   const handleBuildConnectionString = async () => {
     try {
+      // Get current form values without causing re-renders
+      const formValues = getValues();
+      
       const result = await databaseConnectionService.buildConnectionString({
         DatabaseType: selectedType,
-        Server: server,
-        Database: database,
-        Username: username,
-        Password: password,
-        Port: watch('Port'),
+        Server: formValues.Server,
+        Database: formValues.Database,
+        Username: formValues.Username,
+        Password: formValues.Password,
+        Port: formValues.Port,
         UseIntegratedSecurity: false,
         ConnectionTimeout: 30,
         CommandTimeout: 30
       });
       
       setValue('ConnectionString', result.ConnectionString);
-      addNotification('Connection string generated successfully', 'success');
+      addNotification({
+        title: 'Connection String Generated',
+        message: 'Connection string built successfully',
+        type: 'success',
+        source: 'Create Connection',
+        details: 'Connection string has been automatically generated based on your database configuration.'
+      });
     } catch (error) {
       console.error('Error building connection string:', error);
-      addNotification('Failed to generate connection string', 'error');
+      addNotification({
+        title: 'Generation Failed',
+        message: 'Failed to generate connection string',
+        type: 'error',
+        source: 'Create Connection',
+        details: 'Unable to build connection string. Please check your database configuration.',
+        suggestions: ['Verify all required fields are filled', 'Check server address and port', 'Ensure database name is correct']
+      });
     }
   };
 
@@ -171,11 +264,29 @@ const CreateConnection: React.FC = () => {
     try {
       setLoading(true);
       await databaseConnectionService.createConnection(data);
-      addNotification('Database connection created successfully', 'success');
+      addNotification({
+        title: 'Connection Created',
+        message: `Successfully created connection "${data.Name}"`,
+        type: 'success',
+        source: 'Create Connection',
+        details: `Database connection "${data.Name}" has been created and is ready to use.`
+      });
       navigate('/database-connections');
     } catch (error) {
       console.error('Error creating connection:', error);
-      addNotification('Failed to create database connection', 'error');
+      addNotification({
+        title: 'Creation Failed',
+        message: `Failed to create connection "${data.Name}"`,
+        type: 'error',
+        source: 'Create Connection',
+        details: 'Unable to create the database connection. Please check your configuration and try again.',
+        suggestions: [
+          'Verify all required fields are completed',
+          'Test the connection before saving',
+          'Check server accessibility and credentials',
+          'Ensure the connection name is unique'
+        ]
+      });
     } finally {
       setLoading(false);
     }
@@ -451,7 +562,7 @@ const CreateConnection: React.FC = () => {
                         type="button"
                         variant="secondary"
                         onClick={handleBuildConnectionString}
-                        disabled={!server}
+                        disabled={!getValues('Server')}
                       >
                         Generate
                       </Button>
@@ -500,7 +611,7 @@ const CreateConnection: React.FC = () => {
                 type="button"
                 variant="secondary"
                 onClick={handleTestConnection}
-                disabled={testing || (!server && !watch('ApiBaseUrl'))}
+                disabled={testing || (!getValues('Server') && !getValues('ApiBaseUrl'))}
                 className="w-full"
               >
                 {testing ? (

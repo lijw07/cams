@@ -1,0 +1,215 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ master, develop ]
+  pull_request:
+    branches: [ master ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  # .NET Security Scan
+  dotnet-security:
+    name: .NET Security Analysis
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore
+    
+    - name: Security scan with dotnet
+      run: |
+        # Check for known vulnerabilities in dependencies
+        dotnet list package --vulnerable --include-transitive
+        
+        # Install and run security analyzer
+        dotnet tool install --global security-scan
+        dotnet security-scan ./Backend/cams.csproj || true
+    
+    - name: OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'CAMS'
+        path: '.'
+        format: 'ALL'
+        args: >
+          --enableRetired
+          --enableExperimental
+    
+    - name: Upload OWASP results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: owasp-dependency-check-results
+        path: reports/
+        retention-days: 30
+
+  # Frontend Security Scan
+  frontend-security:
+    name: Frontend Security Analysis
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: NPM Audit
+      run: |
+        npm audit --production
+        npm audit fix --force --audit-level=high || true
+    
+    - name: Run Snyk Security Scan
+      uses: snyk/actions/node@master
+      continue-on-error: true
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      with:
+        args: --severity-threshold=high --project-path=frontend
+
+  # Container Security Scan
+  container-security:
+    name: Container Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner on Backend Dockerfile
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'config'
+        scan-ref: './Backend/Dockerfile'
+        format: 'sarif'
+        output: 'backend-dockerfile-results.sarif'
+    
+    - name: Run Trivy vulnerability scanner on Frontend Dockerfile
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'config'
+        scan-ref: './frontend/Dockerfile'
+        format: 'sarif'
+        output: 'frontend-dockerfile-results.sarif'
+    
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: '.'
+        category: 'container-security'
+
+  # CodeQL Analysis
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        language: [ 'csharp', 'javascript-typescript' ]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-and-quality
+    
+    - name: Build for CodeQL
+      if: matrix.language == 'csharp'
+      run: dotnet build --configuration Release
+    
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+      with:
+        category: "/language:${{ matrix.language }}"
+
+  # Secret Scanning
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: TruffleHog OSS
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --debug --only-verified
+    
+    - name: GitLeaks
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # License Compliance
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check .NET licenses
+      run: |
+        dotnet tool install --global dotnet-project-licenses
+        dotnet-project-licenses -i ./Backend/cams.csproj || true
+    
+    - name: Check NPM licenses
+      working-directory: ./frontend
+      run: |
+        npx license-checker --production --summary
+        npx license-checker --production --failOn "GPL-3.0;AGPL-3.0"
+
+  # Security Report Summary
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [dotnet-security, frontend-security, container-security, codeql, secret-scan, license-check]
+    if: always()
+    
+    steps:
+    - name: Create Security Report
+      run: |
+        echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| .NET Security | ${{ needs.dotnet-security.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Frontend Security | ${{ needs.frontend-security.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Container Security | ${{ needs.container-security.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| CodeQL Analysis | ${{ needs.codeql.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Secret Scanning | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| License Check | ${{ needs.license-check.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ All security scans completed. Check individual job logs for details." >> $GITHUB_STEP_SUMMARY

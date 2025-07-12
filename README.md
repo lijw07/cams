@@ -155,6 +155,21 @@ docker-compose up --build
 # Database: localhost:1433
 ```
 
+### ⚡ Smart Startup Sequence
+CAMS automatically handles service dependencies with health checks:
+
+```bash
+# Automatic startup with proper sequence (recommended)
+./startup-sequence.sh
+
+# Production environment
+./startup-sequence.sh prod
+```
+
+**Startup Order**: Database → Backend → Frontend  
+**Total Time**: ~60-90 seconds  
+📋 See [STARTUP-SEQUENCE.md](./STARTUP-SEQUENCE.md) for detailed documentation.
+
 ### 🔧 Manual Setup
 
 #### Backend Setup

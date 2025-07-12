@@ -15,7 +15,9 @@ export const databaseConnectionService = {
   async getConnections(applicationId?: string): Promise<DatabaseConnection[]> {
     const params = new URLSearchParams();
     if (applicationId) params.append('application-id', applicationId);
-    return apiService.get(`/database-connections${params.toString() ? `?${params.toString()}` : ''}`);
+    const url = `/database-connections${params.toString() ? `?${params.toString()}` : ''}`;
+    console.log('getConnections URL:', url, 'for applicationId:', applicationId);
+    return apiService.get(url);
   },
 
   async getConnection(id: string): Promise<DatabaseConnection> {
@@ -43,7 +45,7 @@ export const databaseConnectionService = {
   },
 
   // Connection testing
-  async testConnection(data: DatabaseTestRequest): Promise<ConnectionTestResult> {
+  async testConnection(data: { ConnectionId?: string; ConnectionDetails?: DatabaseConnectionRequest }): Promise<ConnectionTestResult> {
     return apiService.post('/database-connections/test', data);
   },
 
@@ -166,5 +168,20 @@ export const databaseConnectionService = {
     };
   }> {
     return apiService.get(`/database-connections/${id}/usage-stats`);
-  }
+  },
+
+  // Connection assignment operations
+  async getUnassignedConnections(): Promise<DatabaseConnectionSummary[]> {
+    return apiService.get('/database-connections/unassigned');
+  },
+
+  async assignConnectionToApplication(connectionId: string, applicationId: string): Promise<{ message: string }> {
+    return apiService.post(`/database-connections/${connectionId}/assign`, {
+      ApplicationId: applicationId,
+    });
+  },
+
+  async unassignConnectionFromApplication(connectionId: string): Promise<{ message: string }> {
+    return apiService.delete(`/database-connections/${connectionId}/unassign`);
+  },
 };

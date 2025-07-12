@@ -126,13 +126,15 @@ const UserTable: React.FC<UserTableProps> = memo(({
               return (
                 <tr 
                   key={user.Id} 
-                  className="hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors"
+                  className="hover:bg-gray-50 dark:hover:bg-secondary-700 transition-colors cursor-pointer"
+                  onClick={() => onEditUser(user)}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
                       checked={selectedUsers.includes(user.Id)}
                       onChange={() => onToggleUser(user.Id)}
+                      onClick={(e) => e.stopPropagation()}
                       className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
                     />
                   </td>
@@ -169,7 +171,10 @@ const UserTable: React.FC<UserTableProps> = memo(({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => onToggleStatus(user.Id, !user.IsActive)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleStatus(user.Id, !user.IsActive);
+                      }}
                       className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium transition-colors ${
                         user.IsActive
                           ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
@@ -185,21 +190,30 @@ const UserTable: React.FC<UserTableProps> = memo(({
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => onViewUser(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onViewUser(user);
+                        }}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => onEditUser(user)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditUser(user);
+                        }}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="error"
                         size="sm"
-                        onClick={() => onDeleteUser(user.Id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteUser(user.Id);
+                        }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

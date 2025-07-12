@@ -70,6 +70,10 @@ export interface Notification {
   isRead: boolean;
   source?: string;
   actionUrl?: string;
+  details?: string; // Additional details for popup
+  technical?: string; // Technical error details
+  suggestions?: string[]; // Suggested actions
+  isPersistent?: boolean; // Whether notification should stay visible longer
 }
 
 export interface NotificationContextType {
@@ -81,6 +85,8 @@ export interface NotificationContextType {
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   clearAllNotifications: () => void;
+  showNotificationDetails: (notification: Notification) => void;
+  handleNotificationClick: (notification: Notification) => void;
 }
 
 // Theme Types

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import { useForm } from 'react-hook-form';
 
+import { useNotifications } from '../contexts/NotificationContext';
 import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseConnection, DatabaseType } from '../types';
 
 interface UseDatabaseConnectionModalProps {
@@ -22,8 +23,10 @@ export const useDatabaseConnectionModal = ({
   onClose
 }: UseDatabaseConnectionModalProps) => {
   const [selectedDbType, setSelectedDbType] = useState<DatabaseType>(DatabaseType.SqlServer);
+  const { addNotification } = useNotifications();
 
   const form = useForm<DatabaseConnectionRequest | DatabaseConnectionUpdateRequest>({
+    mode: 'onSubmit',  // Only validate when form is submitted
     defaultValues: {
       ApplicationId: applicationId,
       Name: '',
@@ -42,7 +45,7 @@ export const useDatabaseConnectionModal = ({
     }
   });
 
-  const { register, handleSubmit, reset, watch, control, formState: { errors, isSubmitting } } = form;
+  const { register, handleSubmit, reset, watch, control, getValues, formState: { errors, isSubmitting } } = form;
   const watchedDbType = watch('Type');
 
   useEffect(() => {
@@ -104,10 +107,64 @@ export const useDatabaseConnectionModal = ({
       }
       
       await onSubmit(submissionData);
+      
+      // Success notification
+      addNotification({
+        title: `Database Connection ${mode === 'edit' ? 'Updated' : 'Created'} Successfully`,
+        message: `${data.Name} has been ${mode === 'edit' ? 'updated' : 'created'} successfully`,
+        type: 'success',
+        source: 'Database Connection',
+        details: `Connection "${data.Name}" for ${data.Type} database has been ${mode === 'edit' ? 'updated' : 'created'} and is ${data.IsActive ? 'active' : 'inactive'}.`,
+        suggestions: [
+          'Test the connection to ensure it works properly',
+          'Configure any additional settings if needed',
+          'Monitor the connection status in the dashboard'
+        ]
+      });
+      
       reset();
       onClose();
     } catch (error) {
       console.error('Error submitting database connection:', error);
+      
+      // Extract error code from the error response
+      let errorCode = 'UNKNOWN_ERROR';
+      let errorMessage = 'Failed to save database connection';
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as any).response;
+        if (response?.data?.ErrorCode) {
+          errorCode = response.data.ErrorCode;
+        } else if (response?.status) {
+          errorCode = `HTTP_${response.status}`;
+        }
+        
+        if (response?.data?.Message) {
+          errorMessage = response.data.Message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        errorCode = 'CLIENT_ERROR';
+      }
+      
+      // Error notification
+      addNotification({
+        title: `Database Connection ${mode === 'edit' ? 'Update' : 'Creation'} Failed (${errorCode})`,
+        message: errorMessage,
+        type: 'error',
+        source: 'Database Connection',
+        details: `Failed to ${mode === 'edit' ? 'update' : 'create'} the database connection "${data.Name}" with error code: ${errorCode}.`,
+        technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nOperation: ${mode === 'edit' ? 'Update' : 'Create'} Database Connection\nConnection Name: ${data.Name}\nDatabase Type: ${data.Type}`,
+        suggestions: [
+          'Verify that all required fields are filled correctly',
+          'Check that the connection name is unique',
+          'Ensure you have permission to create/edit database connections',
+          'Try again in a few moments',
+          'Contact your system administrator if the problem persists'
+        ]
+      });
     }
   };
 
@@ -150,6 +207,7 @@ export const useDatabaseConnectionModal = ({
     handleClose,
     getDatabaseTypeOptions,
     isApiType,
-    isConnectionStringType
+    isConnectionStringType,
+    getValues
   };
 };

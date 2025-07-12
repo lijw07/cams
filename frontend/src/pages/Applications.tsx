@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug, TestTube } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug } from 'lucide-react';
 
 import Pagination from '../components/common/Pagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
@@ -11,11 +11,10 @@ import { useNotifications } from '../contexts/NotificationContext';
 import { applicationService } from '../services/applicationService';
 import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
 
-// Import components for database connections and connection testing
-import ConnectionTestDemo from './ConnectionTestDemo';
+// Import components for database connections
 import DatabaseConnections from './DatabaseConnections';
 
-type TabType = 'applications' | 'connections' | 'testing';
+type TabType = 'applications' | 'connections';
 
 const Applications: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('applications');
@@ -217,12 +216,6 @@ const Applications: React.FC = () => {
       name: 'Database Connections',
       icon: Plug,
       count: null
-    },
-    {
-      id: 'testing' as TabType,
-      name: 'Connection Testing',
-      icon: TestTube,
-      count: null
     }
   ];
 
@@ -410,8 +403,6 @@ const Applications: React.FC = () => {
         );
       case 'connections':
         return <DatabaseConnections />;
-      case 'testing':
-        return <ConnectionTestDemo />;
       default:
         return null;
     }

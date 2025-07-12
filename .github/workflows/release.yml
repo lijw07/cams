@@ -1,0 +1,307 @@
+name: Release Management
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., 1.2.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Is this a pre-release?'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  # Prepare Release
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      changelog: ${{ steps.changelog.outputs.changelog }}
+      
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: Determine Version
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          # Auto-increment version based on commit messages
+          npm install -g semantic-release @semantic-release/changelog @semantic-release/git
+          VERSION=$(npx semantic-release --dry-run --no-ci | grep 'next release version' | sed 's/.*next release version is //')
+          if [ -z "$VERSION" ]; then
+            # If no version determined, increment patch
+            CURRENT=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+            VERSION=$(echo $CURRENT | sed 's/v//' | awk -F. '{$NF = $NF + 1;} 1' | sed 's/ /./g')
+          fi
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+    
+    - name: Generate Changelog
+      id: changelog
+      run: |
+        # Install changelog generator
+        npm install -g conventional-changelog-cli
+        
+        # Generate changelog
+        conventional-changelog -p angular -i CHANGELOG.md -s -r 0
+        
+        # Extract latest changes
+        CHANGELOG=$(sed -n '/^##/,/^##/{/^##/!p;}' CHANGELOG.md | head -n -1)
+        
+        # Save to output
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+  # Build and Test
+  build:
+    name: Build and Test
+    needs: prepare
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Update version in project files
+      run: |
+        VERSION=${{ needs.prepare.outputs.version }}
+        
+        # Update backend version
+        sed -i "s/<Version>.*<\/Version>/<Version>$VERSION<\/Version>/" Backend/cams.csproj
+        
+        # Update frontend version
+        cd frontend
+        npm version $VERSION --no-git-tag-version
+    
+    - name: Build Backend
+      run: |
+        dotnet build --configuration Release
+        dotnet publish --configuration Release --output ./publish
+    
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run build
+    
+    - name: Run Tests
+      run: dotnet test --configuration Release --no-build
+    
+    - name: Create Release Artifacts
+      run: |
+        # Backend artifact
+        cd publish
+        zip -r ../cams-backend-${{ needs.prepare.outputs.version }}.zip .
+        cd ..
+        
+        # Frontend artifact
+        cd frontend/dist
+        zip -r ../../cams-frontend-${{ needs.prepare.outputs.version }}.zip .
+        cd ../..
+    
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: release-artifacts
+        path: |
+          cams-backend-*.zip
+          cams-frontend-*.zip
+
+  # Create GitHub Release
+  release:
+    name: Create Release
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download Artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: release-artifacts
+    
+    - name: Create Git Tag
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git tag -a "v${{ needs.prepare.outputs.version }}" -m "Release v${{ needs.prepare.outputs.version }}"
+        git push origin "v${{ needs.prepare.outputs.version }}"
+    
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ needs.prepare.outputs.version }}
+        name: Release v${{ needs.prepare.outputs.version }}
+        body: |
+          ## What's Changed
+          
+          ${{ needs.prepare.outputs.changelog }}
+          
+          ## Installation
+          
+          ### Docker
+          ```bash
+          docker pull ghcr.io/${{ github.repository }}:${{ needs.prepare.outputs.version }}
+          ```
+          
+          ### Manual Installation
+          Download the artifacts below and follow the [deployment guide](https://github.com/${{ github.repository }}/blob/master/README.md#deployment).
+          
+          ## Full Changelog
+          https://github.com/${{ github.repository }}/compare/v${{ needs.prepare.outputs.previous_version }}...v${{ needs.prepare.outputs.version }}
+        draft: false
+        prerelease: ${{ github.event.inputs.prerelease || false }}
+        files: |
+          cams-backend-*.zip
+          cams-frontend-*.zip
+
+  # Update Docker Images
+  docker:
+    name: Push Docker Images
+    needs: [prepare, build, release]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Build and Push Backend
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: ./Backend/Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository }}/backend:${{ needs.prepare.outputs.version }}
+          ghcr.io/${{ github.repository }}/backend:latest
+        platforms: linux/amd64,linux/arm64
+    
+    - name: Build and Push Frontend
+      uses: docker/build-push-action@v5
+      with:
+        context: ./frontend
+        file: ./frontend/Dockerfile
+        push: true
+        tags: |
+          ghcr.io/${{ github.repository }}/frontend:${{ needs.prepare.outputs.version }}
+          ghcr.io/${{ github.repository }}/frontend:latest
+        platforms: linux/amd64,linux/arm64
+
+  # Update Documentation
+  docs:
+    name: Update Documentation
+    needs: [prepare, release]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Update README badges
+      run: |
+        VERSION=${{ needs.prepare.outputs.version }}
+        sed -i "s/version-[0-9.]*-/version-$VERSION-/" README.md
+    
+    - name: Update CHANGELOG
+      run: |
+        echo "# Changelog" > CHANGELOG.tmp.md
+        echo "" >> CHANGELOG.tmp.md
+        echo "## [v${{ needs.prepare.outputs.version }}] - $(date +%Y-%m-%d)" >> CHANGELOG.tmp.md
+        echo "" >> CHANGELOG.tmp.md
+        echo "${{ needs.prepare.outputs.changelog }}" >> CHANGELOG.tmp.md
+        echo "" >> CHANGELOG.tmp.md
+        
+        if [ -f CHANGELOG.md ]; then
+          tail -n +2 CHANGELOG.md >> CHANGELOG.tmp.md
+        fi
+        
+        mv CHANGELOG.tmp.md CHANGELOG.md
+    
+    - name: Commit Documentation Updates
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "actions@github.com"
+        git add README.md CHANGELOG.md
+        git commit -m "docs: update for v${{ needs.prepare.outputs.version }} release [skip ci]" || true
+        git push
+
+  # Notify
+  notify:
+    name: Send Notifications
+    needs: [prepare, release, docker]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Send Slack Notification
+      if: vars.SLACK_WEBHOOK_URL
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        STATUS="${{ needs.release.result }}"
+        COLOR="good"
+        if [ "$STATUS" != "success" ]; then
+          COLOR="danger"
+        fi
+        
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"attachments\": [{
+              \"color\": \"$COLOR\",
+              \"title\": \"CAMS Release v${{ needs.prepare.outputs.version }}\",
+              \"text\": \"Release status: $STATUS\",
+              \"fields\": [
+                {\"title\": \"Version\", \"value\": \"${{ needs.prepare.outputs.version }}\", \"short\": true},
+                {\"title\": \"Type\", \"value\": \"${{ github.event.inputs.prerelease && 'Pre-release' || 'Production' }}\", \"short\": true},
+                {\"title\": \"Actor\", \"value\": \"${{ github.actor }}\", \"short\": true},
+                {\"title\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"short\": true}
+              ]
+            }]
+          }" \
+          $SLACK_WEBHOOK_URL
+    
+    - name: Create Summary
+      run: |
+        echo "## Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: v${{ needs.prepare.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Type**: ${{ github.event.inputs.prerelease && 'Pre-release' || 'Production Release' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Status**: ${{ needs.release.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Release Notes" >> $GITHUB_STEP_SUMMARY
+        echo "${{ needs.prepare.outputs.changelog }}" >> $GITHUB_STEP_SUMMARY

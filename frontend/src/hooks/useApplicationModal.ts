@@ -41,24 +41,32 @@ export const useApplicationModal = ({
 
   const loadConnections = useCallback(async () => {
     const appId = application?.id;
-    if (!appId) return;
+    console.log('Loading connections for application ID:', appId);
+    if (!appId) {
+      console.log('No application ID provided, skipping connection load');
+      return;
+    }
     try {
       const connectionData = await databaseConnectionService.getConnections(appId);
-      setConnections(connectionData);
+      console.log('Loaded connections from API:', connectionData);
+      
+      // FIXME: Backend API is not properly filtering by application-id parameter
+      // Client-side filtering as backup until backend issue is resolved
+      const filteredConnections = connectionData.filter(connection => connection.ApplicationId === appId);
+      console.log('Filtered connections for app:', filteredConnections);
+      
+      setConnections(filteredConnections);
     } catch (error) {
       console.error('Error loading connections:', error);
     }
   }, [application?.id]);
 
   useEffect(() => {
-    if (mode === 'edit' && isOpen) {
-      if (application?.connections) {
-        setConnections(application.connections);
-      } else if (application?.id) {
-        loadConnections();
-      }
+    if (mode === 'edit' && isOpen && application?.id) {
+      // Always load fresh connections from the API to ensure accuracy
+      loadConnections();
     }
-  }, [mode, application?.id, application?.connections, isOpen, loadConnections]);
+  }, [mode, application?.id, isOpen, loadConnections]);
 
   useEffect(() => {
     if (application) {
@@ -74,6 +82,14 @@ export const useApplicationModal = ({
       });
     }
   }, [application, reset]);
+
+  // Close connection modal when main modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setIsConnectionFormOpen(false);
+      setEditingConnection(null);
+    }
+  }, [isOpen]);
 
   const handleFormSubmit = async (data: ApplicationRequest) => {
     try {
@@ -141,6 +157,9 @@ export const useApplicationModal = ({
 
   const handleConnectionSubmit = async (data: DatabaseConnectionRequest | DatabaseConnectionUpdateRequest) => {
     try {
+      console.log('Connection submit data:', data);
+      console.log('Application ID:', application?.id);
+      
       if (editingConnection) {
         await databaseConnectionService.updateConnection(editingConnection.Id, data as DatabaseConnectionUpdateRequest);
         addNotification({
@@ -158,6 +177,7 @@ export const useApplicationModal = ({
           source: 'Database Connection'
         });
       }
+      console.log('About to reload connections for application:', application?.id);
       loadConnections();
       handleCloseConnectionModal();
     } catch (error) {

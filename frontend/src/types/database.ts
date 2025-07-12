@@ -74,10 +74,20 @@ export interface DatabaseConnection {
 export interface DatabaseConnectionSummary {
   Id: string;
   Name: string;
+  Description?: string;
   TypeName: string;
   IsActive: boolean;
   StatusName: string;
   LastTestedAt?: string;
+  CreatedAt: string;
+  UpdatedAt: string;
+  Type: DatabaseType;
+  Status: ConnectionStatus;
+  Server: string;
+  Port?: number;
+  Database?: string;
+  ApplicationId?: string;
+  ApplicationName?: string;
 }
 
 export interface DatabaseConnectionRequest {

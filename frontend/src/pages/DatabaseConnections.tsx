@@ -51,7 +51,14 @@ const DatabaseConnections: React.FC = () => {
       setConnections(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error loading connections:', error);
-      addNotification('Failed to load database connections', 'error');
+      addNotification({
+        title: 'Loading Error',
+        message: 'Failed to load database connections',
+        type: 'error',
+        source: 'Database Connections',
+        details: 'Unable to retrieve database connections. Please check your network connection and try again.',
+        suggestions: ['Refresh the page', 'Check your network connection', 'Contact support if the issue persists']
+      });
       setConnections([]);
     } finally {
       setLoading(false);
@@ -109,16 +116,41 @@ const DatabaseConnections: React.FC = () => {
 
   // Test connection
   const handleTestConnection = async (id: string) => {
+    const connection = connections.find(c => c.Id === id);
     try {
       const result = await databaseConnectionService.testExistingConnection(id);
       if (result.IsSuccessful) {
-        addNotification('Connection test successful', 'success');
+        addNotification({
+          title: 'Test Successful',
+          message: `Connection test passed for "${connection?.Name || 'connection'}"`,
+          type: 'success',
+          source: 'Database Connections',
+          details: `Successfully connected to the database. Response time: ${result.ResponseTime || 'N/A'}ms`
+        });
       } else {
-        addNotification(`Connection test failed: ${result.Message}`, 'error');
+        addNotification({
+          title: 'Test Failed',
+          message: `Connection test failed for "${connection?.Name || 'connection'}"`,
+          type: 'error',
+          source: 'Database Connections',
+          details: result.Message || 'Unknown connection error occurred',
+          suggestions: [
+            'Verify server address and credentials',
+            'Check if the database server is running',
+            'Review firewall and network settings'
+          ]
+        });
       }
       await loadConnections(); // Refresh to show updated status
     } catch (error) {
-      addNotification('Failed to test connection', 'error');
+      addNotification({
+        title: 'Test Error',
+        message: `Unable to test connection "${connection?.Name || 'connection'}"`,
+        type: 'error',
+        source: 'Database Connections',
+        details: 'An unexpected error occurred while testing the connection.',
+        suggestions: ['Check your network connection', 'Try again in a few moments', 'Verify the connection still exists']
+      });
     }
   };
 
@@ -126,10 +158,24 @@ const DatabaseConnections: React.FC = () => {
   const handleToggleStatus = async (id: string, isActive: boolean) => {
     try {
       await databaseConnectionService.toggleConnectionStatus(id, isActive);
-      addNotification(`Connection ${isActive ? 'activated' : 'deactivated'} successfully`, 'success');
+      const connection = connections.find(c => c.Id === id);
+      addNotification({
+        title: 'Status Updated',
+        message: `Connection "${connection?.Name || 'connection'}" ${isActive ? 'activated' : 'deactivated'} successfully`,
+        type: 'success',
+        source: 'Database Connections',
+        details: `The connection is now ${isActive ? 'active and available for use' : 'deactivated and will not be used by applications'}.`
+      });
       await loadConnections();
     } catch (error) {
-      addNotification('Failed to update connection status', 'error');
+      addNotification({
+        title: 'Status Update Failed',
+        message: 'Failed to update connection status',
+        type: 'error',
+        source: 'Database Connections',
+        details: 'Unable to change the connection status. Please check your permissions and try again.',
+        suggestions: ['Verify you have permission to modify connections', 'Check if the connection exists', 'Try refreshing and attempting again']
+      });
     }
   };
 
@@ -139,10 +185,28 @@ const DatabaseConnections: React.FC = () => {
 
     try {
       await databaseConnectionService.deleteConnection(id);
-      addNotification('Connection deleted successfully', 'success');
+      const connection = connections.find(c => c.Id === id);
+      addNotification({
+        title: 'Connection Deleted',
+        message: `Successfully deleted connection "${connection?.Name || 'connection'}"`,
+        type: 'success',
+        source: 'Database Connections',
+        details: `Database connection "${connection?.Name || 'connection'}" has been permanently removed from the system.`
+      });
       await loadConnections();
     } catch (error) {
-      addNotification('Failed to delete connection', 'error');
+      addNotification({
+        title: 'Delete Failed',
+        message: 'Failed to delete connection',
+        type: 'error',
+        source: 'Database Connections',
+        details: 'Unable to delete the connection. It may be in use by applications or you may not have sufficient permissions.',
+        suggestions: [
+          'Check if the connection is being used by any applications',
+          'Verify you have permission to delete connections',
+          'Try again in a few moments'
+        ]
+      });
     }
   };
 
@@ -152,11 +216,28 @@ const DatabaseConnections: React.FC = () => {
 
     try {
       await databaseConnectionService.bulkToggleStatus(selectedConnections, isActive);
-      addNotification(`${selectedConnections.length} connections ${isActive ? 'activated' : 'deactivated'}`, 'success');
+      addNotification({
+        title: 'Bulk Status Update',
+        message: `${selectedConnections.length} connections ${isActive ? 'activated' : 'deactivated'} successfully`,
+        type: 'success',
+        source: 'Database Connections',
+        details: `${selectedConnections.length} database connections have been ${isActive ? 'activated and are now available for use' : 'deactivated and will no longer be used by applications'}.`
+      });
       setSelectedConnections([]);
       await loadConnections();
     } catch (error) {
-      addNotification('Failed to update connection statuses', 'error');
+      addNotification({
+        title: 'Bulk Update Failed',
+        message: 'Failed to update connection statuses',
+        type: 'error',
+        source: 'Database Connections',
+        details: `Unable to update status for ${selectedConnections.length} connections. Some connections may not have been updated.`,
+        suggestions: [
+          'Verify you have permission to modify connections',
+          'Check if all selected connections still exist',
+          'Try updating connections individually'
+        ]
+      });
     }
   };
 
@@ -166,11 +247,28 @@ const DatabaseConnections: React.FC = () => {
 
     try {
       await databaseConnectionService.bulkDelete(selectedConnections);
-      addNotification(`${selectedConnections.length} connections deleted`, 'success');
+      addNotification({
+        title: 'Bulk Delete',
+        message: `${selectedConnections.length} connections deleted successfully`,
+        type: 'success',
+        source: 'Database Connections',
+        details: `${selectedConnections.length} database connections have been permanently removed from the system.`
+      });
       setSelectedConnections([]);
       await loadConnections();
     } catch (error) {
-      addNotification('Failed to delete connections', 'error');
+      addNotification({
+        title: 'Bulk Delete Failed',
+        message: 'Failed to delete connections',
+        type: 'error',
+        source: 'Database Connections',
+        details: `Unable to delete ${selectedConnections.length} connections. Some connections may still exist.`,
+        suggestions: [
+          'Check if connections are being used by applications',
+          'Verify you have permission to delete connections',
+          'Try deleting connections individually'
+        ]
+      });
     }
   };
 

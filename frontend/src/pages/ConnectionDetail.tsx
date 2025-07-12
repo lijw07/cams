@@ -91,7 +91,13 @@ const ConnectionDetail: React.FC = () => {
         setValue('Id', connectionData.Id);
       } catch (error) {
         console.error('Error loading connection:', error);
-        addNotification('Failed to load connection details', 'error');
+        addNotification({
+          title: 'Error',
+          message: 'Failed to load connection details',
+          type: 'error',
+          source: 'Connection Detail',
+          details: 'Unable to retrieve connection information. Please check if the connection exists and try again.'
+        });
         navigate('/database-connections');
       } finally {
         setLoading(false);
@@ -112,9 +118,27 @@ const ConnectionDetail: React.FC = () => {
       setTestResult(result);
 
       if (result.IsSuccessful) {
-        addNotification('Connection test successful!', 'success');
+        addNotification({
+          title: 'Connection Test Successful',
+          message: `Successfully connected to ${connection?.Name || 'database'}`,
+          type: 'success',
+          source: 'Connection Detail',
+          details: `Connection established to ${supportedTypes[connection?.Type || 0] || 'database'} at ${connection?.Server}. Response time: ${result.ResponseTime || 'N/A'}ms`
+        });
       } else {
-        addNotification(`Connection test failed: ${result.Message}`, 'error');
+        addNotification({
+          title: 'Connection Test Failed',
+          message: `Failed to connect to ${connection?.Name || 'database'}`,
+          type: 'error',
+          source: 'Connection Detail',
+          details: result.Message || 'Unknown connection error occurred',
+          suggestions: [
+            'Verify server address and port are correct',
+            'Check username and password credentials',
+            'Ensure database server is running and accessible',
+            'Verify network connectivity and firewall settings'
+          ]
+        });
       }
 
       // Refresh connection data to get updated status
@@ -122,7 +146,14 @@ const ConnectionDetail: React.FC = () => {
       setConnection(updatedConnection);
     } catch (error) {
       console.error('Error testing connection:', error);
-      addNotification('Failed to test connection', 'error');
+      addNotification({
+        title: 'Test Connection Error',
+        message: 'Unable to test database connection',
+        type: 'error',
+        source: 'Connection Detail',
+        details: 'An unexpected error occurred while testing the connection. Please try again.',
+        suggestions: ['Check your network connection', 'Verify the connection is still valid', 'Try refreshing the page']
+      });
     } finally {
       setTesting(false);
     }
@@ -137,10 +168,27 @@ const ConnectionDetail: React.FC = () => {
       const updatedConnection = await databaseConnectionService.updateConnection(id, data);
       setConnection(updatedConnection);
       setIsEditing(false);
-      addNotification('Connection updated successfully', 'success');
+      addNotification({
+        title: 'Connection Updated',
+        message: `Successfully updated ${connection?.Name || 'database connection'}`,
+        type: 'success',
+        source: 'Connection Detail',
+        details: `Connection "${data.Name}" has been updated with the latest configuration changes.`
+      });
     } catch (error) {
       console.error('Error updating connection:', error);
-      addNotification('Failed to update connection', 'error');
+      addNotification({
+        title: 'Update Failed',
+        message: `Failed to update ${connection?.Name || 'database connection'}`,
+        type: 'error',
+        source: 'Connection Detail',
+        details: 'Unable to save connection changes. Please verify your input and try again.',
+        suggestions: [
+          'Check that all required fields are filled correctly',
+          'Verify server address and credentials are valid',
+          'Ensure you have permission to modify this connection'
+        ]
+      });
     } finally {
       setSaving(false);
     }
@@ -156,11 +204,28 @@ const ConnectionDetail: React.FC = () => {
 
     try {
       await databaseConnectionService.deleteConnection(id);
-      addNotification('Connection deleted successfully', 'success');
+      addNotification({
+        title: 'Connection Deleted',
+        message: `Successfully deleted connection "${connection.Name}"`,
+        type: 'success',
+        source: 'Connection Detail',
+        details: `Database connection "${connection.Name}" has been permanently removed from the system.`
+      });
       navigate('/database-connections');
     } catch (error) {
       console.error('Error deleting connection:', error);
-      addNotification('Failed to delete connection', 'error');
+      addNotification({
+        title: 'Delete Failed',
+        message: `Failed to delete connection "${connection.Name}"`,
+        type: 'error',
+        source: 'Connection Detail',
+        details: 'Unable to delete the connection. It may be in use by applications or you may not have sufficient permissions.',
+        suggestions: [
+          'Check if the connection is being used by any applications',
+          'Verify you have permission to delete this connection',
+          'Try again in a few moments'
+        ]
+      });
     }
   };
 
@@ -172,9 +237,26 @@ const ConnectionDetail: React.FC = () => {
       await databaseConnectionService.toggleConnectionStatus(id, !connection.IsActive);
       const updatedConnection = await databaseConnectionService.getConnection(id);
       setConnection(updatedConnection);
-      addNotification(`Connection ${!connection.IsActive ? 'activated' : 'deactivated'} successfully`, 'success');
+      addNotification({
+        title: 'Status Updated',
+        message: `Connection "${connection.Name}" ${!connection.IsActive ? 'activated' : 'deactivated'} successfully`,
+        type: 'success',
+        source: 'Connection Detail',
+        details: `The connection is now ${!connection.IsActive ? 'active and available for use' : 'deactivated and will not be used by applications'}.`
+      });
     } catch (error) {
-      addNotification('Failed to update connection status', 'error');
+      addNotification({
+        title: 'Status Update Failed',
+        message: `Failed to ${!connection.IsActive ? 'activate' : 'deactivate'} connection "${connection.Name}"`,
+        type: 'error',
+        source: 'Connection Detail',
+        details: 'Unable to change the connection status. Please check your permissions and try again.',
+        suggestions: [
+          'Verify you have permission to modify this connection',
+          'Check if the connection is currently in use',
+          'Try refreshing the page and attempting again'
+        ]
+      });
     }
   };
 

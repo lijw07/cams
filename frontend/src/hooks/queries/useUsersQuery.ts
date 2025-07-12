@@ -93,7 +93,7 @@ export const useCreateUserMutation = () => {
   return useMutation(
     (userData: CreateUserRequest) => usersService.createUser(userData),
     {
-      onSuccess: (newUser) => {
+      onSuccess: (newUser, userData) => {
         // Invalidate and refetch user lists
         queryClient.invalidateQueries(USER_QUERY_KEYS.lists());
         
@@ -101,19 +101,57 @@ export const useCreateUserMutation = () => {
         queryClient.setQueryData(USER_QUERY_KEYS.detail(newUser.Id), newUser);
         
         addNotification({
-          title: 'User Created',
-          message: `User ${newUser.FirstName} ${newUser.LastName} created successfully`,
+          title: 'User Created Successfully',
+          message: `${newUser.FirstName} ${newUser.LastName} has been created successfully`,
           type: 'success',
-          source: 'User Management'
+          source: 'User Management',
+          details: `User "${newUser.Username}" (${newUser.FirstName} ${newUser.LastName}) has been created with email ${newUser.Email}. The user is ${newUser.IsActive ? 'active' : 'inactive'}.`,
+          suggestions: [
+            'Notify the user of their new account credentials',
+            'Assign appropriate roles and permissions',
+            'Add the user to relevant groups or teams',
+            'Monitor user activity in the system logs'
+          ]
         });
       },
-      onError: (error: any) => {
-        const message = error?.message || 'Failed to create user';
+      onError: (error: any, userData) => {
+        // Extract error code from the error response
+        let errorCode = 'UNKNOWN_ERROR';
+        let errorMessage = 'Failed to create user';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = error.response;
+          if (response?.data?.ErrorCode) {
+            errorCode = response.data.ErrorCode;
+          } else if (response?.status) {
+            errorCode = `HTTP_${response.status}`;
+          }
+          
+          if (response?.data?.Message) {
+            errorMessage = response.data.Message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } else if (error?.message) {
+          errorMessage = error.message;
+          errorCode = 'CLIENT_ERROR';
+        }
+        
         addNotification({
-          title: 'Create User Failed',
-          message: message,
+          title: `User Creation Failed (${errorCode})`,
+          message: errorMessage,
           type: 'error',
-          source: 'User Management'
+          source: 'User Management',
+          details: `Failed to create user "${userData.Username}" with error code: ${errorCode}.`,
+          technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nOperation: Create User\nUsername: ${userData.Username}\nEmail: ${userData.Email}`,
+          suggestions: [
+            'Verify that all required fields are filled correctly',
+            'Check that the username and email are unique',
+            'Ensure password meets security requirements',
+            'Verify that you have permission to create users',
+            'Try again in a few moments',
+            'Contact your system administrator if the problem persists'
+          ]
         });
       },
     }
@@ -142,19 +180,57 @@ export const useUpdateUserMutation = () => {
         queryClient.invalidateQueries(USER_QUERY_KEYS.lists());
         
         addNotification({
-          title: 'User Updated',
-          message: `User ${updatedUser.FirstName} ${updatedUser.LastName} updated successfully`,
+          title: 'User Updated Successfully',
+          message: `${updatedUser.FirstName} ${updatedUser.LastName} has been updated successfully`,
           type: 'success',
-          source: 'User Management'
+          source: 'User Management',
+          details: `User "${updatedUser.Username}" (${updatedUser.FirstName} ${updatedUser.LastName}) has been updated. The user is ${updatedUser.IsActive ? 'active' : 'inactive'}.`,
+          suggestions: [
+            'Inform the user of any changes to their account',
+            'Review user permissions and role assignments',
+            'Monitor user activity for any issues',
+            'Update related documentation if needed'
+          ]
         });
       },
-      onError: (error: any) => {
-        const message = error?.message || 'Failed to update user';
+      onError: (error: any, variables) => {
+        // Extract error code from the error response
+        let errorCode = 'UNKNOWN_ERROR';
+        let errorMessage = 'Failed to update user';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = error.response;
+          if (response?.data?.ErrorCode) {
+            errorCode = response.data.ErrorCode;
+          } else if (response?.status) {
+            errorCode = `HTTP_${response.status}`;
+          }
+          
+          if (response?.data?.Message) {
+            errorMessage = response.data.Message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } else if (error?.message) {
+          errorMessage = error.message;
+          errorCode = 'CLIENT_ERROR';
+        }
+        
         addNotification({
-          title: 'Update User Failed',
-          message: message,
+          title: `User Update Failed (${errorCode})`,
+          message: errorMessage,
           type: 'error',
-          source: 'User Management'
+          source: 'User Management',
+          details: `Failed to update user "${variables.userData.Username || variables.userId}" with error code: ${errorCode}.`,
+          technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nOperation: Update User\nUser ID: ${variables.userId}\nUsername: ${variables.userData.Username || 'N/A'}\nEmail: ${variables.userData.Email || 'N/A'}`,
+          suggestions: [
+            'Verify that all required fields are filled correctly',
+            'Check that the username and email are unique (if changed)',
+            'Ensure you have permission to edit this user',
+            'Verify the user exists and is not locked',
+            'Try again in a few moments',
+            'Contact your system administrator if the problem persists'
+          ]
         });
       },
     }
@@ -174,27 +250,65 @@ export const useDeleteUserMutation = () => {
   return useMutation(
     (userId: string) => usersService.deleteUser(userId),
     {
-      onSuccess: (_, userId) => {
+      onSuccess: (deletedUser, userId) => {
         // Remove the user from cache
         queryClient.removeQueries(USER_QUERY_KEYS.detail(userId));
         
         // Invalidate user lists
         queryClient.invalidateQueries(USER_QUERY_KEYS.lists());
         
+        const userName = deletedUser?.Username || deletedUser?.FirstName || 'User';
         addNotification({
-          title: 'User Deleted',
-          message: 'User deleted successfully',
+          title: 'User Deleted Successfully',
+          message: `${userName} has been deleted successfully`,
           type: 'success',
-          source: 'User Management'
+          source: 'User Management',
+          details: `User "${userName}" has been permanently removed from the system. This action cannot be undone.`,
+          suggestions: [
+            'Verify that all user data has been properly archived',
+            'Update any related documentation or team structures',
+            'Review permissions for any shared resources',
+            'Monitor for any system dependencies that may be affected'
+          ]
         });
       },
-      onError: (error: any) => {
-        const message = error?.message || 'Failed to delete user';
+      onError: (error: any, userId) => {
+        // Extract error code from the error response
+        let errorCode = 'UNKNOWN_ERROR';
+        let errorMessage = 'Failed to delete user';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = error.response;
+          if (response?.data?.ErrorCode) {
+            errorCode = response.data.ErrorCode;
+          } else if (response?.status) {
+            errorCode = `HTTP_${response.status}`;
+          }
+          
+          if (response?.data?.Message) {
+            errorMessage = response.data.Message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } else if (error?.message) {
+          errorMessage = error.message;
+          errorCode = 'CLIENT_ERROR';
+        }
+        
         addNotification({
-          title: 'Delete User Failed',
-          message: message,
+          title: `User Deletion Failed (${errorCode})`,
+          message: errorMessage,
           type: 'error',
-          source: 'User Management'
+          source: 'User Management',
+          details: `Failed to delete user with ID "${userId}" with error code: ${errorCode}.`,
+          technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nOperation: Delete User\nUser ID: ${userId}`,
+          suggestions: [
+            'Verify that you have permission to delete users',
+            'Check if the user has any dependencies that prevent deletion',
+            'Ensure the user is not currently logged in or active',
+            'Try again in a few moments',
+            'Contact your system administrator if the problem persists'
+          ]
         });
       },
     }
@@ -225,7 +339,7 @@ export const useBulkUserMutation = () => {
       }
     },
     {
-      onSuccess: (_, variables) => {
+      onSuccess: (result, variables) => {
         // Invalidate all user queries to reflect bulk changes
         queryClient.invalidateQueries(USER_QUERY_KEYS.all);
         
@@ -233,19 +347,57 @@ export const useBulkUserMutation = () => {
                               variables.operation === 'activate' ? 'activated' : 'deactivated';
         
         addNotification({
-          title: 'Bulk Operation Complete',
+          title: 'Bulk Operation Completed Successfully',
           message: `${variables.userIds.length} users ${operationText} successfully`,
           type: 'success',
-          source: 'User Management'
+          source: 'User Management',
+          details: `Bulk ${variables.operation} operation completed for ${variables.userIds.length} user(s). All selected users have been ${operationText}.`,
+          suggestions: [
+            variables.operation === 'delete' ? 'Verify that all user data has been properly archived' : 'Review the updated user statuses',
+            'Update any related documentation or processes',
+            'Monitor for any system dependencies that may be affected',
+            variables.operation !== 'delete' ? 'Inform affected users of their status change' : 'Update team structures as needed'
+          ]
         });
       },
-      onError: (error: any) => {
-        const message = error?.message || 'Bulk operation failed';
+      onError: (error: any, variables) => {
+        // Extract error code from the error response
+        let errorCode = 'UNKNOWN_ERROR';
+        let errorMessage = 'Bulk operation failed';
+        
+        if (error && typeof error === 'object' && 'response' in error) {
+          const response = error.response;
+          if (response?.data?.ErrorCode) {
+            errorCode = response.data.ErrorCode;
+          } else if (response?.status) {
+            errorCode = `HTTP_${response.status}`;
+          }
+          
+          if (response?.data?.Message) {
+            errorMessage = response.data.Message;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+        } else if (error?.message) {
+          errorMessage = error.message;
+          errorCode = 'CLIENT_ERROR';
+        }
+        
         addNotification({
-          title: 'Bulk Operation Failed',
-          message: message,
+          title: `Bulk ${variables.operation.charAt(0).toUpperCase() + variables.operation.slice(1)} Failed (${errorCode})`,
+          message: errorMessage,
           type: 'error',
-          source: 'User Management'
+          source: 'User Management',
+          details: `Failed to ${variables.operation} ${variables.userIds.length} user(s) with error code: ${errorCode}.`,
+          technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nOperation: Bulk ${variables.operation}\nUser Count: ${variables.userIds.length}\nUser IDs: ${variables.userIds.join(', ')}`,
+          suggestions: [
+            'Verify that you have permission to perform bulk operations',
+            'Check if some users have dependencies that prevent the operation',
+            'Try the operation with a smaller batch of users',
+            'Ensure none of the selected users are currently active (for deletion)',
+            'Try again in a few moments',
+            'Contact your system administrator if the problem persists'
+          ]
         });
       },
     }

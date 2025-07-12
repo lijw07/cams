@@ -26,5 +26,10 @@ namespace cams.Backend.Services
         Task<BulkOperationResponse> BulkDeleteAsync(Guid[] connectionIds, Guid userId);
         Task<ConnectionUsageStatsResponse?> GetConnectionUsageStatsAsync(Guid id, Guid userId);
         Task<bool> UpdateLastAccessedAsync(Guid id, Guid userId);
+        
+        // New methods for connection assignment
+        Task<IEnumerable<DatabaseConnectionSummary>> GetUnassignedConnectionsAsync(Guid userId);
+        Task<bool> AssignConnectionToApplicationAsync(Guid connectionId, Guid applicationId, Guid userId);
+        Task<bool> UnassignConnectionFromApplicationAsync(Guid connectionId, Guid userId);
     }
 }

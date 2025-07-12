@@ -15,7 +15,8 @@ services:
       - ./frontend:/app:consistent
       - /app/node_modules
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s

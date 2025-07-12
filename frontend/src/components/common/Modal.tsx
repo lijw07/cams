@@ -52,9 +52,12 @@ const Modal: React.FC<ModalProps> = ({
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
       
-      // Focus the modal container for screen reader announcement
+      // Only focus the modal container if no other element is focused
+      // This prevents stealing focus from input fields
       setTimeout(() => {
-        modalRef.current?.focus();
+        if (!document.activeElement || document.activeElement === document.body) {
+          modalRef.current?.focus();
+        }
       }, 0);
     }
 

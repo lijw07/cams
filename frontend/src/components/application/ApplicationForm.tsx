@@ -11,13 +11,15 @@ interface ApplicationFormProps {
   errors: FieldErrors<ApplicationRequest>;
   isSubmitting: boolean;
   mode: 'create' | 'edit';
+  onClose?: () => void;
 }
 
 export const ApplicationForm: React.FC<ApplicationFormProps> = ({
   register,
   errors,
   isSubmitting,
-  mode
+  mode,
+  onClose
 }) => {
   return (
     <div>
@@ -124,7 +126,17 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({
           </span>
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-4 space-x-3">
+          {onClose && (
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn btn-secondary"
+              disabled={isSubmitting}
+            >
+              Cancel
+            </button>
+          )}
           <button
             type="submit"
             className="btn btn-primary"

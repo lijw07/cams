@@ -871,8 +871,16 @@ public class RoleControllerTests : ControllerTestBase
         var result = await _controller.GetRoleStats(roleId);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        var notFoundResult = result.Should().BeOfType<NotFoundObjectResult>().Subject;
+        notFoundResult.StatusCode.Should().Be(404);
+        notFoundResult.Value.Should().NotBeNull();
+        
+        // The value should contain a message property with "Role not found"
+        var valueType = notFoundResult.Value.GetType();
+        var messageProperty = valueType.GetProperty("message");
+        messageProperty.Should().NotBeNull();
+        var message = messageProperty!.GetValue(notFoundResult.Value) as string;
+        message.Should().Be("Role not found");
     }
 
     #endregion
@@ -923,8 +931,16 @@ public class RoleControllerTests : ControllerTestBase
         var result = await _controller.AssignUsersToRole(roleId, request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        var badRequestResult = result.Should().BeOfType<BadRequestObjectResult>().Subject;
+        badRequestResult.StatusCode.Should().Be(400);
+        badRequestResult.Value.Should().NotBeNull();
+        
+        // The value should contain a message property with "Failed to assign users to role"
+        var valueType = badRequestResult.Value.GetType();
+        var messageProperty = valueType.GetProperty("message");
+        messageProperty.Should().NotBeNull();
+        var message = messageProperty!.GetValue(badRequestResult.Value) as string;
+        message.Should().Be("Failed to assign users to role");
     }
 
     [Fact]

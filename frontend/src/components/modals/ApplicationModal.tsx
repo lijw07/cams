@@ -1,11 +1,10 @@
 import React from 'react';
 
-import { X } from 'lucide-react';
-
 import { useApplicationModal } from '../../hooks/useApplicationModal';
 import { ApplicationRequest } from '../../types';
 import { ApplicationConnections } from '../application/ApplicationConnections';
 import { ApplicationForm } from '../application/ApplicationForm';
+import Modal from '../common/Modal';
 
 import DatabaseConnectionModal from './DatabaseConnectionModal';
 
@@ -50,25 +49,12 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen p-4">
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-          onClick={onClose}
-        />
-
-        <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {mode === 'create' ? 'Create New Application' : 'Edit Application'}
-            </h2>
-            <button
-              onClick={onClose}
-              className="p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={mode === 'create' ? 'Create New Application' : 'Edit Application'}
+      size="xl"
+    >
 
           <div className="grid grid-cols-2 gap-6">
             <form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -77,16 +63,22 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
                 errors={errors}
                 isSubmitting={isSubmitting}
                 mode={mode}
+                onClose={onClose}
               />
             </form>
 
             <ApplicationConnections
+              applicationId={application?.id}
               connections={connections}
               mode={mode}
               onAddConnection={() => setIsConnectionFormOpen(true)}
               onEditConnection={handleEditConnection}
               onToggleStatus={toggleConnectionStatus}
               onDeleteConnection={handleDeleteConnection}
+              onConnectionAssigned={() => {
+                // Refresh connections after assignment
+                window.location.reload(); // Simple refresh for now
+              }}
             />
           </div>
 
@@ -101,9 +93,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
               mode={editingConnection ? 'edit' : 'create'}
             />
           )}
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 };
 
