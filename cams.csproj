@@ -11,18 +11,19 @@
     <ItemGroup>
         <PackageReference Include="Azure.Identity" Version="1.11.4" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.10" />
-        <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.5" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10">
           <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
           <PrivateAssets>all</PrivateAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.10" />
         <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
         <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="7.1.2" />
         <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.1.2" />
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
         <PackageReference Include="MailKit" Version="4.13.0" />
         <PackageReference Include="MimeKit" Version="4.13.0" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+        <PackageReference Include="MySql.Data" Version="8.3.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
         <PackageReference Include="NCrontab" Version="3.3.3" />
@@ -34,6 +35,16 @@
         <Content Remove="Cams.Tests\**" />
         <EmbeddedResource Remove="Cams.Tests\**" />
         <None Remove="Cams.Tests\**" />
+        <Compile Remove="PostgreSQLConnectionTester\**" />
+        <Content Remove="PostgreSQLConnectionTester\**" />
+        <EmbeddedResource Remove="PostgreSQLConnectionTester\**" />
+        <None Remove="PostgreSQLConnectionTester\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Backend\PostgreSQLConnectionTester\obj\Debug\net8.0\PostgreSQLConnectionTester.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="Backend\PostgreSQLConnectionTester\obj\PostgreSQLConnectionTester.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="Backend\PostgreSQLConnectionTester\obj\project.assets.json" />
     </ItemGroup>
 
 </Project>

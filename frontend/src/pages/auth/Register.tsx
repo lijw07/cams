@@ -8,16 +8,10 @@ import { Database, Eye, EyeOff, Loader2, CheckCircle } from 'lucide-react';
 import SEOHead from '../../components/SEO/SEOHead';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { authService } from '../../services/authService';
+import { RegisterRequest } from '../../types/auth';
 
-interface RegisterFormData {
-  Username: string;
-  Email: string;
-  Password: string;
-  ConfirmPassword: string;
-  FirstName: string;
-  LastName: string;
-  PhoneNumber?: string;
-}
+// Use the existing type from auth types
+type RegisterFormData = RegisterRequest;
 
 const Register: React.FC = () => {
   const navigate = useNavigate();

@@ -11,8 +11,7 @@ namespace cams.Backend.Model
         [Required]
         public Guid UserId { get; set; }
 
-        [Required]
-        public Guid ApplicationId { get; set; }
+        public Guid? ApplicationId { get; set; }
 
         [Required]
         [StringLength(100)]
@@ -69,6 +68,6 @@ namespace cams.Backend.Model
         public virtual User User { get; set; } = null!;
 
         [ForeignKey("ApplicationId")]
-        public virtual Application Application { get; set; } = null!;
+        public virtual Application? Application { get; set; }
     }
 }

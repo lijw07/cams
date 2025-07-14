@@ -13,9 +13,9 @@ services:
       - VITE_PROXY_TARGET=http://backend:8080
     volumes:
       - ./frontend:/app:consistent
-      - /app/node_modules
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000"]
       interval: 30s
@@ -41,9 +41,9 @@ services:
       - DOTNET_MODIFIABLE_ASSEMBLIES=Debug
       # Database Configuration
       - DB_HOST=db
-      - DB_PORT=1433
+      - DB_PORT=5432
       - DB_NAME=CamsDb
-      - DB_USER=sa
+      - DB_USER=postgres
       - DB_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
       # JWT Configuration
       - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-super-secret-jwt-key-that-is-at-least-32-characters-long!}
@@ -85,18 +85,18 @@ services:
     restart: unless-stopped
 
   db:
-    image: mcr.microsoft.com/mssql/server:2022-latest
+    image: postgres:16-alpine
     container_name: "${COMPOSE_PROJECT_NAME:-cams}-database"
     environment:
-      - ACCEPT_EULA=Y
-      - SA_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
-      - MSSQL_PID=Express
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${DB_PASSWORD:-YourStrong!Passw0rd}
+      - POSTGRES_DB=CamsDb
     ports:
-      - "1433:1433"
+      - "5432:5432"
     volumes:
-      - sql_data:/var/opt/mssql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$SA_PASSWORD\" -Q \"SELECT 1\" -C -l 30"]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 15s
       timeout: 10s
       retries: 10
@@ -113,8 +113,8 @@ networks:
     name: "${COMPOSE_PROJECT_NAME:-cams}-network"
 
 volumes:
-  sql_data:
-    name: "${COMPOSE_PROJECT_NAME:-cams}-sql-data"
+  postgres_data:
+    name: "${COMPOSE_PROJECT_NAME:-cams}-postgres-data"
   backend_cache:
     name: "${COMPOSE_PROJECT_NAME:-cams}-backend-cache"
   backend_bin:

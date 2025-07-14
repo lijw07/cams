@@ -5,10 +5,10 @@ import { Link } from 'react-router-dom';
 
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
-interface LoginFormData {
-  Username: string;
-  Password: string;
-}
+import { LoginRequest } from '../../types/auth';
+
+// Use the existing LoginRequest type
+type LoginFormData = LoginRequest;
 
 interface LoginFormProps {
   register: UseFormRegister<LoginFormData>;

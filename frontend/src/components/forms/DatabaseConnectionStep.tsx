@@ -20,6 +20,8 @@ interface DatabaseConnectionStepProps {
   isConnectionStringType: () => boolean;
   isCloudPlatform: () => boolean;
   testResult: { success: boolean; message: string } | null;
+  handleTestConnection?: () => Promise<void>;
+  isTestingConnection?: boolean;
 }
 
 const DatabaseConnectionStep: React.FC<DatabaseConnectionStepProps> = ({
@@ -33,7 +35,9 @@ const DatabaseConnectionStep: React.FC<DatabaseConnectionStepProps> = ({
   isApiType,
   isConnectionStringType,
   isCloudPlatform,
-  testResult
+  testResult,
+  handleTestConnection,
+  isTestingConnection
 }) => {
   return (
     <div className="space-y-4">

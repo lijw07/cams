@@ -15,7 +15,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user, logout } = useAuth();
-  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification, clearAllNotifications, handleNotificationClick } = useNotifications();
   const navigate = useNavigate();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [notificationMenuOpen, setNotificationMenuOpen] = useState(false);
@@ -39,13 +39,9 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
     }
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id);
+  const onNotificationClick = (notification: Notification) => {
+    handleNotificationClick(notification);
     setNotificationMenuOpen(false);
-    
-    if (notification.actionUrl) {
-      navigate(notification.actionUrl);
-    }
   };
 
   const getNotificationIcon = (type: Notification['type']) => {
@@ -193,7 +189,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                         className={`p-4 border-b border-secondary-100 dark:border-secondary-700 last:border-b-0 cursor-pointer hover:bg-secondary-50 dark:hover:bg-secondary-700 ${
                           !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                         }`}
-                        onClick={() => handleNotificationClick(notification)}
+                        onClick={() => onNotificationClick(notification)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex items-start space-x-3 flex-1">

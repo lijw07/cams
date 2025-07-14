@@ -1,4 +1,11 @@
+import type { components } from '../types/api.generated';
 import { apiService } from './api';
+
+// Type aliases for generated types
+type CreateUserRequest = components['schemas']['CreateUserRequest'];
+type UpdateUserRequest = components['schemas']['UpdateUserRequest'];
+type UserRoleAssignmentRequest = components['schemas']['UserRoleAssignmentRequest'];
+type ResetPasswordRequest = components['schemas']['ResetPasswordRequest'];
 
 export interface PaginationRequest extends Record<string, unknown> {
   PageNumber: number;
@@ -36,32 +43,6 @@ export interface UserManagement {
   DatabaseConnectionCount: number;
 }
 
-export interface CreateUserRequest {
-  Username: string;
-  Email: string;
-  Password: string;
-  FirstName?: string;
-  LastName?: string;
-  PhoneNumber?: string;
-  IsActive: boolean;
-  SendWelcomeEmail?: boolean;
-  RoleIds?: string[];
-}
-
-export interface UpdateUserRequest {
-  Id: string;
-  Username: string;
-  Email: string;
-  FirstName?: string;
-  LastName?: string;
-  PhoneNumber?: string;
-  IsActive: boolean;
-}
-
-export interface UserRoleAssignment {
-  UserId: string;
-  RoleIds: string[];
-}
 
 export const usersService = {
   // User management CRUD
@@ -111,20 +92,21 @@ export const usersService = {
     return apiService.get(`/management/users/${id}/roles`);
   },
 
-  async assignRoles(data: UserRoleAssignment): Promise<{ message: string }> {
+  async assignRoles(data: UserRoleAssignmentRequest): Promise<{ message: string }> {
     return apiService.post('/management/users/assign-roles', data);
   },
 
-  async removeRoles(data: UserRoleAssignment): Promise<{ message: string }> {
+  async removeRoles(data: UserRoleAssignmentRequest): Promise<{ message: string }> {
     return apiService.post('/management/users/remove-roles', data);
   },
 
   async updateUserRoles(userId: string, roleIds: string[]): Promise<{ message: string }> {
     // Use the assign-roles endpoint to update user roles
-    return apiService.post('/management/users/assign-roles', { 
+    const request: UserRoleAssignmentRequest = { 
       UserId: userId, 
       RoleIds: roleIds 
-    });
+    };
+    return apiService.post('/management/users/assign-roles', request);
   },
 
   // User statistics
@@ -142,10 +124,11 @@ export const usersService = {
     newPassword: string;
     sendEmailNotification: boolean;
   }): Promise<{ message: string }> {
-    return apiService.post(`/management/users/${id}/reset-password`, {
+    const request: ResetPasswordRequest = {
       NewPassword: data.newPassword,
       SendEmailNotification: data.sendEmailNotification
-    });
+    };
+    return apiService.post(`/management/users/${id}/reset-password`, request);
   },
 
   async forcePasswordChange(id: string): Promise<{ message: string }> {
@@ -187,3 +170,6 @@ export const usersService = {
     });
   },
 };
+
+// Export types for use in components
+export type { CreateUserRequest, UpdateUserRequest, UserRoleAssignmentRequest, ResetPasswordRequest };

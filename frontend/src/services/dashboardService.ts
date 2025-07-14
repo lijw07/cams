@@ -2,6 +2,7 @@ import { applicationService } from './applicationService';
 import { roleService } from './roleService';
 import { usersService } from './usersService';
 
+// Dashboard-specific types
 export interface DashboardStats {
   totalUsers: number;
   totalApplications: number;

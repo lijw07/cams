@@ -1,6 +1,13 @@
-import { ConnectionTestSchedule, ConnectionTestScheduleRequest } from '../types';
+import type { components } from '../types/api.generated';
+import type { ConnectionTestSchedule } from '../types/application';
 
 import { apiService } from './api';
+
+// Type aliases for cleaner code
+type ConnectionTestScheduleRequest = components['schemas']['ConnectionTestScheduleRequest'];
+
+// Re-export types for component usage
+export type { ConnectionTestSchedule, ConnectionTestScheduleRequest };
 
 export const connectionTestScheduleService = {
   // Get all schedules

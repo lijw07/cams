@@ -37,12 +37,6 @@ const EditUser = lazy(() => import('./pages/management/EditUser'));
 const RoleManagement = lazy(() => import('./pages/management/RoleManagement'));
 const BulkMigration = lazy(() => import('./pages/migration/BulkMigration'));
 
-// Database Connection pages (lazy load)
-const DatabaseConnections = lazy(() => import('./pages/DatabaseConnections'));
-const CreateConnection = lazy(() => import('./pages/CreateConnection'));
-const ConnectionDetail = lazy(() => import('./pages/ConnectionDetail'));
-const ConnectionTestDemo = lazy(() => import('./pages/ConnectionTestDemo'));
-
 // Log pages (platform admin only - lazy load)
 const AuditLogs = lazy(() => import('./pages/logs/AuditLogs'));
 const SystemLogs = lazy(() => import('./pages/logs/SystemLogs'));
@@ -132,12 +126,6 @@ const App: React.FC = () => {
           <Route path="applications" element={<Applications />} />
           <Route path="applications/:id" element={<ApplicationDetail />} />
           
-          {/* Database Connection routes */}
-          <Route path="database-connections" element={<DatabaseConnections />} />
-          <Route path="database-connections/create" element={<CreateConnection />} />
-          <Route path="database-connections/:id" element={<ConnectionDetail />} />
-          <Route path="connection-test-demo" element={<ConnectionTestDemo />} />
-          
           {/* Profile routes */}
           <Route path="profile" element={<Profile />} />
           <Route path="settings" element={<Settings />} />
@@ -150,11 +138,6 @@ const App: React.FC = () => {
           
           {/* Migration routes */}
           <Route path="migration" element={<BulkMigration />} />
-          
-          {/* Legacy redirects for database connections - redirect to applications page */}
-          <Route path="database-connections" element={<Navigate to="/applications" replace />} />
-          <Route path="database-connections/*" element={<Navigate to="/applications" replace />} />
-          <Route path="connection-test-demo" element={<Navigate to="/applications" replace />} />
           
           {/* Log routes */}
           <Route path="logs/audit" element={<AuditLogs />} />

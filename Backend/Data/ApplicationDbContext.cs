@@ -32,8 +32,8 @@ namespace cams.Backend.Data
                 entity.Property(e => e.FirstName).HasMaxLength(100);
                 entity.Property(e => e.LastName).HasMaxLength(100);
                 entity.Property(e => e.PhoneNumber).HasMaxLength(20);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // Role entity configuration
@@ -43,8 +43,8 @@ namespace cams.Backend.Data
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(50);
                 entity.HasIndex(e => e.Name).IsUnique();
                 entity.Property(e => e.Description).HasMaxLength(255);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // UserRole entity configuration
@@ -52,7 +52,7 @@ namespace cams.Backend.Data
             {
                 entity.HasKey(e => e.Id);
                 entity.HasIndex(e => new { e.UserId, e.RoleId }).IsUnique();
-                entity.Property(e => e.AssignedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.AssignedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationships
                 entity.HasOne(e => e.User)
@@ -80,8 +80,8 @@ namespace cams.Backend.Data
                 entity.Property(e => e.Version).HasMaxLength(50);
                 entity.Property(e => e.Environment).HasMaxLength(200);
                 entity.Property(e => e.Tags).HasMaxLength(500);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
@@ -104,8 +104,8 @@ namespace cams.Backend.Data
                 entity.Property(e => e.ApiBaseUrl).HasMaxLength(500);
                 entity.Property(e => e.ApiKey).HasMaxLength(255);
                 entity.Property(e => e.AdditionalSettings).HasMaxLength(1000);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationships - avoid multiple cascade paths
                 entity.HasOne(e => e.User)
@@ -131,7 +131,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.IpAddress).IsRequired().HasMaxLength(45);
                 entity.Property(e => e.UserAgent).HasMaxLength(500);
-                entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.Timestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.Severity).HasMaxLength(20).HasDefaultValue("Information");
 
                 // Configure relationship with User
@@ -155,7 +155,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.IpAddress).HasMaxLength(45);
                 entity.Property(e => e.RequestPath).HasMaxLength(100);
                 entity.Property(e => e.HttpMethod).HasMaxLength(10);
-                entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.Timestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.MachineName).HasMaxLength(100);
                 entity.Property(e => e.ProcessId).HasMaxLength(100);
                 entity.Property(e => e.ThreadId).HasMaxLength(100);
@@ -182,7 +182,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.SessionId).HasMaxLength(100);
                 entity.Property(e => e.Resource).HasMaxLength(100);
                 entity.Property(e => e.Metadata).HasMaxLength(1000);
-                entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.Timestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.Severity).HasMaxLength(20).HasDefaultValue("Information");
                 entity.Property(e => e.FailureReason).HasMaxLength(500);
 
@@ -208,7 +208,7 @@ namespace cams.Backend.Data
                 entity.Property(e => e.PerformanceLevel).HasMaxLength(50).HasDefaultValue("Normal");
                 entity.Property(e => e.Metadata).HasMaxLength(1000);
                 entity.Property(e => e.AlertTrigger).HasMaxLength(500);
-                entity.Property(e => e.Timestamp).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.Timestamp).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationship with User
                 entity.HasOne(e => e.User)
@@ -224,8 +224,8 @@ namespace cams.Backend.Data
                 entity.Property(e => e.CronExpression).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.LastRunStatus).HasMaxLength(20);
                 entity.Property(e => e.LastRunMessage).HasMaxLength(1000);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationship with Application
                 entity.HasOne(e => e.Application)

@@ -1,19 +1,34 @@
-import {
+import type {
   AuditLog,
   SystemLog,
   SecurityLog,
   PerformanceLog,
   LogsResponse,
-  mapPaginatedToLegacy,
   AuditLogFilters,
   SystemLogFilters,
   SecurityLogFilters,
   PerformanceLogFilters,
   LogStatistics,
   LogTrends
-} from '../types';
+} from '../types/logs';
+import { mapPaginatedToLegacy } from '../types/logs';
 
 import { apiService as api } from './api';
+
+// Re-export types for component usage
+export type {
+  AuditLog,
+  SystemLog,
+  SecurityLog,
+  PerformanceLog,
+  LogsResponse,
+  AuditLogFilters,
+  SystemLogFilters,
+  SecurityLogFilters,
+  PerformanceLogFilters,
+  LogStatistics,
+  LogTrends
+};
 
 class LogService {
   // Audit Logs

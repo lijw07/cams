@@ -96,6 +96,16 @@ namespace cams.Backend.Helpers
                           DatabaseType.GraphQL or
                           DatabaseType.WebSocket;
         }
+
+        /// <summary>
+        /// Gets the database type name (alias for GetDisplayName for backward compatibility)
+        /// </summary>
+        /// <param name="type">The database type</param>
+        /// <returns>Human-readable type name</returns>
+        public static string GetDatabaseTypeName(DatabaseType type)
+        {
+            return GetDisplayName(type);
+        }
     }
 
     public class DatabaseTypeInfo

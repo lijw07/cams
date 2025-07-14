@@ -1,0 +1,249 @@
+name: Deploy to Production
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+          - development
+
+env:
+  DOCKER_REGISTRY: ghcr.io
+  DOCKER_IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # Prepare Release
+  prepare-release:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_notes: ${{ steps.release_notes.outputs.notes }}
+    
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    
+    - name: Get version
+      id: version
+      run: |
+        if [[ $GITHUB_REF == refs/tags/* ]]; then
+          VERSION=${GITHUB_REF#refs/tags/}
+        else
+          VERSION="manual-$(date +%Y%m%d-%H%M%S)"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+    
+    - name: Generate release notes
+      id: release_notes
+      run: |
+        # Generate release notes based on commits since last tag
+        LAST_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+        if [ -n "$LAST_TAG" ]; then
+          NOTES=$(git log --pretty=format:"- %s" $LAST_TAG..HEAD)
+        else
+          NOTES="Initial release"
+        fi
+        echo "notes<<EOF" >> $GITHUB_OUTPUT
+        echo "$NOTES" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+  # Deploy Backend
+  deploy-backend:
+    name: Deploy Backend
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    permissions:
+      contents: read
+      packages: write
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.DOCKER_REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Deploy to Kubernetes
+      id: deploy
+      if: vars.DEPLOY_METHOD == 'kubernetes'
+      run: |
+        # This is a placeholder for Kubernetes deployment
+        # In a real scenario, you would:
+        # 1. Setup kubectl with credentials
+        # 2. Update deployment manifest with new image tag
+        # 3. Apply the manifest
+        echo "Deploying backend version ${{ needs.prepare-release.outputs.version }} to Kubernetes"
+        echo "url=https://api.cams.example.com" >> $GITHUB_OUTPUT
+    
+    - name: Deploy to Docker Swarm
+      if: vars.DEPLOY_METHOD == 'swarm'
+      run: |
+        # Deploy using Docker Swarm
+        echo "Deploying backend to Docker Swarm"
+        # docker service update --image ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_IMAGE_NAME }}:${{ needs.prepare-release.outputs.version }}-backend cams-backend
+    
+    - name: Deploy to VM with Docker Compose
+      if: vars.DEPLOY_METHOD == 'compose'
+      env:
+        DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+      run: |
+        # Deploy using Docker Compose over SSH
+        echo "Deploying to VM with Docker Compose"
+        # Setup SSH key and deploy
+        # ssh $DEPLOY_USER@$DEPLOY_HOST "cd /opt/cams && docker-compose pull && docker-compose up -d"
+    
+    - name: Run database migrations
+      run: |
+        echo "Running database migrations..."
+        # In production, you might run migrations as a Kubernetes job or separate container
+    
+    - name: Health check
+      run: |
+        echo "Performing health check..."
+        # curl -f ${{ steps.deploy.outputs.url }}/health || exit 1
+
+  # Deploy Frontend
+  deploy-frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: prepare-release
+    permissions:
+      contents: read
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+      url: ${{ steps.deploy.outputs.url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+    
+    - name: Build Frontend
+      working-directory: ./frontend
+      run: |
+        npm ci
+        npm run build
+      env:
+        VITE_APP_API_URL: ${{ vars.API_URL }}
+        VITE_APP_ENV: ${{ github.event.inputs.environment || 'production' }}
+        VITE_APP_VERSION: ${{ needs.prepare-release.outputs.version }}
+    
+    - name: Deploy to S3/CloudFront
+      id: deploy
+      if: vars.FRONTEND_DEPLOY_METHOD == 's3'
+      env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ vars.AWS_REGION }}
+        S3_BUCKET: ${{ vars.S3_BUCKET }}
+        CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+      run: |
+        # Deploy to S3 and invalidate CloudFront
+        aws s3 sync frontend/dist s3://$S3_BUCKET --delete
+        aws cloudfront create-invalidation --distribution-id $CLOUDFRONT_DISTRIBUTION_ID --paths "/*"
+        echo "url=https://${{ vars.FRONTEND_DOMAIN }}" >> $GITHUB_OUTPUT
+    
+    - name: Deploy to Netlify
+      if: vars.FRONTEND_DEPLOY_METHOD == 'netlify'
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ vars.NETLIFY_SITE_ID }}
+      run: |
+        npx netlify-cli deploy --prod --dir=frontend/dist
+    
+    - name: Deploy to GitHub Pages
+      if: vars.FRONTEND_DEPLOY_METHOD == 'pages'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./frontend/dist
+        cname: ${{ vars.FRONTEND_DOMAIN }}
+
+  # Post-deployment tasks
+  post-deployment:
+    name: Post Deployment
+    runs-on: ubuntu-latest
+    needs: [prepare-release, deploy-backend, deploy-frontend]
+    if: success()
+    permissions:
+      contents: write
+      actions: read
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create GitHub Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v1
+      with:
+        body: ${{ needs.prepare-release.outputs.release_notes }}
+        draft: false
+        prerelease: false
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Notify Slack
+      if: vars.SLACK_WEBHOOK_URL
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{\"text\":\"🚀 CAMS ${{ needs.prepare-release.outputs.version }} deployed to ${{ github.event.inputs.environment || 'production' }}\"}" \
+          $SLACK_WEBHOOK_URL
+    
+    - name: Update deployment status
+      run: |
+        echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "- **Version**: ${{ needs.prepare-release.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Environment**: ${{ github.event.inputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend**: ${{ needs.deploy-backend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: ${{ needs.deploy-frontend.result }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Release Notes" >> $GITHUB_STEP_SUMMARY
+        echo "${{ needs.prepare-release.outputs.release_notes }}" >> $GITHUB_STEP_SUMMARY
+
+  # Rollback job (manual trigger)
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: failure() && github.event_name == 'workflow_dispatch'
+    needs: [deploy-backend, deploy-frontend]
+    permissions:
+      contents: none
+    
+    steps:
+    - name: Rollback to previous version
+      run: |
+        echo "Rolling back deployment..."
+        # Implement rollback logic here
+        # This could involve:
+        # - Reverting Kubernetes deployments
+        # - Restoring previous Docker images
+        # - Reverting database migrations
+        # - Clearing CDN caches

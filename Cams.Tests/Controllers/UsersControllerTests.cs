@@ -7,6 +7,7 @@ using cams.Backend.View;
 using cams.Backend.Model;
 using Cams.Tests.Builders;
 using Cams.Tests.Fixtures;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Cams.Tests.Controllers;
 
@@ -30,6 +31,32 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
             _loggingServiceMock.Object,
             _loggerMock.Object);
     }
+    
+    private IServiceProvider CreateServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(_roleServiceMock.Object);
+        services.AddSingleton(_loggerMock.Object);
+        services.AddSingleton(_loggingServiceMock.Object);
+        services.AddSingleton<ILogger<cams.Backend.Attributes.RequireRoleAttribute>>(new Mock<ILogger<cams.Backend.Attributes.RequireRoleAttribute>>().Object);
+        return services.BuildServiceProvider();
+    }
+    
+    private void SetupDefaultRoleAuthorization(Guid userId, params string[] allowedRoles)
+    {
+        // Setup default to return false for all roles
+        _roleServiceMock
+            .Setup(x => x.UserHasRoleAsync(It.IsAny<Guid>(), It.IsAny<string>()))
+            .ReturnsAsync(false);
+            
+        // Then setup specific roles to return true for any user (including the one used by the attribute)
+        foreach (var role in allowedRoles)
+        {
+            _roleServiceMock
+                .Setup(x => x.UserHasRoleAsync(It.IsAny<Guid>(), role))
+                .ReturnsAsync(true);
+        }
+    }
 
     #region GetUsers Tests
 
@@ -38,7 +65,11 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        
+        // Setup role authorization BEFORE creating the controller context
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
+        
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         // Create test users
         var user1 = UserBuilder.Create().WithId(Guid.NewGuid()).WithUsername("user1").Build();
@@ -49,13 +80,6 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
 
         var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(true);
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Admin"))
-            .ReturnsAsync(false);
-
         // Act
         var result = await _controller.GetUsers(request);
 
@@ -65,7 +89,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         paginatedResult.Data.Should().HaveCount(2);
         paginatedResult.Pagination.TotalItems.Should().Be(2);
 
-        _roleServiceMock.Verify(x => x.UserHasRoleAsync(userId, "Platform_Admin"), Times.Once);
+        _roleServiceMock.Verify(x => x.UserHasRoleAsync(It.IsAny<Guid>(), "PlatformAdmin"), Times.AtLeastOnce);
     }
 
     [Fact]
@@ -73,7 +97,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         // Create test users with roles
         var user1 = UserBuilder.Create().WithId(Guid.NewGuid()).WithUsername("user1").Build();
@@ -87,11 +111,13 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
 
         var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
+        // Setup role authorization for the RequireRole attribute and controller checks
+        // Admin role should return true, PlatformAdmin should return false
         _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
+            .Setup(x => x.UserHasRoleAsync(It.IsAny<Guid>(), "PlatformAdmin"))
             .ReturnsAsync(false);
         _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Admin"))
+            .Setup(x => x.UserHasRoleAsync(It.IsAny<Guid>(), "Admin"))
             .ReturnsAsync(true);
 
         // Act
@@ -110,16 +136,12 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(false);
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Admin"))
-            .ReturnsAsync(false);
+        // Setup role authorization - no roles, should result in Forbid
+        SetupDefaultRoleAuthorization(userId);
 
         // Act
         var result = await _controller.GetUsers(request);
@@ -133,7 +155,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var user1 = UserBuilder.Create().WithUsername("john.doe").WithEmail("john@example.com").Build();
         var user2 = UserBuilder.Create().WithUsername("jane.smith").WithEmail("jane@example.com").Build();
@@ -143,9 +165,8 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
 
         var request = new PaginationRequest { PageNumber = 1, PageSize = 10, SearchTerm = "john" };
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(true);
+        // Setup role authorization for the RequireRole attribute and controller checks
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         var result = await _controller.GetUsers(request);
@@ -162,12 +183,12 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
         _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
+            .Setup(x => x.UserHasRoleAsync(It.IsAny<Guid>(), "PlatformAdmin"))
             .ThrowsAsync(new Exception("Database error"));
 
         // Act
@@ -188,15 +209,17 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).WithUsername("testuser").Build();
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(true);
+        // Setup role authorization for the RequireRole attribute and controller checks
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         var result = await _controller.GetUserById(targetUserId);
@@ -214,11 +237,13 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(true);
+        // Setup role authorization for the RequireRole attribute and controller checks
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         var result = await _controller.GetUserById(targetUserId);
@@ -233,14 +258,13 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(false);
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Admin"))
-            .ReturnsAsync(false);
+        // Setup role authorization - no roles, should result in Forbid
+        SetupDefaultRoleAuthorization(userId);
 
         // Act
         var result = await _controller.GetUserById(targetUserId);
@@ -258,7 +282,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var request = new CreateUserRequest
         {
@@ -289,7 +316,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var existingUser = UserBuilder.Create().WithUsername("existinguser").WithEmail("existing@example.com").Build();
         _context.Users.Add(existingUser);
@@ -306,8 +336,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.CreateUser(request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
@@ -315,7 +344,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var existingUser = UserBuilder.Create().WithUsername("existinguser").WithEmail("existing@example.com").Build();
         _context.Users.Add(existingUser);
@@ -332,8 +364,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.CreateUser(request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
@@ -341,7 +372,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         // Dispose the context to cause an exception
         await _context.DisposeAsync();
@@ -371,7 +402,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).WithUsername("olduser").WithEmail("old@example.com").Build();
         _context.Users.Add(user);
@@ -405,8 +439,15 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     public async Task UpdateUser_WithInvalidModelState_ReturnsBadRequest()
     {
         // Arrange
+        var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
         _controller.ModelState.AddModelError("Username", "Username is required");
+
+        // Mock the role check for RequireRole attribute
+        _roleServiceMock
+            .Setup(x => x.UserHasRoleAsync(userId, It.IsAny<string>()))
+            .ReturnsAsync(true);
 
         var request = new UpdateUserRequest();
 
@@ -414,8 +455,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.UpdateUser(targetUserId, request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
@@ -424,7 +464,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var request = new UpdateUserRequest
         {
@@ -436,8 +479,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.UpdateUser(targetUserId, request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -446,7 +488,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user1 = UserBuilder.Create().WithId(targetUserId).WithUsername("user1").WithEmail("user1@example.com").Build();
         var user2 = UserBuilder.Create().WithUsername("user2").WithEmail("user2@example.com").Build();
@@ -463,8 +508,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.UpdateUser(targetUserId, request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     #endregion
@@ -477,7 +521,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).WithUsername("userToDelete").Build();
         _context.Users.Add(user);
@@ -501,14 +548,16 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         var result = await _controller.DeleteUser(targetUserId);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -516,7 +565,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var user = UserBuilder.Create().WithId(userId).WithUsername("currentuser").Build();
         _context.Users.Add(user);
@@ -526,8 +575,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.DeleteUser(userId);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(400);
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]
@@ -536,7 +584,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).WithUsername("userToDelete").Build();
         var role = RoleBuilder.Create().WithName("TestRole").Build();
@@ -570,7 +621,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).WithActive(true).Build();
         _context.Users.Add(user);
@@ -597,7 +651,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var request = new ToggleUserStatusRequest { IsActive = false };
 
@@ -605,8 +662,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.ToggleUserStatus(targetUserId, request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     #endregion
@@ -619,7 +675,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).Build();
         var role1 = RoleBuilder.Create().WithName("Role1").Build();
@@ -655,7 +714,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var request = new UserRoleAssignmentRequest
         {
@@ -667,8 +729,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.AssignRoles(request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     [Fact]
@@ -677,7 +738,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).Build();
         var oldRole = RoleBuilder.Create().WithName("OldRole").Build();
@@ -713,7 +777,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).Build();
         var role1 = RoleBuilder.Create().WithName("Role1").Build();
@@ -756,7 +823,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).Build();
         _context.Users.Add(user);
@@ -782,14 +852,16 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         var result = await _controller.GetUserStats(targetUserId);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     #endregion
@@ -802,7 +874,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).WithPasswordHash("oldPasswordHash").Build();
         _context.Users.Add(user);
@@ -829,7 +904,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var request = new ResetPasswordRequest { NewPassword = "NewStrongPassword123!" };
 
@@ -837,8 +915,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         var result = await _controller.ResetUserPassword(targetUserId, request);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     #endregion
@@ -851,7 +928,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var user = UserBuilder.Create().WithId(targetUserId).Build();
         _context.Users.Add(user);
@@ -871,14 +951,16 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         var result = await _controller.ForcePasswordChange(targetUserId);
 
         // Assert
-        var objectResult = result.Should().BeOfType<ObjectResult>().Subject;
-        objectResult.StatusCode.Should().Be(404);
+        result.Should().BeOfType<NotFoundObjectResult>();
     }
 
     #endregion
@@ -890,7 +972,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var user1 = UserBuilder.Create().WithActive(true).Build();
         var user2 = UserBuilder.Create().WithActive(true).Build();
@@ -922,7 +1004,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var currentUser = UserBuilder.Create().WithId(userId).WithActive(true).Build();
         var otherUser = UserBuilder.Create().WithActive(true).Build();
@@ -954,7 +1036,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var user1 = UserBuilder.Create().Build();
         var user2 = UserBuilder.Create().Build();
@@ -985,7 +1067,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var currentUser = UserBuilder.Create().WithId(userId).WithActive(true).Build();
         var otherUser = UserBuilder.Create().WithActive(true).Build();
@@ -1020,7 +1102,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var user1 = UserBuilder.Create().WithUsername("john.doe").WithEmail("john@example.com").Build();
         var user2 = UserBuilder.Create().WithUsername("jane.smith").WithEmail("jane@example.com").Build();
@@ -1041,7 +1123,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var activeUser = UserBuilder.Create().WithActive(true).Build();
         var inactiveUser = UserBuilder.Create().WithActive(false).Build();
@@ -1062,7 +1144,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         // Dispose the context to cause an exception
         await _context.DisposeAsync();
@@ -1085,7 +1167,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         var userRoles = new List<UserRoleResponse>
         {
@@ -1114,7 +1199,10 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
         // Arrange
         var userId = Guid.NewGuid();
         var targetUserId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
+        
+        // Setup role authorization for the RequireRole attribute
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         _roleServiceMock
             .Setup(x => x.GetUserRolesAsync(targetUserId))
@@ -1137,13 +1225,12 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var request = new PaginationRequest { PageNumber = 1, PageSize = 10 };
 
-        _roleServiceMock
-            .Setup(x => x.UserHasRoleAsync(userId, "Platform_Admin"))
-            .ReturnsAsync(true);
+        // Setup role authorization for the RequireRole attribute and controller checks
+        SetupDefaultRoleAuthorization(userId, "PlatformAdmin");
 
         // Act
         await _controller.GetUsers(request);
@@ -1170,7 +1257,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var request = new CreateUserRequest
         {
@@ -1225,7 +1312,7 @@ public class UsersControllerTests : ControllerTestBase, IClassFixture<DatabaseFi
     {
         // Arrange
         var userId = Guid.NewGuid();
-        _controller.ControllerContext = CreateControllerContext(userId);
+        _controller.ControllerContext = CreateControllerContextWithServices(userId, CreateServiceProvider());
 
         var request = new CreateUserRequest
         {

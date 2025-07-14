@@ -49,6 +49,23 @@ const RoleModal: React.FC<RoleModalProps> = ({
     }
   }, [role, mode, reset]);
 
+  // Handle escape key to close modal
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleEscapeKey);
+    };
+  }, [isOpen, onClose]);
+
   const handleFormSubmit = async (data: CreateRoleRequest | UpdateRoleRequest) => {
     try {
       await onSubmit(data);
@@ -66,7 +83,6 @@ const RoleModal: React.FC<RoleModalProps> = ({
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div 
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-          onClick={onClose}
         />
 
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>

@@ -1,75 +1,96 @@
-# Git
-.git
-.gitignore
-README.md
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
 
-# Docker
-Dockerfile
+# Visual Studio 2019/2022 cache/options directory
+.vs/
+
+# Visual Studio Code
+.vscode/
+
+# JetBrains Rider
+.idea/
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Benchmark Results
+BenchmarkDotNet.Artifacts/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Files built by Visual Studio
+*_i.c
+*_p.c
+*_h.h
+*.ilk
+*.meta
+*.obj
+*.iobj
+*.pch
+*.pdb
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+# Ignore the PostgreSQL connection tester project
+PostgreSQLConnectionTester/
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+LICENSE
+
+# Docker files themselves
+Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# .NET
-bin/
-obj/
-out/
-publish/
-.vs/
-.vscode/
-*.user
-*.suo
-*.cache
-*.tmp
-*.log
-.dotnet/
-.nuget/
+# Frontend node_modules (if accidentally copied)
+frontend/node_modules/
 
-# Node.js
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm
-.yarn-integrity
-build/
-dist/
-.cache/
-
-# Frontend folder (has its own Dockerfile)
-frontend/
-
-# IDE
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
+# MacOS
 .DS_Store
-Thumbs.db
 
-# Environment files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
-logs/
-*.log
-
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Testing
-coverage/
+# Test results
 TestResults/
-test-results.xml
-
-# Keep these (do not ignore)
-!CLAUDE.md
-!/Migrations
-!/frontend/dist/
+*.trx
+*.coverage
+*.coveragexml

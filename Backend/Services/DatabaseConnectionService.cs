@@ -1,4 +1,6 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
+using System.Data.SqlClient;
+using MySql.Data.MySqlClient;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
@@ -9,6 +11,7 @@ using cams.Backend.View;
 using cams.Backend.Enums;
 using cams.Backend.Data;
 using Backend.Helpers;
+using cams.Backend.Helpers;
 
 namespace cams.Backend.Services
 {
@@ -48,11 +51,14 @@ namespace cams.Backend.Services
 
         public async Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, Guid userId)
         {
-            // Validate that the user has access to the specified application
-            var hasAccess = await applicationService.ValidateApplicationAccessAsync(request.ApplicationId, userId);
-            if (!hasAccess)
+            // Validate that the user has access to the specified application (if provided)
+            if (request.ApplicationId.HasValue)
             {
-                throw new UnauthorizedAccessException("User does not have access to the specified application");
+                var hasAccess = await applicationService.ValidateApplicationAccessAsync(request.ApplicationId.Value, userId);
+                if (!hasAccess)
+                {
+                    throw new UnauthorizedAccessException("User does not have access to the specified application");
+                }
             }
 
             var connection = new DatabaseConnection
@@ -185,7 +191,7 @@ namespace cams.Backend.Services
                     };
                 }
 
-                var testResult = await PerformConnectionTestAsync(connection, connectionDetails);
+                var testResult = await PerformConnectionTestAsync(connection, connectionDetails, userId);
 
                 if (connection != null)
                 {
@@ -290,7 +296,7 @@ namespace cams.Backend.Services
             return reader.ReadToEnd();
         }
 
-        private async Task<DatabaseConnectionTestResponse> PerformConnectionTestAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request)
+        private async Task<DatabaseConnectionTestResponse> PerformConnectionTestAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, Guid userId)
         {
             var startTime = DateTime.UtcNow;
 
@@ -301,18 +307,13 @@ namespace cams.Backend.Services
                 switch (dbType)
                 {
                     case DatabaseType.SqlServer:
-                        return await TestSqlServerConnectionAsync(connection, request, startTime);
-                    case DatabaseType.MySQL:
+                        return await TestSqlServerConnectionAsync(connection, request, startTime, userId);
                     case DatabaseType.PostgreSQL:
-                        return new DatabaseConnectionTestResponse
-                        {
-                            IsSuccessful = false,
-                            Message = $"Testing for {dbType} is not currently supported",
-                            TestedAt = DateTime.UtcNow,
-                            ResponseTime = DateTime.UtcNow - startTime
-                        };
+                        return await TestPostgreSQLConnectionAsync(connection, request, startTime, userId);
+                    case DatabaseType.MySQL:
+                        return await TestMySQLConnectionAsync(connection, request, startTime, userId);
                     case DatabaseType.RestApi:
-                        return await TestApiConnectionAsync(connection, request, startTime);
+                        return await TestApiConnectionAsync(connection, request, startTime, userId);
                     default:
                         return new DatabaseConnectionTestResponse
                         {
@@ -325,6 +326,11 @@ namespace cams.Backend.Services
             }
             catch (Exception ex)
             {
+                var dbType = connection?.Type ?? request?.Type ?? DatabaseType.SqlServer;
+                var connectionName = connection?.Name ?? request?.Name ?? "Unknown";
+                
+                logger.LogError(ex, "Connection test failed for {ConnectionName} ({DatabaseType})", connectionName, dbType);
+                
                 return new DatabaseConnectionTestResponse
                 {
                     IsSuccessful = false,
@@ -336,9 +342,13 @@ namespace cams.Backend.Services
             }
         }
 
-        private async Task<DatabaseConnectionTestResponse> TestSqlServerConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime)
+        private async Task<DatabaseConnectionTestResponse> TestSqlServerConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime, Guid userId)
         {
             var connectionString = GetConnectionString(connection, request);
+            var connectionName = connection?.Name ?? request?.Name ?? "Unknown";
+            var server = connection?.Server ?? request?.Server ?? "Unknown";
+
+            logger.LogInformation("User {UserId} testing SQL Server connection {ConnectionName} to server {Server}", userId, connectionName, server);
 
             using var sqlConnection = new SqlConnection(connectionString);
             await sqlConnection.OpenAsync();
@@ -346,6 +356,9 @@ namespace cams.Backend.Services
             var command = sqlConnection.CreateCommand();
             command.CommandText = "SELECT 1";
             var result = await command.ExecuteScalarAsync();
+
+            logger.LogInformation("SQL Server connection test successful for user {UserId}, connection {ConnectionName} on {Server}", 
+                userId, connectionName, sqlConnection.DataSource);
 
             return new DatabaseConnectionTestResponse
             {
@@ -361,8 +374,75 @@ namespace cams.Backend.Services
             };
         }
 
+        private async Task<DatabaseConnectionTestResponse> TestPostgreSQLConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime, Guid userId)
+        {
+            var connectionString = GetConnectionString(connection, request);
+            var connectionName = connection?.Name ?? request?.Name ?? "Unknown";
+            var server = connection?.Server ?? request?.Server ?? "Unknown";
 
-        private async Task<DatabaseConnectionTestResponse> TestApiConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime)
+            logger.LogInformation("User {UserId} testing PostgreSQL connection {ConnectionName} to server {Server}", userId, connectionName, server);
+
+            using var pgConnection = new NpgsqlConnection(connectionString);
+            await pgConnection.OpenAsync();
+
+            var command = pgConnection.CreateCommand();
+            command.CommandText = "SELECT version()";
+            var version = await command.ExecuteScalarAsync();
+
+            logger.LogInformation("PostgreSQL connection test successful for user {UserId}, connection {ConnectionName} on {Server}:{Port}", 
+                userId, connectionName, pgConnection.Host, pgConnection.Port);
+
+            return new DatabaseConnectionTestResponse
+            {
+                IsSuccessful = true,
+                Message = "PostgreSQL connection successful",
+                TestedAt = DateTime.UtcNow,
+                ResponseTime = DateTime.UtcNow - startTime,
+                AdditionalInfo = new Dictionary<string, object>
+                {
+                    {"ServerVersion", pgConnection.ServerVersion},
+                    {"PostgreSQLVersion", version?.ToString() ?? "Unknown"},
+                    {"Database", pgConnection.Database ?? ""},
+                    {"Host", pgConnection.Host},
+                    {"Port", pgConnection.Port}
+                }
+            };
+        }
+
+        private async Task<DatabaseConnectionTestResponse> TestMySQLConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime, Guid userId)
+        {
+            var connectionString = GetConnectionString(connection, request);
+            var connectionName = connection?.Name ?? request?.Name ?? "Unknown";
+            var server = connection?.Server ?? request?.Server ?? "Unknown";
+
+            logger.LogInformation("User {UserId} testing MySQL connection {ConnectionName} to server {Server}", userId, connectionName, server);
+
+            using var mysqlConnection = new MySqlConnection(connectionString);
+            await mysqlConnection.OpenAsync();
+
+            var command = mysqlConnection.CreateCommand();
+            command.CommandText = "SELECT VERSION()";
+            var version = await command.ExecuteScalarAsync();
+
+            logger.LogInformation("MySQL connection test successful for user {UserId}, connection {ConnectionName} on {Server}", 
+                userId, connectionName, mysqlConnection.DataSource);
+
+            return new DatabaseConnectionTestResponse
+            {
+                IsSuccessful = true,
+                Message = "MySQL connection successful",
+                TestedAt = DateTime.UtcNow,
+                ResponseTime = DateTime.UtcNow - startTime,
+                AdditionalInfo = new Dictionary<string, object>
+                {
+                    {"ServerVersion", version?.ToString() ?? "Unknown"},
+                    {"Database", mysqlConnection.Database},
+                    {"ServerInfo", mysqlConnection.ServerThread.ToString()}
+                }
+            };
+        }
+
+        private async Task<DatabaseConnectionTestResponse> TestApiConnectionAsync(DatabaseConnection? connection, DatabaseConnectionRequest? request, DateTime startTime, Guid userId)
         {
             var baseUrl = connection?.ApiBaseUrl ?? request?.ApiBaseUrl;
             var apiKey = connection?.ApiKey != null ? DecryptSensitiveData(connection.ApiKey) : request?.ApiKey;
@@ -415,15 +495,47 @@ namespace cams.Backend.Services
 
         private string BuildConnectionStringWithValidation(DatabaseConnectionRequest request)
         {
-            var builder = new SqlConnectionStringBuilder
+            switch (request.Type)
             {
-                DataSource = request.Server,
-                InitialCatalog = request.Database,
-                UserID = request.Username,
-                Password = request.Password
-            };
+                case DatabaseType.PostgreSQL:
+                    var pgBuilder = new NpgsqlConnectionStringBuilder
+                    {
+                        Host = request.Server,
+                        Database = request.Database,
+                        Username = request.Username,
+                        Password = request.Password,
+                        Port = request.Port ?? 5432
+                    };
+                    return pgBuilder.ConnectionString;
 
-            return builder.ConnectionString;
+                case DatabaseType.SqlServer:
+                    var sqlBuilder = new SqlConnectionStringBuilder
+                    {
+                        DataSource = request.Port.HasValue 
+                            ? $"{request.Server},{request.Port}" 
+                            : request.Server,
+                        InitialCatalog = request.Database,
+                        UserID = request.Username,
+                        Password = request.Password,
+                        TrustServerCertificate = true,
+                        Encrypt = true
+                    };
+                    return sqlBuilder.ConnectionString;
+
+                case DatabaseType.MySQL:
+                    var mysqlBuilder = new MySqlConnectionStringBuilder
+                    {
+                        Server = request.Server,
+                        Database = request.Database,
+                        UserID = request.Username,
+                        Password = request.Password,
+                        Port = (uint)(request.Port ?? 3306)
+                    };
+                    return mysqlBuilder.ConnectionString;
+
+                default:
+                    throw new NotSupportedException($"Database type {request.Type} is not supported for connection string building");
+            }
         }
 
         private DatabaseConnectionResponse MapToResponse(DatabaseConnection connection, bool includeSensitiveData = false)
@@ -432,7 +544,7 @@ namespace cams.Backend.Services
             {
                 Id = connection.Id,
                 ApplicationId = connection.ApplicationId,
-                ApplicationName = connection.Application?.Name ?? $"App-{connection.ApplicationId}",
+                ApplicationName = connection.Application?.Name ?? (connection.ApplicationId.HasValue ? $"App-{connection.ApplicationId}" : null),
                 Name = connection.Name,
                 Description = connection.Description,
                 Type = connection.Type,
@@ -479,12 +591,13 @@ namespace cams.Backend.Services
                 switch (databaseType)
                 {
                     case DatabaseType.SqlServer:
-                        var builder = new SqlConnectionStringBuilder(connectionString);
-                        components.Server = builder.DataSource;
-                        components.Database = builder.InitialCatalog;
-                        components.Username = builder.UserID;
-                        components.UseIntegratedSecurity = builder.IntegratedSecurity;
-                        components.ConnectionTimeout = builder.ConnectTimeout;
+                    case DatabaseType.PostgreSQL:
+                        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+                        components.Server = builder.Host;
+                        components.Database = builder.Database;
+                        components.Username = builder.Username;
+                        components.UseIntegratedSecurity = false;
+                        components.ConnectionTimeout = builder.Timeout;
                         components.CommandTimeout = builder.CommandTimeout;
                         break;
                     default:
@@ -718,6 +831,86 @@ namespace cams.Backend.Services
                 return false;
 
             connection.LastAccessedAt = DateTime.UtcNow;
+            connection.UpdatedAt = DateTime.UtcNow;
+
+            await context.SaveChangesAsync();
+
+            return true;
+        }
+
+        public async Task<IEnumerable<DatabaseConnectionSummary>> GetUnassignedConnectionsAsync(Guid userId)
+        {
+            var connections = await context.DatabaseConnections
+                .Include(c => c.Application)
+                .Where(c => c.UserId == userId && !c.ApplicationId.HasValue)
+                .OrderBy(c => c.Name)
+                .Select(c => new DatabaseConnectionSummary
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    Type = c.Type,
+                    TypeName = DatabaseTypeHelper.GetDatabaseTypeName(c.Type),
+                    Server = c.Server,
+                    Port = c.Port,
+                    Database = c.Database,
+                    IsActive = c.IsActive,
+                    Status = c.Status,
+                    StatusName = c.Status.ToString(),
+                    LastTestedAt = c.LastTestedAt,
+                    CreatedAt = c.CreatedAt,
+                    UpdatedAt = c.UpdatedAt,
+                    ApplicationId = c.ApplicationId,
+                    ApplicationName = null // No application assigned
+                })
+                .ToListAsync();
+
+            return connections;
+        }
+
+        public async Task<bool> AssignConnectionToApplicationAsync(Guid connectionId, Guid applicationId, Guid userId)
+        {
+            using var transaction = await context.Database.BeginTransactionAsync();
+            try
+            {
+                // Verify user owns the connection
+                var connection = await context.DatabaseConnections
+                    .FirstOrDefaultAsync(c => c.Id == connectionId && c.UserId == userId);
+
+                if (connection == null)
+                    return false;
+
+                // Verify user has access to the application  
+                var hasAppAccess = await applicationService.ValidateApplicationAccessAsync(applicationId, userId);
+                if (!hasAppAccess)
+                    return false;
+
+                // Assign the connection to the application
+                connection.ApplicationId = applicationId;
+                connection.UpdatedAt = DateTime.UtcNow;
+
+                await context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                return false;
+            }
+        }
+
+        public async Task<bool> UnassignConnectionFromApplicationAsync(Guid connectionId, Guid userId)
+        {
+            var connection = await context.DatabaseConnections
+                .FirstOrDefaultAsync(c => c.Id == connectionId && c.UserId == userId);
+
+            if (connection == null)
+                return false;
+
+            // Remove the application assignment
+            connection.ApplicationId = null;
             connection.UpdatedAt = DateTime.UtcNow;
 
             await context.SaveChangesAsync();

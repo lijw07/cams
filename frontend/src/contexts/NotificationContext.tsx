@@ -3,6 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Notification, NotificationContextType } from '../types';
+import NotificationDetailsModal from '../components/modals/NotificationDetailsModal';
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
@@ -20,6 +21,8 @@ interface NotificationProviderProps {
 
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selectedNotification, setSelectedNotification] = useState<Notification | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const navigate = useNavigate();
 
   // Load notifications from localStorage on mount
@@ -81,15 +84,29 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
 
   const unreadCount = notifications.filter(notif => !notif.isRead).length;
 
+  // Show notification details modal
+  const showNotificationDetails = (notification: Notification) => {
+    console.log('showNotificationDetails called for:', notification.title);
+    setSelectedNotification(notification);
+    setIsDetailsModalOpen(true);
+    markAsRead(notification.id);
+  };
+
   // Helper function to handle notification click with navigation
   const handleNotificationClick = (notification: Notification) => {
-    // Mark as read
-    markAsRead(notification.id);
+    console.log('handleNotificationClick called with:', {
+      id: notification.id,
+      title: notification.title,
+      hasDetails: !!notification.details,
+      hasTechnical: !!notification.technical,
+      hasSuggestions: !!notification.suggestions?.length,
+      suggestions: notification.suggestions,
+      source: notification.source
+    });
     
-    // Navigate to action URL if provided
-    if (notification.actionUrl) {
-      navigate(notification.actionUrl);
-    }
+    // Always show the notification details modal when clicked
+    console.log('Showing notification details modal');
+    showNotificationDetails(notification);
   };
 
   const value: NotificationContextType = {
@@ -101,17 +118,18 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     removeNotification: deleteNotification,
     deleteNotification,
     clearAllNotifications,
-  };
-
-  // Add the handleNotificationClick function to the context
-  const extendedValue = {
-    ...value,
+    showNotificationDetails,
     handleNotificationClick,
   };
 
   return (
-    <NotificationContext.Provider value={extendedValue as any}>
+    <NotificationContext.Provider value={value}>
       {children}
+      <NotificationDetailsModal
+        isOpen={isDetailsModalOpen}
+        onClose={() => setIsDetailsModalOpen(false)}
+        notification={selectedNotification}
+      />
     </NotificationContext.Provider>
   );
 };

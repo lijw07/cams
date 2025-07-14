@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 
 import { ApplicationWithConnectionRequest, DatabaseType } from '../types';
+import { useNotifications } from '../contexts/NotificationContext';
 
 import { useApplicationForm } from './useApplicationForm';
 import { useConnectionTesting } from './useConnectionTesting';
@@ -24,6 +25,7 @@ export const useApplicationWithConnectionRefactored = ({
   onClose 
 }: UseApplicationWithConnectionProps) => {
   const [selectedDbType, setSelectedDbType] = useState<DatabaseType>(DatabaseType.SqlServer);
+  const { addNotification } = useNotifications();
   
   // Use composed hooks
   const form = useApplicationForm();
@@ -77,11 +79,68 @@ export const useApplicationWithConnectionRefactored = ({
       };
       
       await onSubmit(submissionData);
+      
+      // Success notification
+      addNotification({
+        title: 'Application with Connection Created Successfully',
+        message: `${data.ApplicationName} with ${dbUtils.getDatabaseTypeName(selectedDbType)} connection has been created`,
+        type: 'success',
+        source: 'Application Management',
+        details: `Application "${data.ApplicationName}" has been created with a ${dbUtils.getDatabaseTypeName(selectedDbType)} database connection "${data.ConnectionName}". The application is ${data.IsApplicationActive ? 'active' : 'inactive'} and the connection is ${data.IsConnectionActive ? 'active' : 'inactive'}.`,
+        suggestions: [
+          'Test the database connection to ensure it works properly',
+          'Configure application settings and dependencies',
+          'Set up monitoring and logging for the new application',
+          'Assign appropriate user permissions and roles'
+        ]
+      });
+      
       form.reset();
       wizard.resetSteps();
       onClose();
     } catch (error) {
-      // Error is handled by the parent component
+      console.error('Error submitting application with connection:', error);
+      
+      // Extract error code from the error response
+      let errorCode = 'UNKNOWN_ERROR';
+      let errorMessage = 'Failed to create application with connection';
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as any).response;
+        if (response?.data?.ErrorCode) {
+          errorCode = response.data.ErrorCode;
+        } else if (response?.status) {
+          errorCode = `HTTP_${response.status}`;
+        }
+        
+        if (response?.data?.Message) {
+          errorMessage = response.data.Message;
+        } else if (error instanceof Error) {
+          errorMessage = error.message;
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+        errorCode = 'CLIENT_ERROR';
+      }
+      
+      // Error notification
+      addNotification({
+        title: `Application Creation Failed (${errorCode})`,
+        message: errorMessage,
+        type: 'error',
+        source: 'Application Management',
+        details: `Failed to create application "${data.ApplicationName}" with ${dbUtils.getDatabaseTypeName(selectedDbType)} connection "${data.ConnectionName}" with error code: ${errorCode}.`,
+        technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nOperation: Create Application with Connection\nApplication Name: ${data.ApplicationName}\nConnection Name: ${data.ConnectionName}\nDatabase Type: ${dbUtils.getDatabaseTypeName(selectedDbType)}`,
+        suggestions: [
+          'Verify that all required fields are filled correctly',
+          'Check that the application name is unique',
+          'Ensure the database connection parameters are valid',
+          'Test the database connection before creating the application',
+          'Verify that you have permission to create applications',
+          'Try again in a few moments',
+          'Contact your system administrator if the problem persists'
+        ]
+      });
     }
   };
 

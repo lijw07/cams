@@ -24,6 +24,7 @@ export const useApplicationWithConnection = ({
   const { addNotification } = useNotifications();
 
   const form = useForm<ApplicationWithConnectionRequest>({
+    mode: 'onSubmit',  // Only validate when form is submitted
     defaultValues: {
       ApplicationName: '',
       ApplicationDescription: '',
@@ -56,29 +57,17 @@ export const useApplicationWithConnection = ({
     control,
     clearErrors,
     trigger,
+    getValues,
     formState: { errors, isSubmitting }
   } = form;
 
   const watchedDbType = watch('DatabaseType');
-  const watchedServer = watch('Server');
-  const watchedPort = watch('Port');
-  const watchedDatabase = watch('Database');
-  const watchedUsername = watch('Username');
-  const watchedPassword = watch('Password');
-  const watchedConnectionString = watch('ConnectionString');
-  const watchedApiBaseUrl = watch('ApiBaseUrl');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
+    // Only clear test result when database type changes, not on every field change
     setTestResult(null);
   }, [watchedDbType]);
-
-  // Clear test result when connection form data changes
-  useEffect(() => {
-    if (currentStep === 2) {
-      setTestResult(null);
-    }
-  }, [watchedServer, watchedPort, watchedDatabase, watchedUsername, watchedPassword, watchedConnectionString, watchedApiBaseUrl, currentStep]);
 
   // Clear errors when modal opens
   useEffect(() => {
@@ -131,9 +120,20 @@ export const useApplicationWithConnection = ({
   };
 
   const handleTestConnection = async () => {
-    const formData = watch();
+    const formData = getValues();
+    console.log('Form data for test connection:', formData);
     setIsTestingConnection(true);
     setTestResult(null);
+
+    // Show immediate notification that test is starting
+    addNotification({
+      title: 'Testing Connection',
+      message: 'Attempting to connect to the database...',
+      type: 'info',
+      source: 'Database Connection',
+      details: 'This process may take a few seconds depending on your network and database configuration.',
+      isPersistent: true
+    });
 
     try {
       let testData;
@@ -142,65 +142,130 @@ export const useApplicationWithConnection = ({
         addNotification({
           title: 'Connection Test Unavailable',
           message: 'Connection testing not available for custom connection strings',
-          type: 'error',
-          source: 'Database Connection'
+          type: 'warning',
+          source: 'Database Connection',
+          details: 'Custom connection strings cannot be validated automatically for security reasons.',
+          suggestions: [
+            'Test your connection string manually using a database client',
+            'Ensure the connection string format is correct for your database type',
+            'Contact your database administrator to verify the connection details'
+          ]
         });
         setIsTestingConnection(false);
         return;
       } else if (isCloudPlatform()) {
         testData = {
-          DatabaseType: formData.DatabaseType,
-          Server: formData.Server || formData.ApiBaseUrl || '',
-          Database: formData.Database || '',
-          Username: formData.Username || formData.ClientId || '',
-          Password: formData.Password || formData.ClientSecret || formData.ApiKey || ''
+          ConnectionDetails: {
+            ApplicationId: '', // Will be set by backend if needed
+            Name: formData.ConnectionName || 'Test Connection',
+            Description: formData.ConnectionDescription,
+            Type: formData.DatabaseType,
+            Server: formData.Server || formData.ApiBaseUrl || '',
+            Database: formData.Database || '',
+            Username: formData.Username || formData.ClientId || '',
+            Password: formData.Password || formData.ClientSecret || formData.ApiKey || '',
+            IsActive: true
+          }
         };
       } else if (isApiType()) {
         testData = {
-          DatabaseType: formData.DatabaseType,
-          Server: formData.ApiBaseUrl || '',
-          ApiKey: formData.ApiKey || '',
-          Username: formData.Username || '',
-          Password: formData.Password || ''
+          ConnectionDetails: {
+            ApplicationId: '', // Will be set by backend if needed
+            Name: formData.ConnectionName || 'Test Connection',
+            Description: formData.ConnectionDescription,
+            Type: formData.DatabaseType,
+            Server: formData.ApiBaseUrl || '',
+            ApiKey: formData.ApiKey || '',
+            ApiBaseUrl: formData.ApiBaseUrl || '',
+            Username: formData.Username || '',
+            Password: formData.Password || '',
+            IsActive: true
+          }
         };
       } else {
         testData = {
-          DatabaseType: formData.DatabaseType,
-          Server: formData.Server || '',
-          Database: formData.Database || '',
-          Username: formData.Username || '',
-          Password: formData.Password || '',
-          Port: formData.Port
+          ConnectionDetails: {
+            ApplicationId: '', // Will be set by backend if needed
+            Name: formData.ConnectionName || 'Test Connection',
+            Description: formData.ConnectionDescription,
+            Type: formData.DatabaseType,
+            Server: formData.Server || '',
+            Port: formData.Port,
+            Database: formData.Database || '',
+            Username: formData.Username || '',
+            Password: formData.Password || '',
+            IsActive: true
+          }
         };
       }
 
+      console.log('Test data being sent:', testData);
       const result = await databaseConnectionService.testConnection(testData);
+      console.log('Test result:', result);
       
       if (result.IsSuccessful) {
         setTestResult({ success: true, message: result.Message || 'Connection successful!' });
         addNotification({
           title: 'Connection Test Successful',
-          message: 'Database connection test passed!',
+          message: 'Successfully connected to the database',
           type: 'success',
-          source: 'Database Connection'
+          source: 'Database Connection',
+          details: `Connection established in ${result.Duration || 'unknown'} ms. ${result.AdditionalInfo ? JSON.stringify(result.AdditionalInfo) : ''}`,
+          suggestions: [
+            'You can now proceed to create the application with this connection',
+            'Test the connection periodically to ensure it remains accessible'
+          ]
         });
       } else {
-        setTestResult({ success: false, message: result.Message || 'Connection failed' });
+        // Extract error code from result
+        const errorCode = result.ErrorCode || 'UNKNOWN_ERROR';
+        const errorMessage = result.Message || 'Connection failed';
+        
+        setTestResult({ success: false, message: errorMessage });
         addNotification({
-          title: 'Connection Test Failed',
-          message: `Connection test failed: ${result.Message}`,
+          title: `Connection Test Failed (${errorCode})`,
+          message: errorMessage,
           type: 'error',
-          source: 'Database Connection'
+          source: 'Database Connection',
+          details: `The connection test failed with error code: ${errorCode}. Please verify your connection parameters and try again.`,
+          technical: `Error Code: ${errorCode}\nError Message: ${errorMessage}\nError Details: ${result.ErrorDetails || 'No additional error details available'}`,
+          suggestions: [
+            'Verify that the server address and port are correct',
+            'Check that the database name exists',
+            'Ensure your username and password are valid',
+            'Verify that the database server is running and accessible',
+            'Check firewall settings that might block the connection'
+          ]
         });
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Connection test failed';
+      
+      // Try to extract error code from the error response
+      let errorCode = 'NETWORK_ERROR';
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as any).response;
+        if (response?.data?.ErrorCode) {
+          errorCode = response.data.ErrorCode;
+        } else if (response?.status) {
+          errorCode = `HTTP_${response.status}`;
+        }
+      }
+      
       setTestResult({ success: false, message: errorMessage });
       addNotification({
-        title: 'Connection Test Failed',
-        message: `Connection test failed: ${errorMessage}`,
+        title: `Connection Test Failed (${errorCode})`,
+        message: 'Network or system error occurred',
         type: 'error',
-        source: 'Database Connection'
+        source: 'Database Connection',
+        details: `The connection test could not be completed due to a system error (${errorCode}).`,
+        technical: `Error Code: ${errorCode}\nError: ${errorMessage}\n\nThis could be due to network issues, server problems, or invalid request data.`,
+        suggestions: [
+          'Check your internet connection',
+          'Verify that the CAMS backend server is running',
+          'Try again in a few moments',
+          'Contact your system administrator if the problem persists'
+        ]
       });
     } finally {
       setIsTestingConnection(false);

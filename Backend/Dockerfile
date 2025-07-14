@@ -28,6 +28,9 @@ RUN dotnet restore
 # Copy everything else
 COPY ../ .
 
+# Clean up any existing obj/bin directories from host
+RUN rm -rf /src/obj /src/bin /src/Backend/obj /src/Backend/bin /src/Cams.Tests/obj /src/Cams.Tests/bin
+
 # Install minimal tools needed for debugging
 RUN apt-get update && \
     apt-get install -y curl && \

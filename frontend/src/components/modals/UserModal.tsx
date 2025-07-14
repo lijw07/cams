@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 
-import { X } from 'lucide-react';
-
 import { useUserModal } from '../../hooks/useUserModal';
 import { UserWithRoles } from '../../types/management';
 import Button from '../common/Button';
@@ -64,20 +62,13 @@ const UserModal: React.FC<UserModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} size="xl">
-      <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {mode === 'create' ? 'Create New User' : 'Edit User'}
-        </h2>
-        <button
-          onClick={handleClose}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-        >
-          <X className="w-6 h-6" />
-        </button>
-      </div>
-
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="p-6">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={handleClose} 
+      size="xl"
+      title={mode === 'create' ? 'Create New User' : 'Edit User'}
+    >
+      <form onSubmit={handleSubmit(handleFormSubmit)}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* User Form Fields */}
           <div>

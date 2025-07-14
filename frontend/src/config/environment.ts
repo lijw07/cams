@@ -72,7 +72,7 @@ export const env = {
 
   // API Configuration
   api: {
-    baseUrl: getEnvVar('VITE_APP_API_URL', getEnvVar('VITE_API_URL', 'http://localhost:5000')),
+    baseUrl: getEnvVar('VITE_APP_API_URL', getEnvVar('VITE_API_URL', 'http://localhost:8080')),
     timeout: getEnvVar('VITE_APP_API_TIMEOUT', 30000, toNumber),
     retryAttempts: getEnvVar('VITE_APP_API_RETRY_ATTEMPTS', 3, toNumber),
     retryDelay: getEnvVar('VITE_APP_API_RETRY_DELAY', 1000, toNumber),

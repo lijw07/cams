@@ -775,5 +775,133 @@ namespace cams.Backend.Controller
                 return HttpResponseHelper.CreateErrorResponse("Error updating last accessed time");
             }
         }
+
+        [HttpGet("unassigned")]
+        public async Task<IActionResult> GetUnassignedConnections()
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} requested unassigned database connections", userId);
+
+                var connections = await connectionService.GetUnassignedConnectionsAsync(userId);
+
+                logger.LogInformation("Retrieved {ConnectionCount} unassigned database connections for user {UserId}",
+                    connections.Count(), userId);
+
+                return Ok(connections);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                logger.LogWarning("Unauthorized access attempt to unassigned database connections");
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error retrieving unassigned database connections for user {UserId}", UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error retrieving unassigned connections");
+            }
+        }
+
+        [HttpPost("{id}/assign")]
+        public async Task<IActionResult> AssignConnectionToApplication(Guid id, [FromBody] AssignConnectionRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return HttpResponseHelper.CreateValidationErrorResponse(
+                        ModelState.Where(x => x.Value?.Errors.Count > 0)
+                            .ToDictionary(
+                                kvp => kvp.Key,
+                                kvp => kvp.Value?.Errors.Select(e => e.ErrorMessage).ToArray() ?? Array.Empty<string>()
+                            ));
+                }
+
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} assigning database connection {ConnectionId} to application {ApplicationId}",
+                    userId, id, request.ApplicationId);
+
+                var success = await connectionService.AssignConnectionToApplicationAsync(id, request.ApplicationId, userId);
+
+                if (!success)
+                {
+                    logger.LogWarning("Failed to assign database connection {ConnectionId} to application {ApplicationId} for user {UserId}",
+                        id, request.ApplicationId, userId);
+                    return HttpResponseHelper.CreateBadRequestResponse("Unable to assign connection to application. Verify the connection and application exist and you have access to both.");
+                }
+
+                logger.LogInformation("Successfully assigned database connection {ConnectionId} to application {ApplicationId} for user {UserId}",
+                    id, request.ApplicationId, userId);
+
+                // Log audit event for connection assignment
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Update.ToString(),
+                    AuditEntityTypes.DATABASE_CONNECTION,
+                    entityId: id,
+                    description: $"Assigned connection to application {request.ApplicationId}",
+                    newValues: $"ApplicationId: {request.ApplicationId}",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                return Ok(new { message = "Connection assigned to application successfully" });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                logger.LogWarning("Unauthorized access attempt to assign database connection {ConnectionId}", id);
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error assigning database connection {ConnectionId} to application for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error assigning connection to application");
+            }
+        }
+
+        [HttpDelete("{id}/unassign")]
+        public async Task<IActionResult> UnassignConnectionFromApplication(Guid id)
+        {
+            try
+            {
+                var userId = UserHelper.GetCurrentUserId(User);
+                logger.LogInformation("User {UserId} unassigning database connection {ConnectionId} from application", userId, id);
+
+                var success = await connectionService.UnassignConnectionFromApplicationAsync(id, userId);
+
+                if (!success)
+                {
+                    logger.LogWarning("Failed to unassign database connection {ConnectionId} for user {UserId} - connection not found", id, userId);
+                    return HttpResponseHelper.CreateNotFoundResponse("Connection");
+                }
+
+                logger.LogInformation("Successfully unassigned database connection {ConnectionId} from application for user {UserId}", id, userId);
+
+                // Log audit event for connection unassignment
+                await loggingService.LogAuditAsync(
+                    userId,
+                    AuditAction.Update.ToString(),
+                    AuditEntityTypes.DATABASE_CONNECTION,
+                    entityId: id,
+                    description: "Unassigned connection from application",
+                    newValues: "ApplicationId: null",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString(),
+                    userAgent: Request.Headers.UserAgent.ToString()
+                );
+
+                return Ok(new { message = "Connection unassigned from application successfully" });
+            }
+            catch (UnauthorizedAccessException)
+            {
+                logger.LogWarning("Unauthorized access attempt to unassign database connection {ConnectionId}", id);
+                return HttpResponseHelper.CreateUnauthorizedResponse();
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error unassigning database connection {ConnectionId} for user {UserId}", id, UserHelper.GetCurrentUserId(User));
+                return HttpResponseHelper.CreateErrorResponse("Error unassigning connection from application");
+            }
+        }
     }
 }

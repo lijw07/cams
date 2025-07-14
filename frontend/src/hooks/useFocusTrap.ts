@@ -65,14 +65,17 @@ export function useFocusTrap(
     // Add event listener
     document.addEventListener('keydown', handleKeyDown);
 
-    // Focus first focusable element on mount
+    // Focus first focusable element on mount ONLY if nothing is currently focused
     const focusableElements = getFocusableElements();
-    if (focusableElements.length > 0) {
+    if (focusableElements.length > 0 && !container.contains(document.activeElement)) {
       // Small delay to ensure DOM is ready
       const timeoutId = setTimeout(() => {
-        const firstElement = getFocusableElements()[0];
-        if (firstElement) {
-          firstElement.focus();
+        // Double-check that nothing is focused (user might have clicked an input)
+        if (!container.contains(document.activeElement)) {
+          const firstElement = getFocusableElements()[0];
+          if (firstElement) {
+            firstElement.focus();
+          }
         }
       }, 50);
 

@@ -65,7 +65,7 @@ namespace cams.Backend.Services
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower() && u.IsActive);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
@@ -99,7 +99,7 @@ namespace cams.Backend.Services
             }
 
             // Check if username or email already exists
-            if (await _context.Users.AnyAsync(u => u.Username == request.Username && u.IsActive))
+            if (await _context.Users.AnyAsync(u => u.Username.ToLower() == request.Username.ToLower() && u.IsActive))
             {
                 return new RegisterResponse
                 {
@@ -108,7 +108,7 @@ namespace cams.Backend.Services
                 };
             }
 
-            if (await _context.Users.AnyAsync(u => u.Email == request.Email && u.IsActive))
+            if (await _context.Users.AnyAsync(u => u.Email.ToLower() == request.Email.ToLower() && u.IsActive))
             {
                 return new RegisterResponse
                 {
@@ -216,7 +216,7 @@ namespace cams.Backend.Services
         public async Task<bool> ValidateRefreshTokenAsync(string username, string refreshToken)
         {
             var user = await _context.Users
-                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower() && u.IsActive);
 
             return user != null &&
                    user.RefreshToken == refreshToken &&
@@ -228,7 +228,7 @@ namespace cams.Backend.Services
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Username == username && u.IsActive);
+                .FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower() && u.IsActive);
 
             if (user == null || user.RefreshToken != refreshToken || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {

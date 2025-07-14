@@ -13,9 +13,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Upload,
-  Plug,
-  TestTube
+  Upload
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -47,18 +45,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       href: '/applications',
       icon: Package,
       current: location.pathname.startsWith('/applications')
-    },
-    {
-      name: 'Database Connections',
-      href: '/database-connections',
-      icon: Plug,
-      current: location.pathname.startsWith('/database-connections')
-    },
-    {
-      name: 'Connection Testing',
-      href: '/connection-test-demo',
-      icon: TestTube,
-      current: location.pathname.startsWith('/connection-test-demo')
     }
   ];
 

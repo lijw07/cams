@@ -37,8 +37,8 @@ CMD ["nginx", "-g", "daemon off;"]
 # Development stage
 FROM node:22.16.0-alpine AS development
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl for health checks and python/make for native dependencies
+RUN apk add --no-cache curl python3 make g++
 
 # Set working directory
 WORKDIR /app
@@ -47,7 +47,8 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies)
-RUN npm ci
+# Force reinstall to ensure correct architecture binaries
+RUN npm ci --force
 
 # Copy source code
 COPY . .
@@ -56,4 +57,5 @@ COPY . .
 EXPOSE 3000
 
 # Start development server
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
+# Install dependencies if node_modules doesn't exist, then start the server
+CMD sh -c "if [ ! -d node_modules ]; then npm ci; fi && npx vite --host 0.0.0.0"

@@ -1,31 +1,24 @@
-import { User, UserProfileResponse } from '../types';
+import type { components } from '../types/api.generated';
+import type { User, UserProfileResponse } from '../types/auth';
 
 import { apiService } from './api';
 
-export interface UserProfileUpdateRequest {
-  FirstName?: string | null;
-  LastName?: string | null;
-  PhoneNumber?: string | null;
-}
+// Type aliases for cleaner code
+type UserProfileRequest = components['schemas']['UserProfileRequest'];
+type ChangePasswordRequest = components['schemas']['ChangePasswordRequest'];
+type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
+type ValidatePasswordRequest = components['schemas']['ValidatePasswordRequest'];
+type DeactivateAccountRequest = components['schemas']['DeactivateAccountRequest'];
 
-export interface ChangePasswordRequest {
-  CurrentPassword: string;
-  NewPassword: string;
-  ConfirmNewPassword: string;
-}
-
-export interface ChangeEmailRequest {
-  CurrentPassword: string;
-  NewEmail: string;
-}
-
-export interface ValidatePasswordRequest {
-  Password: string;
-}
-
-export interface DeactivateAccountRequest {
-  CurrentPassword: string;
-}
+// Re-export types for component usage
+export type {
+  UserProfileRequest,
+  UserProfileRequest as UserProfileUpdateRequest, // Alias for backwards compatibility
+  ChangePasswordRequest,
+  ChangeEmailRequest,
+  ValidatePasswordRequest,
+  DeactivateAccountRequest
+};
 
 export const profileService = {
   // Get user profile
@@ -39,7 +32,7 @@ export const profileService = {
   },
 
   // Update user profile
-  async updateProfile(data: UserProfileUpdateRequest): Promise<User> {
+  async updateProfile(data: UserProfileRequest): Promise<User> {
     return apiService.put('/user/profile', data);
   },
 
