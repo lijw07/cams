@@ -1,4 +1,4 @@
-using Microsoft.Data.SqlClient;
+using Npgsql;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
@@ -344,7 +344,7 @@ namespace cams.Backend.Services
         {
             var connectionString = GetConnectionString(connection, request);
 
-            using var sqlConnection = new SqlConnection(connectionString);
+            using var sqlConnection = new NpgsqlConnection(connectionString);
             await sqlConnection.OpenAsync();
 
             var command = sqlConnection.CreateCommand();
@@ -419,12 +419,13 @@ namespace cams.Backend.Services
 
         private string BuildConnectionStringWithValidation(DatabaseConnectionRequest request)
         {
-            var builder = new SqlConnectionStringBuilder
+            var builder = new NpgsqlConnectionStringBuilder
             {
-                DataSource = request.Server,
-                InitialCatalog = request.Database,
-                UserID = request.Username,
-                Password = request.Password
+                Host = request.Server,
+                Database = request.Database,
+                Username = request.Username,
+                Password = request.Password,
+                Port = 5432
             };
 
             return builder.ConnectionString;
@@ -483,12 +484,13 @@ namespace cams.Backend.Services
                 switch (databaseType)
                 {
                     case DatabaseType.SqlServer:
-                        var builder = new SqlConnectionStringBuilder(connectionString);
-                        components.Server = builder.DataSource;
-                        components.Database = builder.InitialCatalog;
-                        components.Username = builder.UserID;
-                        components.UseIntegratedSecurity = builder.IntegratedSecurity;
-                        components.ConnectionTimeout = builder.ConnectTimeout;
+                    case DatabaseType.PostgreSQL:
+                        var builder = new NpgsqlConnectionStringBuilder(connectionString);
+                        components.Server = builder.Host;
+                        components.Database = builder.Database;
+                        components.Username = builder.Username;
+                        components.UseIntegratedSecurity = false;
+                        components.ConnectionTimeout = builder.Timeout;
                         components.CommandTimeout = builder.CommandTimeout;
                         break;
                     default:

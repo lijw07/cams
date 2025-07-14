@@ -36,7 +36,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     var connectionString = GetConnectionString(builder.Configuration);
-    options.UseSqlServer(connectionString);
+    options.UseNpgsql(connectionString);
 });
 
 // Configure Swagger with JWT support
@@ -238,9 +238,9 @@ static string GetConnectionString(IConfiguration configuration)
     
     if (!string.IsNullOrEmpty(dbHost) && !string.IsNullOrEmpty(dbName))
     {
-        // Build connection string from environment variables
-        var connectionString = $"Server={dbHost},{dbPort ?? "1433"};Database={dbName};User Id={dbUser ?? "sa"};Password={dbPassword};TrustServerCertificate=true;";
-        Console.WriteLine($"Using environment-based connection string: Server={dbHost},{dbPort ?? "1433"};Database={dbName};...");
+        // Build PostgreSQL connection string from environment variables
+        var connectionString = $"Host={dbHost};Port={dbPort ?? "5432"};Database={dbName};Username={dbUser ?? "postgres"};Password={dbPassword};";
+        Console.WriteLine($"Using environment-based connection string: Host={dbHost};Port={dbPort ?? "5432"};Database={dbName};...");
         return connectionString;
     }
     
