@@ -13,7 +13,11 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "generate-types": "openapi-typescript ../openapi.json -o src/types/api.generated.ts",
+    "generate-types-from-url": "openapi-typescript http://localhost:8080/swagger/v1/swagger.json -o src/types/api.generated.ts",
+    "update-types": "echo 'Start the backend first (dotnet run), then run: npm run generate-types-from-url'",
+    "check-api-types": "./scripts/check-api-types.sh"
   },
   "dependencies": {
     "@microsoft/signalr": "^8.0.7",
@@ -59,5 +63,8 @@
     "typescript": "^5.2.2",
     "vite": "^7.0.4",
     "vitest": "^1.0.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-linux-x64-musl": "4.9.5"
   }
 }

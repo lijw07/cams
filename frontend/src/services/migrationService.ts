@@ -1,13 +1,26 @@
-import {
+import type { components } from '../types/api.generated';
+import type {
+  MigrationResult,
+  MigrationValidationResult
+} from '../types/migration';
+
+import { apiService } from './api';
+
+// Type aliases for cleaner code
+type BulkMigrationRequest = components['schemas']['BulkMigrationRequest'];
+type BulkUserImportRequest = components['schemas']['BulkUserImportRequest'];
+type BulkRoleImportRequest = components['schemas']['BulkRoleImportRequest'];
+type BulkApplicationImportRequest = components['schemas']['BulkApplicationImportRequest'];
+
+// Re-export types for component usage
+export type {
   BulkMigrationRequest,
   BulkUserImportRequest,
   BulkRoleImportRequest,
   BulkApplicationImportRequest,
   MigrationResult,
   MigrationValidationResult
-} from '../types';
-
-import { apiService } from './api';
+};
 
 export const migrationService = {
   // Validate migration data

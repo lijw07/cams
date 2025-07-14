@@ -2,13 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useNotifications } from '../contexts/NotificationContext';
-import { profileService } from '../services/profileService';
+import { profileService, type UserProfileRequest } from '../services/profileService';
 
-interface ProfileFormData {
-  FirstName: string;
-  LastName: string;
-  PhoneNumber: string;
-}
+// Use the service type directly
+type ProfileFormData = UserProfileRequest;
 
 export const useProfile = () => {
   const { user, refreshUserProfile } = useAuth();

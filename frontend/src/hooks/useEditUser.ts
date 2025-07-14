@@ -5,16 +5,10 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { useNotifications } from '../contexts/NotificationContext';
 import { roleService } from '../services/roleService';
-import { usersService } from '../services/usersService';
+import { usersService, type UpdateUserRequest } from '../services/usersService';
 
-interface EditUserFormData {
-  Username: string;
-  Email: string;
-  FirstName?: string;
-  LastName?: string;
-  PhoneNumber?: string;
-  IsActive: boolean;
-}
+// Use the service type directly
+type EditUserFormData = UpdateUserRequest;
 
 export const useEditUser = () => {
   const navigate = useNavigate();

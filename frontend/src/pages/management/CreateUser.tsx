@@ -7,18 +7,12 @@ import { ArrowLeft, Save, User, Mail, Lock, Phone, UserCheck } from 'lucide-reac
 
 import { useNotifications } from '../../contexts/NotificationContext';
 import { roleService } from '../../services/roleService';
-import { usersService } from '../../services/usersService';
+import { usersService, type CreateUserRequest } from '../../services/usersService';
 
-interface CreateUserFormData {
-  Username: string;
-  Email: string;
-  Password: string;
-  ConfirmPassword: string;
-  FirstName: string;
-  LastName: string;
-  PhoneNumber?: string;
-  RoleIds: string[];
-  IsActive: boolean;
+// Form interface that extends the API CreateUserRequest with additional form-only fields
+interface CreateUserFormData extends CreateUserRequest {
+  ConfirmPassword: string; // Form validation only, not sent to API
+  RoleIds: string[]; // Handled separately via role assignment API
 }
 
 const CreateUserPage: React.FC = () => {
@@ -64,12 +58,24 @@ const CreateUserPage: React.FC = () => {
     try {
       setIsLoading(true);
       
-      const requestData = {
-        ...data,
-        RoleIds: selectedRoles,
+      // Prepare user creation request (excluding form-only fields)
+      const createUserData: CreateUserRequest = {
+        Username: data.Username,
+        Email: data.Email,
+        Password: data.Password,
+        FirstName: data.FirstName,
+        LastName: data.LastName,
+        PhoneNumber: data.PhoneNumber,
+        IsActive: data.IsActive,
       };
 
-      await usersService.createUser(requestData);
+      // Create the user first
+      const createdUser = await usersService.createUser(createUserData);
+      
+      // Assign roles if any are selected
+      if (selectedRoles.length > 0) {
+        await usersService.updateUserRoles(createdUser.Id, selectedRoles);
+      }
       
       addNotification({
         title: 'Success',

@@ -1,7 +1,15 @@
-import { LoginRequest, LoginResponse, UserProfileResponse } from '../types';
+import { components } from '../types/api.generated';
+import { LoginResponse, UserProfileResponse } from '../types';
 import { secureStorage } from '../utils/secureStorage';
 
 import { apiService } from './api';
+
+// Type aliases for cleaner code
+type LoginRequest = components['schemas']['LoginRequest'];
+type RefreshTokenRequest = components['schemas']['RefreshTokenRequest'];
+type ChangePasswordRequest = components['schemas']['ChangePasswordRequest'];
+type ChangeEmailRequest = components['schemas']['ChangeEmailRequest'];
+type UserProfileRequest = components['schemas']['UserProfileRequest'];
 
 /**
  * Authentication service for managing user authentication and profile operations
@@ -107,10 +115,12 @@ export const authService = {
    * ```
    */
   async refreshToken(username: string, refreshToken: string): Promise<LoginResponse> {
-    const response = await apiService.post<LoginResponse>('/auth/refresh-token', {
+    const request: RefreshTokenRequest = {
       Username: username,
       RefreshToken: refreshToken,
-    });
+    };
+    
+    const response = await apiService.post<LoginResponse>('/auth/refresh-token', request);
     
     if (response.Token) {
       secureStorage.setToken(response.Token);
@@ -184,11 +194,7 @@ export const authService = {
    * console.log('Profile updated:', updatedProfile);
    * ```
    */
-  async updateProfile(data: {
-    FirstName?: string;
-    LastName?: string;
-    PhoneNumber?: string;
-  }): Promise<UserProfileResponse> {
+  async updateProfile(data: UserProfileRequest): Promise<UserProfileResponse> {
     return apiService.put('/user/profile', data);
   },
 
@@ -213,11 +219,7 @@ export const authService = {
    * console.log('Password changed successfully');
    * ```
    */
-  async changePassword(data: {
-    CurrentPassword: string;
-    NewPassword: string;
-    ConfirmNewPassword: string;
-  }): Promise<void> {
+  async changePassword(data: ChangePasswordRequest): Promise<void> {
     return apiService.post('/user/change-password', data);
   },
 
@@ -240,10 +242,7 @@ export const authService = {
    * console.log('Email changed successfully');
    * ```
    */
-  async changeEmail(data: {
-    NewEmail: string;
-    CurrentPassword: string;
-  }): Promise<void> {
+  async changeEmail(data: ChangeEmailRequest): Promise<void> {
     return apiService.post('/user/change-email', data);
   },
 

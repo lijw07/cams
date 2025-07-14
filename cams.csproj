@@ -22,6 +22,8 @@
         <PackageReference Include="MailKit" Version="4.13.0" />
         <PackageReference Include="MimeKit" Version="4.13.0" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+        <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+        <PackageReference Include="MySql.Data" Version="8.3.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.1.2" />
         <PackageReference Include="NCrontab" Version="3.3.3" />
@@ -33,6 +35,16 @@
         <Content Remove="Cams.Tests\**" />
         <EmbeddedResource Remove="Cams.Tests\**" />
         <None Remove="Cams.Tests\**" />
+        <Compile Remove="PostgreSQLConnectionTester\**" />
+        <Content Remove="PostgreSQLConnectionTester\**" />
+        <EmbeddedResource Remove="PostgreSQLConnectionTester\**" />
+        <None Remove="PostgreSQLConnectionTester\**" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <_ContentIncludedByDefault Remove="Backend\PostgreSQLConnectionTester\obj\Debug\net8.0\PostgreSQLConnectionTester.sourcelink.json" />
+      <_ContentIncludedByDefault Remove="Backend\PostgreSQLConnectionTester\obj\PostgreSQLConnectionTester.csproj.nuget.dgspec.json" />
+      <_ContentIncludedByDefault Remove="Backend\PostgreSQLConnectionTester\obj\project.assets.json" />
     </ItemGroup>
 
 </Project>

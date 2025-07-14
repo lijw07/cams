@@ -4,13 +4,12 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../contexts/AuthContext';
+import { LoginRequest } from '../types/auth';
 
 import { useEventTracking } from './useEventTracking';
 
-interface LoginFormData {
-  Username: string;
-  Password: string;
-}
+// Use the existing LoginRequest type
+type LoginFormData = LoginRequest;
 
 export const useLoginForm = () => {
   const { login } = useAuth();

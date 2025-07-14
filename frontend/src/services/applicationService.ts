@@ -1,14 +1,19 @@
+import type { components } from '../types/api.generated';
 import {
   Application,
-  ApplicationRequest,
-  ApplicationWithConnectionRequest,
   ApplicationWithConnectionResponse,
   DatabaseConnectionSummary,
   PaginationRequest,
   PagedResult,
 } from '../types';
-
 import { apiService } from './api';
+
+// Type aliases for generated types
+type ApplicationRequest = components['schemas']['ApplicationRequest'];
+type ApplicationUpdateRequest = components['schemas']['ApplicationUpdateRequest'];
+type ApplicationWithConnectionRequest = components['schemas']['ApplicationWithConnectionRequest'];
+type ApplicationWithConnectionUpdateRequest = components['schemas']['ApplicationWithConnectionUpdateRequest'];
+type ToggleApplicationStatusRequest = components['schemas']['ToggleApplicationStatusRequest'];
 
 export const applicationService = {
   // Regular application CRUD
@@ -36,7 +41,7 @@ export const applicationService = {
     return apiService.post('/applications', data);
   },
 
-  async updateApplication(id: string, data: ApplicationRequest & { Id: string }): Promise<Application> {
+  async updateApplication(id: string, data: ApplicationUpdateRequest): Promise<Application> {
     return apiService.put(`/applications/${id}`, data);
   },
 
@@ -45,7 +50,8 @@ export const applicationService = {
   },
 
   async toggleApplicationStatus(id: string, isActive: boolean): Promise<{ message: string }> {
-    return apiService.patch(`/applications/${id}/toggle`, { IsActive: isActive });
+    const request: ToggleApplicationStatusRequest = { IsActive: isActive };
+    return apiService.patch(`/applications/${id}/toggle`, request);
   },
 
   async updateLastAccessed(id: string): Promise<{ message: string }> {
@@ -64,7 +70,7 @@ export const applicationService = {
 
   async updateApplicationWithConnection(
     id: string,
-    data: ApplicationWithConnectionRequest & { ApplicationId: string; ConnectionId: string }
+    data: ApplicationWithConnectionUpdateRequest
   ): Promise<ApplicationWithConnectionResponse> {
     return apiService.put(`/applications/${id}/with-connection`, data);
   },
@@ -72,4 +78,13 @@ export const applicationService = {
   async getApplicationWithPrimaryConnection(id: string): Promise<ApplicationWithConnectionResponse> {
     return apiService.get(`/applications/${id}/with-primary-connection`);
   }
+};
+
+// Export types for use in components
+export type { 
+  ApplicationRequest, 
+  ApplicationUpdateRequest, 
+  ApplicationWithConnectionRequest, 
+  ApplicationWithConnectionUpdateRequest,
+  ToggleApplicationStatusRequest 
 };

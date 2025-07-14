@@ -8,6 +8,7 @@ interface PaginationProps {
   totalItems: number;
   pageSize: number;
   onPageChange: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
   showFirstLast?: boolean;
   showPageNumbers?: boolean;
   maxVisiblePages?: number;

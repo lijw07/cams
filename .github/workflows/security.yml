@@ -26,7 +26,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.412'
     
     - name: Restore dependencies
       run: dotnet restore
@@ -138,7 +138,7 @@ jobs:
       if: matrix.language == 'csharp'
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.412'
     
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
@@ -189,7 +189,7 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.0.x'
+        dotnet-version: '8.0.412'
     
     - name: Setup Node.js
       uses: actions/setup-node@v4

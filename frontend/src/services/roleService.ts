@@ -1,36 +1,16 @@
+import type { PaginationRequest, PaginatedResponse } from '../types';
+import type { components } from '../types/api.generated';
+import type { Role } from '../types/management';
+
 import { apiService } from './api';
 
-export interface PaginationRequest extends Record<string, unknown> {
-  PageNumber: number;
-  PageSize: number;
-  SortBy?: string;
-  SortDirection?: 'asc' | 'desc';
-  SearchTerm?: string;
-}
+// Type aliases for cleaner code
+type RoleRequest = components['schemas']['RoleRequest'];
 
-export interface PaginatedResponse<T> {
-  Data: T[];
-  Pagination: {
-    CurrentPage: number;
-    PerPage: number;
-    TotalItems: number;
-    TotalPages: number;
-    HasNext: boolean;
-    HasPrevious: boolean;
-  };
-}
+// Re-export types for component usage
+export type { Role, RoleRequest, PaginationRequest, PaginatedResponse };
 
-export interface Role {
-  Id: string;
-  Name: string;
-  Description?: string;
-  IsSystem: boolean;
-  IsActive: boolean;
-  UserCount: number;
-  CreatedAt: string;
-  UpdatedAt: string;
-}
-
+// Custom types not in generated API
 export interface CreateRoleRequest {
   Name: string;
   Description?: string;
