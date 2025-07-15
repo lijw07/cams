@@ -435,12 +435,6 @@ const Applications: React.FC = () => {
             New Application
           </button>
         )}
-        {activeTab === 'connections' && (
-          <button onClick={openCreateConnectionModal} className="btn btn-primary">
-            <Plus className="w-4 h-4 mr-2" />
-            New Connection
-          </button>
-        )}
       </div>
 
       {/* Tab Navigation */}

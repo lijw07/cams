@@ -147,11 +147,11 @@ const Modal: React.FC<ModalProps> = ({
           aria-labelledby={title ? titleId : undefined}
           aria-describedby={contentId}
           tabIndex={-1}
-          className={`relative bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} p-6`}
+          className={`relative bg-white dark:bg-secondary-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} max-h-[90vh] overflow-hidden flex flex-col`}
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between p-6 pb-4 flex-shrink-0">
               {title && (
                 <h2 
                   id={titleId}
@@ -175,7 +175,7 @@ const Modal: React.FC<ModalProps> = ({
           )}
 
           {/* Content */}
-          <div id={contentId} className="modal-content">
+          <div id={contentId} className="modal-content flex-1 min-h-0 overflow-y-auto p-6 pt-4">
             {children}
           </div>
         </div>

@@ -13,8 +13,7 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Upload,
-  Github
+  Upload
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -88,13 +87,6 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       href: '/management/roles',
       icon: Shield,
       current: location.pathname.startsWith('/management/roles')
-    },
-    {
-      name: 'GitHub Management',
-      href: '/management/github',
-      icon: Github,
-      current: location.pathname.startsWith('/management/github'),
-      requiresPlatformAdmin: true
     },
     {
       name: 'Bulk Migration',
@@ -175,34 +167,24 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 Management
               </h3>
               <div className="mt-2 space-y-1">
-                {managementItems
-                  .filter(item => {
-                    // Only show GitHub Management to Platform Admins
-                    if (item.requiresPlatformAdmin) {
-                      return isPlatformAdmin;
-                    }
-                    // Show other management items to all admins
-                    return true;
-                  })
-                  .map((item) => (
-                    <NavLink
-                      key={item.name}
-                      to={item.href}
-                      className={({ isActive }) => `
-                        group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                        ${isActive 
-                          ? 'bg-primary-600 text-white' 
-                          : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }
-                      `}
-                      aria-current={item.current ? 'page' : undefined}
-                      onClick={() => setOpen(false)}
-                    >
-                      <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
-                      {item.name}
-                    </NavLink>
-                  ))
-                }
+                {managementItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    className={({ isActive }) => `
+                      group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                      ${isActive 
+                        ? 'bg-primary-600 text-white' 
+                        : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }
+                    `}
+                    aria-current={item.current ? 'page' : undefined}
+                    onClick={() => setOpen(false)}
+                  >
+                    <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
+                    {item.name}
+                  </NavLink>
+                ))}
               </div>
             </div>
           )}

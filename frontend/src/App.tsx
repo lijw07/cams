@@ -36,7 +36,6 @@ const CreateUser = lazy(() => import('./pages/management/CreateUser'));
 const EditUser = lazy(() => import('./pages/management/EditUser'));
 const RoleManagement = lazy(() => import('./pages/management/RoleManagement'));
 const BulkMigration = lazy(() => import('./pages/migration/BulkMigration'));
-const GitHubManagement = lazy(() => import('./pages/management/GitHubManagement'));
 
 // Log pages (platform admin only - lazy load)
 const AuditLogs = lazy(() => import('./pages/logs/AuditLogs'));
@@ -136,7 +135,6 @@ const App: React.FC = () => {
           <Route path="management/users/create" element={<CreateUser />} />
           <Route path="management/users/:id/edit" element={<EditUser />} />
           <Route path="management/roles" element={<RoleManagement />} />
-          <Route path="management/github" element={<GitHubManagement />} />
           
           {/* Migration routes */}
           <Route path="migration" element={<BulkMigration />} />
