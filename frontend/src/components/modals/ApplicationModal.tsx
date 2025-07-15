@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useApplicationModal } from '../../hooks/useApplicationModal';
+import { useModalStack } from '../../hooks/useModalStack';
 import { ApplicationRequest } from '../../types';
 import { ApplicationConnections } from '../application/ApplicationConnections';
 import { ApplicationForm } from '../application/ApplicationForm';
@@ -23,6 +24,9 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
   application,
   mode = 'create'
 }) => {
+  // Register this modal with the modal stack
+  useModalStack(isOpen, onClose);
+
   const {
     register,
     handleSubmit,

@@ -20,34 +20,37 @@ namespace cams.Backend.Data
             {
                 Console.WriteLine("Starting database initialization...");
 
-                // First, ensure the database exists
-                Console.WriteLine("Ensuring database exists...");
-                var created = await context.Database.EnsureCreatedAsync();
-                if (created)
+                // Check if we're using a relational database provider
+                if (context.Database.IsRelational())
                 {
-                    Console.WriteLine("Database was created.");
-                }
-                else
-                {
-                    Console.WriteLine("Database already exists, checking migrations...");
-                    // Only apply migrations if we're using a relational database provider
-                    if (context.Database.IsRelational())
+                    // First check if tables exist but migration history is missing
+                    var tablesExist = await CheckIfTablesExistAsync(context);
+                    var hasMigrationHistory = await context.Database.GetAppliedMigrationsAsync();
+                    
+                    if (tablesExist && !hasMigrationHistory.Any())
                     {
-                        var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
-                        if (pendingMigrations.Any())
-                        {
-                            Console.WriteLine($"Applying {pendingMigrations.Count()} pending migrations...");
-                            await context.Database.MigrateAsync();
-                        }
-                        else
-                        {
-                            Console.WriteLine("No pending migrations found.");
-                        }
+                        Console.WriteLine("Tables exist but migration history is empty. Syncing migration history...");
+                        await SyncMigrationHistoryAsync(context);
+                    }
+                    
+                    Console.WriteLine("Checking for pending migrations...");
+                    var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
+                    if (pendingMigrations.Any())
+                    {
+                        Console.WriteLine($"Applying {pendingMigrations.Count()} pending migrations...");
+                        await context.Database.MigrateAsync();
+                        Console.WriteLine("Migrations applied successfully.");
                     }
                     else
                     {
-                        Console.WriteLine("Using in-memory database, skipping migrations.");
+                        Console.WriteLine("No pending migrations found.");
                     }
+                }
+                else
+                {
+                    // For in-memory database (used in tests), use EnsureCreated
+                    Console.WriteLine("Using in-memory database, creating schema...");
+                    await context.Database.EnsureCreatedAsync();
                 }
 
                 Console.WriteLine("Database initialization completed. Starting data seeding...");
@@ -231,6 +234,51 @@ namespace cams.Backend.Data
 
             await context.UserRoles.AddRangeAsync(userRoles);
             Console.WriteLine($"Seeded {userRoles.Count} default user role assignments");
+        }
+
+        private static async Task<bool> CheckIfTablesExistAsync(ApplicationDbContext context)
+        {
+            try
+            {
+                // Check if the Roles table exists by trying to count records
+                // This will throw if the table doesn't exist
+                await context.Roles.CountAsync();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static async Task SyncMigrationHistoryAsync(ApplicationDbContext context)
+        {
+            try
+            {
+                // Get all migrations defined in the assembly
+                var allMigrations = context.Database.GetMigrations();
+                
+                // For each migration, add it to the history table
+                foreach (var migration in allMigrations)
+                {
+                    var sql = @"
+                        INSERT INTO ""__EFMigrationsHistory"" (""MigrationId"", ""ProductVersion"")
+                        SELECT @p0, @p1
+                        WHERE NOT EXISTS (
+                            SELECT 1 FROM ""__EFMigrationsHistory"" 
+                            WHERE ""MigrationId"" = @p0
+                        )";
+                    
+                    await context.Database.ExecuteSqlRawAsync(sql, migration, "8.0.11");
+                }
+                
+                Console.WriteLine($"Synced {allMigrations.Count()} migrations to history table.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error syncing migration history: {ex.Message}");
+                // Don't throw - let the normal migration process handle it
+            }
         }
     }
 }

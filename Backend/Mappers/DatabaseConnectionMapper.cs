@@ -32,6 +32,9 @@ namespace cams.Backend.Mappers
                 ApplicationId = request.ApplicationId,
                 UserId = userId,
                 IsActive = request.IsActive,
+                GitHubToken = request.GitHubToken,
+                GitHubOrganization = request.GitHubOrganization,
+                GitHubRepository = request.GitHubRepository,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -58,7 +61,10 @@ namespace cams.Backend.Mappers
                 CreatedAt = entity.CreatedAt,
                 UpdatedAt = entity.UpdatedAt,
                 LastTestedAt = entity.LastTestedAt,
-                LastTestResult = entity.LastTestResult
+                LastTestResult = entity.LastTestResult,
+                GitHubOrganization = entity.GitHubOrganization,
+                GitHubRepository = entity.GitHubRepository,
+                GitHubToken = entity.GitHubToken // Note: Should be masked in production
             };
         }
 
@@ -84,6 +90,12 @@ namespace cams.Backend.Mappers
             entity.AdditionalSettings = request.AdditionalSettings;
             entity.ApplicationId = request.ApplicationId;
             entity.IsActive = request.IsActive;
+            
+            // Update GitHub fields
+            entity.GitHubToken = request.GitHubToken;
+            entity.GitHubOrganization = request.GitHubOrganization;
+            entity.GitHubRepository = request.GitHubRepository;
+            
             entity.UpdatedAt = DateTime.UtcNow;
         }
 

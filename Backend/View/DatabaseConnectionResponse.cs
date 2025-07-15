@@ -29,5 +29,11 @@ namespace cams.Backend.View
         // Sensitive data - only included when explicitly requested
         public string? ConnectionString { get; set; }
         public string? ApiKey { get; set; }
+        
+        // GitHub-specific fields
+        public string? GitHubOrganization { get; set; }
+        public string? GitHubRepository { get; set; }
+        public bool HasGitHubToken => !string.IsNullOrEmpty(GitHubToken);
+        public string? GitHubToken { get; set; }
     }
 }

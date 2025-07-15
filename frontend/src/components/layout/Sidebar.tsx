@@ -13,7 +13,8 @@ import {
   Activity,
   AlertTriangle,
   BarChart3,
-  Upload
+  Upload,
+  Github
 } from 'lucide-react';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -87,6 +88,13 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
       href: '/management/roles',
       icon: Shield,
       current: location.pathname.startsWith('/management/roles')
+    },
+    {
+      name: 'GitHub Management',
+      href: '/management/github',
+      icon: Github,
+      current: location.pathname.startsWith('/management/github'),
+      requiresPlatformAdmin: true
     },
     {
       name: 'Bulk Migration',
@@ -169,10 +177,11 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
               <div className="mt-2 space-y-1">
                 {managementItems
                   .filter(item => {
-                    // Only show User Management and Role Management to admins
-                    if (item.name === 'User Management' || item.name === 'Role Management') {
-                      return isAdmin;
+                    // Only show GitHub Management to Platform Admins
+                    if (item.requiresPlatformAdmin) {
+                      return isPlatformAdmin;
                     }
+                    // Show other management items to all admins
                     return true;
                   })
                   .map((item) => (

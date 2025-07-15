@@ -26,7 +26,7 @@ const CloudConnectionForm: React.FC<CloudConnectionFormProps> = ({
   control,
   errors, 
   databaseType,
-  watch 
+  watch
 }) => {
   const { getAuthMethodOptions, isAWSProvider, isAzureProvider, isGoogleProvider, isSaaSProvider } = useCloudConnectionForm();
   const authMethod = watch('AuthenticationMethod');
@@ -51,7 +51,6 @@ const CloudConnectionForm: React.FC<CloudConnectionFormProps> = ({
         <Controller
           name="AuthenticationMethod"
           control={control}
-          rules={{ required: 'Authentication method is required' }}
           render={({ field }) => (
             <Select
               {...field}

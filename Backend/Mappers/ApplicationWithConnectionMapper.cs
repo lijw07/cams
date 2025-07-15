@@ -55,6 +55,9 @@ namespace cams.Backend.Mappers
                 ApiKey = request.ApiKey,
                 AdditionalSettings = request.AdditionalSettings,
                 IsActive = request.IsConnectionActive,
+                GitHubToken = request.GitHubToken,
+                GitHubOrganization = request.GitHubOrganization,
+                GitHubRepository = request.GitHubRepository,
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
@@ -108,6 +111,12 @@ namespace cams.Backend.Mappers
             existingConnection.ApiKey = request.ApiKey;
             existingConnection.AdditionalSettings = request.AdditionalSettings;
             existingConnection.IsActive = request.IsConnectionActive;
+            
+            // Update GitHub fields
+            existingConnection.GitHubToken = request.GitHubToken;
+            existingConnection.GitHubOrganization = request.GitHubOrganization;
+            existingConnection.GitHubRepository = request.GitHubRepository;
+            
             existingConnection.UpdatedAt = DateTime.UtcNow;
 
             return (existingApp, existingConnection);

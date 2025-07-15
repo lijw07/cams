@@ -127,7 +127,7 @@ export const ApplicationForm: React.FC<ApplicationFormProps> = ({
         </div>
 
         <div className="flex justify-end pt-4 space-x-3">
-          {onClose && (
+          {onClose && mode === 'create' && (
             <button
               type="button"
               onClick={onClose}

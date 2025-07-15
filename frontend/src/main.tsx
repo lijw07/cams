@@ -11,6 +11,7 @@ import { validateEnvironment } from './config/environment'
 import { queryClient } from './config/queryClient'
 import { AnalyticsProvider } from './contexts/AnalyticsContext'
 import { AuthProvider } from './contexts/AuthContext'
+import { ModalProvider } from './contexts/ModalContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { ThemeProvider } from './contexts/ThemeContext'
 import './index.css'
@@ -29,13 +30,15 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <ThemeProvider>
-            <NotificationProvider>
-              <AuthProvider>
-                <AnalyticsProvider>
-                  <App />
-                </AnalyticsProvider>
-              </AuthProvider>
-            </NotificationProvider>
+            <ModalProvider>
+              <NotificationProvider>
+                <AuthProvider>
+                  <AnalyticsProvider>
+                    <App />
+                  </AnalyticsProvider>
+                </AuthProvider>
+              </NotificationProvider>
+            </ModalProvider>
           </ThemeProvider>
         </BrowserRouter>
       </QueryClientProvider>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug } from 'lucide-react';
 
-import Pagination from '../components/common/Pagination';
+import PerformanceLogsPagination from '../components/logs/PerformanceLogsPagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
 import { useNotifications } from '../contexts/NotificationContext';
@@ -29,6 +29,7 @@ const Applications: React.FC = () => {
   const [sortBy, setSortBy] = useState('Name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { addNotification } = useNotifications();
+  const [triggerConnectionModal, setTriggerConnectionModal] = useState(false);
 
   const fetchApplications = useCallback(async () => {
     try {
@@ -130,11 +131,29 @@ const Applications: React.FC = () => {
   const handleCreateApplicationWithConnection = async (data: ApplicationWithConnectionRequest) => {
     try {
       const response = await applicationService.createApplicationWithConnection(data);
-      addNotification({ title: 'Success', message: 'Application and connection created successfully', type: 'success', source: 'Applications' });
+      
+      // Single consolidated notification based on the outcome
       if (response.ConnectionTestResult) {
-        addNotification({ title: 'Success', message: 'Database connection test passed', type: 'success', source: 'Applications' });
+        addNotification({ 
+          title: 'Success', 
+          message: 'Application and connection created successfully. Database connection test passed.', 
+          type: 'success', 
+          source: 'Applications' 
+        });
       } else if (response.ConnectionTestMessage) {
-        addNotification({ title: 'Error', message: `Connection test failed: ${response.ConnectionTestMessage}`, type: 'error', source: 'Applications' });
+        addNotification({ 
+          title: 'Partial Success', 
+          message: `Application and connection created, but connection test failed: ${response.ConnectionTestMessage}`, 
+          type: 'warning', 
+          source: 'Applications' 
+        });
+      } else {
+        addNotification({ 
+          title: 'Success', 
+          message: 'Application and connection created successfully', 
+          type: 'success', 
+          source: 'Applications' 
+        });
       }
       fetchApplications();
     } catch (error: any) {
@@ -169,6 +188,10 @@ const Applications: React.FC = () => {
       }
       throw error;
     }
+  };
+
+  const openCreateConnectionModal = () => {
+    setTriggerConnectionModal(true);
   };
 
   const openEditModal = async (application: Application) => {
@@ -262,19 +285,6 @@ const Applications: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">Show:</label>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    >
-                      <option value={6}>6 per page</option>
-                      <option value={9}>9 per page</option>
-                      <option value={12}>12 per page</option>
-                      <option value={24}>24 per page</option>
-                    </select>
-                  </div>
                 </div>
               </div>
             </div>
@@ -343,8 +353,7 @@ const Applications: React.FC = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">{app.Description}</p>
                       )}
 
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                        <span>Version: {app.Version || 'N/A'}</span>
+                      <div className="flex items-center justify-end text-sm text-gray-500 mb-4">
                         <span className={`badge ${app.IsActive ? 'badge-success' : 'badge-secondary'}`}>
                           {app.IsActive ? 'Active' : 'Inactive'}
                         </span>
@@ -388,13 +397,15 @@ const Applications: React.FC = () => {
                 </div>
 
                 {/* Pagination */}
-                {pagedData && pagedData.TotalPages > 1 && (
-                  <Pagination
+                {totalCount > 0 && (
+                  <PerformanceLogsPagination
                     currentPage={currentPage}
-                    totalPages={pagedData.TotalPages}
-                    totalItems={totalCount}
+                    totalPages={pagedData?.TotalPages || 1}
+                    totalCount={totalCount}
                     pageSize={pageSize}
                     onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[6, 9, 12, 24]}
                   />
                 )}
               </>
@@ -402,7 +413,10 @@ const Applications: React.FC = () => {
           </>
         );
       case 'connections':
-        return <DatabaseConnections />;
+        return <DatabaseConnections 
+          triggerCreateModal={triggerConnectionModal}
+          onModalTriggered={() => setTriggerConnectionModal(false)}
+        />;
       default:
         return null;
     }
@@ -419,6 +433,12 @@ const Applications: React.FC = () => {
           <button onClick={openCreateModal} className="btn btn-primary">
             <Plus className="w-4 h-4 mr-2" />
             New Application
+          </button>
+        )}
+        {activeTab === 'connections' && (
+          <button onClick={openCreateConnectionModal} className="btn btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            New Connection
           </button>
         )}
       </div>
@@ -469,7 +489,6 @@ const Applications: React.FC = () => {
               ...selectedApplication,
               Name: selectedApplication.Name,
               Description: selectedApplication.Description,
-              Version: selectedApplication.Version,
               Environment: selectedApplication.Environment,
               Tags: selectedApplication.Tags,
               IsActive: selectedApplication.IsActive,

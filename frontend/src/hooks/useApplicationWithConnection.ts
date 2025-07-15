@@ -21,17 +21,25 @@ export const useApplicationWithConnection = ({
   const [selectedDbType, setSelectedDbType] = useState<DatabaseType>(DatabaseType.SqlServer);
   const [isTestingConnection, setIsTestingConnection] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [fullTestResult, setFullTestResult] = useState<any>(null);
   const { addNotification } = useNotifications();
 
-  const form = useForm<ApplicationWithConnectionRequest>({
-    mode: 'onSubmit',  // Only validate when form is submitted
+  // Application form
+  const applicationForm = useForm({
+    mode: 'onSubmit',
     defaultValues: {
       ApplicationName: '',
       ApplicationDescription: '',
-      Version: '',
       Environment: 'Development',
       Tags: '',
-      IsApplicationActive: true,
+      IsApplicationActive: true
+    }
+  });
+
+  // Connection form
+  const connectionForm = useForm({
+    mode: 'onSubmit',
+    defaultValues: {
       ConnectionName: '',
       ConnectionDescription: '',
       DatabaseType: DatabaseType.SqlServer,
@@ -45,23 +53,14 @@ export const useApplicationWithConnection = ({
       ApiKey: '',
       AdditionalSettings: '',
       IsConnectionActive: true,
-      TestConnectionOnCreate: false
+      TestConnectionOnCreate: false,
+      GitHubToken: '',
+      GitHubOrganization: '',
+      GitHubRepository: ''
     }
   });
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    watch,
-    control,
-    clearErrors,
-    trigger,
-    getValues,
-    formState: { errors, isSubmitting }
-  } = form;
-
-  const watchedDbType = watch('DatabaseType');
+  const watchedDbType = connectionForm.watch('DatabaseType');
 
   useEffect(() => {
     setSelectedDbType(watchedDbType);
@@ -69,25 +68,64 @@ export const useApplicationWithConnection = ({
     setTestResult(null);
   }, [watchedDbType]);
 
-  // Clear errors when modal opens
+  // Reset forms when modal opens
   useEffect(() => {
     if (isOpen) {
-      clearErrors();
+      applicationForm.reset();
+      connectionForm.reset();
       setCurrentStep(1);
       setTestResult(null);
+      setFullTestResult(null);
     }
-  }, [isOpen, clearErrors]);
+  }, [isOpen, applicationForm, connectionForm]);
 
-  const handleFormSubmit = async (data: ApplicationWithConnectionRequest) => {
+  const handleFormSubmit = async () => {
     try {
-      const submissionData = {
-        ...data,
-        Port: data.Port ? parseInt(data.Port.toString()) : undefined,
-        Server: data.Server || (isApiType() ? 'api' : data.Server)
+      // Validate both forms
+      const isAppValid = await applicationForm.trigger();
+      const isConnValid = await connectionForm.trigger();
+      
+      if (!isAppValid || !isConnValid) {
+        // If application form is invalid, go back to step 1
+        if (!isAppValid && currentStep === 2) {
+          setCurrentStep(1);
+        }
+        return;
+      }
+      
+      // Get values from both forms
+      const appData = applicationForm.getValues();
+      const connData = connectionForm.getValues();
+      
+      // Combine the data
+      const submissionData: ApplicationWithConnectionRequest = {
+        ApplicationName: appData.ApplicationName,
+        ApplicationDescription: appData.ApplicationDescription,
+        Environment: appData.Environment,
+        Tags: appData.Tags,
+        IsApplicationActive: appData.IsApplicationActive,
+        ConnectionName: connData.ConnectionName,
+        ConnectionDescription: connData.ConnectionDescription,
+        DatabaseType: connData.DatabaseType,
+        Server: connData.Server || (isApiType() ? 'api' : connData.Server),
+        Port: connData.Port ? parseInt(connData.Port.toString()) : undefined,
+        Database: connData.Database,
+        Username: connData.Username,
+        Password: connData.Password,
+        ConnectionString: connData.ConnectionString,
+        ApiBaseUrl: connData.ApiBaseUrl,
+        ApiKey: connData.ApiKey,
+        AdditionalSettings: connData.AdditionalSettings,
+        IsConnectionActive: connData.IsConnectionActive,
+        TestConnectionOnCreate: connData.TestConnectionOnCreate,
+        GitHubToken: connData.GitHubToken,
+        GitHubOrganization: connData.GitHubOrganization,
+        GitHubRepository: connData.GitHubRepository
       };
       
       await onSubmit(submissionData);
-      reset();
+      applicationForm.reset();
+      connectionForm.reset();
       setCurrentStep(1);
       onClose();
     } catch (error) {
@@ -96,31 +134,29 @@ export const useApplicationWithConnection = ({
   };
 
   const handleClose = () => {
-    reset();
+    applicationForm.reset();
+    connectionForm.reset();
     setCurrentStep(1);
     setTestResult(null);
-    clearErrors();
     onClose();
   };
 
   const nextStep = async () => {
-    const isStep1Valid = await trigger(['ApplicationName']);
+    const isStep1Valid = await applicationForm.trigger();
     
     if (isStep1Valid) {
       setCurrentStep(2);
       setTestResult(null);
-      clearErrors(['ConnectionName', 'DatabaseType', 'Server', 'Database', 'Username', 'Password', 'ConnectionString', 'ApiBaseUrl']);
     }
   };
 
   const prevStep = () => {
     setCurrentStep(1);
     setTestResult(null);
-    clearErrors(['ConnectionName', 'DatabaseType', 'Server', 'Database', 'Username', 'Password', 'ConnectionString', 'ApiBaseUrl']);
   };
 
   const handleTestConnection = async () => {
-    const formData = getValues();
+    const formData = connectionForm.getValues();
     console.log('Form data for test connection:', formData);
     setIsTestingConnection(true);
     setTestResult(null);
@@ -167,6 +203,21 @@ export const useApplicationWithConnection = ({
             IsActive: true
           }
         };
+      } else if (selectedDbType === DatabaseType.GitHub_API) {
+        testData = {
+          ConnectionDetails: {
+            ApplicationId: '', // Will be set by backend if needed
+            Name: formData.ConnectionName || 'Test Connection',
+            Description: formData.ConnectionDescription,
+            Type: formData.DatabaseType,
+            Server: 'api.github.com',
+            ApiKey: formData.GitHubToken || '',
+            ApiBaseUrl: 'https://api.github.com',
+            Username: formData.GitHubOrganization || '',
+            Password: formData.GitHubRepository || '',
+            IsActive: true
+          }
+        };
       } else if (isApiType()) {
         testData = {
           ConnectionDetails: {
@@ -202,6 +253,9 @@ export const useApplicationWithConnection = ({
       console.log('Test data being sent:', testData);
       const result = await databaseConnectionService.testConnection(testData);
       console.log('Test result:', result);
+      
+      // Store full result for popup
+      setFullTestResult(result);
       
       if (result.IsSuccessful) {
         setTestResult({ success: true, message: result.Message || 'Connection successful!' });
@@ -243,6 +297,7 @@ export const useApplicationWithConnection = ({
       
       // Try to extract error code from the error response
       let errorCode = 'NETWORK_ERROR';
+      let errorDetails = '';
       if (error && typeof error === 'object' && 'response' in error) {
         const response = (error as any).response;
         if (response?.data?.ErrorCode) {
@@ -250,7 +305,19 @@ export const useApplicationWithConnection = ({
         } else if (response?.status) {
           errorCode = `HTTP_${response.status}`;
         }
+        if (response?.data?.Message) {
+          errorDetails = response.data.Message;
+        }
       }
+      
+      // Store error result for popup
+      const errorResult = {
+        IsSuccessful: false,
+        Message: errorMessage,
+        ErrorCode: errorCode,
+        ErrorDetails: errorDetails
+      };
+      setFullTestResult(errorResult);
       
       setTestResult({ success: false, message: errorMessage });
       addNotification({
@@ -296,6 +363,7 @@ export const useApplicationWithConnection = ({
     { value: DatabaseType.ServiceNow_API, label: 'ServiceNow' },
     { value: DatabaseType.Snowflake, label: 'Snowflake' },
     { value: DatabaseType.Databricks, label: 'Databricks' },
+    { value: DatabaseType.GitHub_API, label: 'GitHub API' },
     { value: DatabaseType.Custom, label: 'Custom' }
   ];
 
@@ -305,7 +373,8 @@ export const useApplicationWithConnection = ({
       DatabaseType.GraphQL, 
       DatabaseType.WebSocket,
       DatabaseType.Salesforce_API,
-      DatabaseType.ServiceNow_API
+      DatabaseType.ServiceNow_API,
+      DatabaseType.GitHub_API
     ].includes(selectedDbType);
   };
 
@@ -317,6 +386,9 @@ export const useApplicationWithConnection = ({
     return selectedDbType >= DatabaseType.AWS_RDS && selectedDbType <= DatabaseType.Databricks;
   };
 
+  // Get the appropriate form methods based on current step
+  const currentForm = currentStep === 1 ? applicationForm : connectionForm;
+  
   return {
     // Form state
     currentStep,
@@ -324,14 +396,15 @@ export const useApplicationWithConnection = ({
     setSelectedDbType,
     isTestingConnection,
     testResult,
+    fullTestResult,
     
-    // Form methods
-    register,
-    handleSubmit,
-    watch,
-    control,
-    errors,
-    isSubmitting,
+    // Form methods - provide the appropriate form based on current step
+    register: currentForm.register,
+    handleSubmit: currentForm.handleSubmit,
+    watch: currentForm.watch,
+    control: currentForm.control,
+    errors: currentForm.formState.errors,
+    isSubmitting: currentForm.formState.isSubmitting,
     
     // Actions
     handleFormSubmit,

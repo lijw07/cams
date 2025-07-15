@@ -149,11 +149,18 @@ export function validateEnvironment(): void {
     }
   }
 
-  // Validate API URL format
-  try {
-    new URL(env.api.baseUrl);
-  } catch {
-    throw new Error(`Invalid VITE_APP_API_URL format: ${env.api.baseUrl}`);
+  // Validate API URL format (allow relative URLs for local development)
+  if (!env.api.baseUrl.startsWith('/') && !env.api.baseUrl.startsWith('http')) {
+    throw new Error(`Invalid VITE_APP_API_URL format: ${env.api.baseUrl}. Must start with "/" or "http"`);
+  }
+  
+  // For absolute URLs, validate the format
+  if (env.api.baseUrl.startsWith('http')) {
+    try {
+      new URL(env.api.baseUrl);
+    } catch {
+      throw new Error(`Invalid VITE_APP_API_URL format: ${env.api.baseUrl}`);
+    }
   }
 
   // Log environment info in development

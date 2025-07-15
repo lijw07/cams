@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useId } from 'react';
 import { X } from 'lucide-react';
 
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import { useModalStack } from '../../hooks/useModalStack';
 
 import Button from './Button';
 
@@ -15,6 +16,7 @@ export interface ModalProps {
   showCloseButton?: boolean;
   closeOnOverlayClick?: boolean;
   closeOnEscape?: boolean;
+  disableStackManagement?: boolean;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -25,21 +27,33 @@ const Modal: React.FC<ModalProps> = ({
   children,
   showCloseButton = true,
   closeOnOverlayClick = true,
-  closeOnEscape = true
+  closeOnEscape = true,
+  disableStackManagement = false
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
   const contentId = useId();
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const mouseDownTarget = useRef<EventTarget | null>(null);
 
-  // Handle escape key
+  // Register this modal with the modal stack (unless disabled)
+  if (!disableStackManagement) {
+    try {
+      useModalStack(isOpen, onClose);
+    } catch (error) {
+      // If modal stack is not available, continue without it
+      console.warn('Modal stack not available, falling back to individual modal handling');
+    }
+  }
+
   // Use focus trap hook
   useFocusTrap(modalRef, isOpen);
 
   // Handle escape key and focus management
   useEffect(() => {
     const handleEscape = (event: KeyboardEvent) => {
-      if (closeOnEscape && event.key === 'Escape') {
+      // Only handle ESC if stack management is disabled (for legacy modals)
+      if (disableStackManagement && closeOnEscape && event.key === 'Escape') {
         onClose();
       }
     };
@@ -48,9 +62,15 @@ const Modal: React.FC<ModalProps> = ({
       // Store currently focused element
       previousActiveElement.current = document.activeElement as HTMLElement;
       
-      document.addEventListener('keydown', handleEscape);
+      if (disableStackManagement) {
+        document.addEventListener('keydown', handleEscape);
+      }
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
+      // Also set position fixed to prevent iOS scroll issues
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${window.scrollY}px`;
+      document.body.style.width = '100%';
       
       // Only focus the modal container if no other element is focused
       // This prevents stealing focus from input fields
@@ -62,21 +82,39 @@ const Modal: React.FC<ModalProps> = ({
     }
 
     return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'unset';
+      if (disableStackManagement) {
+        document.removeEventListener('keydown', handleEscape);
+      }
+      
+      // Restore body scroll
+      const scrollY = document.body.style.top;
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      window.scrollTo(0, parseInt(scrollY || '0') * -1);
       
       // Restore focus to previous element
       if (previousActiveElement.current && document.body.contains(previousActiveElement.current)) {
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen, closeOnEscape, onClose]);
+  }, [isOpen, closeOnEscape, onClose, disableStackManagement]);
 
-  // Handle click outside
+  // Handle mouse down to track where click started
+  const handleMouseDown = (event: React.MouseEvent) => {
+    mouseDownTarget.current = event.target;
+  };
+
+  // Handle click outside - only close if both mousedown and mouseup happened on overlay
   const handleOverlayClick = (event: React.MouseEvent) => {
-    if (closeOnOverlayClick && event.target === event.currentTarget) {
+    if (closeOnOverlayClick && 
+        event.target === event.currentTarget && 
+        mouseDownTarget.current === event.target) {
       onClose();
     }
+    // Reset the mouse down target
+    mouseDownTarget.current = null;
   };
 
   const sizeClasses = {
@@ -89,9 +127,10 @@ const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
+    <div className="fixed inset-0 z-50">
       <div 
         className="flex items-center justify-center min-h-screen p-4"
+        onMouseDown={handleMouseDown}
         onClick={handleOverlayClick}
       >
         {/* Overlay */}

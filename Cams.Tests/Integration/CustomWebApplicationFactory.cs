@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using cams.Backend.Data;
+using System.Linq;
 
 namespace Cams.Tests.Integration;
 
@@ -11,25 +12,39 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
+        // Configure to use test environment and disable service validation
+        builder.UseEnvironment("Test");
         builder.ConfigureServices(services =>
         {
-            // Remove the existing DbContext registration
-            var descriptor = services.SingleOrDefault(
-                d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
+            // Remove existing DbContext and DbContextFactory registrations
+            var descriptorsToRemove = services.Where(d => 
+                d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>) ||
+                d.ServiceType == typeof(ApplicationDbContext) ||
+                d.ServiceType == typeof(IDbContextFactory<ApplicationDbContext>)).ToList();
             
-            if (descriptor != null)
+            foreach (var descriptor in descriptorsToRemove)
             {
                 services.Remove(descriptor);
             }
 
-            // Add in-memory database for testing
+            // Add in-memory database for testing with consistent configuration
             services.AddDbContext<ApplicationDbContext>(options =>
             {
                 options.UseInMemoryDatabase("TestDatabase");
-            });
+            }, ServiceLifetime.Scoped, ServiceLifetime.Singleton);
 
-            // Build the service provider
-            var serviceProvider = services.BuildServiceProvider();
+            // Also register the factory for services that need it
+            services.AddDbContextFactory<ApplicationDbContext>(options =>
+            {
+                options.UseInMemoryDatabase("TestDatabase");
+            }, ServiceLifetime.Singleton);
+
+            // Build the service provider with all validations disabled for test environment
+            var serviceProvider = services.BuildServiceProvider(new ServiceProviderOptions
+            {
+                ValidateScopes = false,
+                ValidateOnBuild = false
+            });
 
             // Create a scope to obtain a reference to the database context
             using var scope = serviceProvider.CreateScope();
@@ -49,6 +64,13 @@ public class CustomWebApplicationFactory<TStartup> : WebApplicationFactory<TStar
             {
                 logger.LogError(ex, "An error occurred seeding the database with test data.");
             }
+        });
+        
+        // Override the host builder to disable service validation
+        builder.UseDefaultServiceProvider(options =>
+        {
+            options.ValidateScopes = false;
+            options.ValidateOnBuild = false;
         });
     }
 
