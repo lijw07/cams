@@ -2,7 +2,7 @@ import React from 'react';
 
 import { UseFormRegister, FieldErrors } from 'react-hook-form';
 
-import { Server } from 'lucide-react';
+import { Server, ToggleLeft, ToggleRight } from 'lucide-react';
 
 import { ApplicationWithConnectionRequest } from '../../types';
 
@@ -24,16 +24,10 @@ const ApplicationDetailsStep: React.FC<ApplicationDetailsStepProps> = ({
 
       <div>
         <label htmlFor="applicationName" className="label">
-          Application Name *
+          Application Name
         </label>
         <input
-          {...register('ApplicationName', {
-            required: 'Application name is required',
-            minLength: {
-              value: 3,
-              message: 'Name must be at least 3 characters'
-            }
-          })}
+          {...register('ApplicationName')}
           type="text"
           id="applicationName"
           className="input"
@@ -57,35 +51,20 @@ const ApplicationDetailsStep: React.FC<ApplicationDetailsStepProps> = ({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="version" className="label">
-            Version
-          </label>
-          <input
-            {...register('Version')}
-            type="text"
-            id="version"
-            className="input"
-            placeholder="e.g., 1.0.0"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="environment" className="label">
-            Environment
-          </label>
-          <select
-            {...register('Environment')}
-            id="environment"
-            className="input"
-          >
-            <option value="Development">Development</option>
-            <option value="Staging">Staging</option>
-            <option value="Production">Production</option>
-            <option value="Testing">Testing</option>
-          </select>
-        </div>
+      <div>
+        <label htmlFor="environment" className="label">
+          Environment
+        </label>
+        <select
+          {...register('Environment')}
+          id="environment"
+          className="input"
+        >
+          <option value="Development">Development</option>
+          <option value="Staging">Staging</option>
+          <option value="Production">Production</option>
+          <option value="Testing">Testing</option>
+        </select>
       </div>
 
       <div>
@@ -104,21 +83,27 @@ const ApplicationDetailsStep: React.FC<ApplicationDetailsStepProps> = ({
         </p>
       </div>
 
-      <div className="flex items-center space-x-3 p-3 bg-secondary-50 dark:bg-secondary-700 rounded-lg border border-secondary-200 dark:border-secondary-600">
-        <div className="flex items-center">
-          <input
-            {...register('IsApplicationActive')}
-            type="checkbox"
-            id="isApplicationActive"
-            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 dark:border-secondary-600 rounded"
-          />
-          <label htmlFor="isApplicationActive" className="ml-2 block text-sm font-medium text-secondary-900 dark:text-white">
-            Active Application
+      <div className="p-4 bg-secondary-50 dark:bg-secondary-800 rounded-lg border border-secondary-200 dark:border-secondary-600">
+        <div className="flex items-center justify-between">
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              {...register('IsApplicationActive')}
+              type="checkbox"
+              className="sr-only peer"
+              id="isApplicationActive"
+            />
+            <div className="w-11 h-6 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-600"></div>
+            <span className="ml-3 text-sm font-medium text-secondary-900 dark:text-secondary-300">
+              Active
+            </span>
           </label>
+          <div>
+            <h4 className="text-sm font-medium text-secondary-900 dark:text-white">Application Status</h4>
+            <p className="text-sm text-secondary-500 dark:text-secondary-400 mt-1">
+              Active applications can be accessed and used by the system
+            </p>
+          </div>
         </div>
-        <span className="text-xs text-secondary-500 dark:text-secondary-400">
-          Application will be available for use when active
-        </span>
       </div>
     </div>
   );

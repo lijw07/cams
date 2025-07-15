@@ -116,6 +116,7 @@ namespace cams.Backend.Services
             if (application == null)
                 return null;
 
+            // Update properties
             application.Name = request.Name;
             application.Description = request.Description;
             application.Version = request.Version;
@@ -124,9 +125,30 @@ namespace cams.Backend.Services
             application.IsActive = request.IsActive;
             application.UpdatedAt = DateTime.UtcNow;
 
-            await context.SaveChangesAsync();
-            logger.LogInformation("Updated application {ApplicationName} for user {UserId}",
-                LoggingHelper.Sanitize(request.Name), userId);
+            // Explicitly mark as modified to ensure Entity Framework tracks changes
+            context.Applications.Update(application);
+            
+            try
+            {
+                var changeCount = await context.SaveChangesAsync();
+                
+                if (changeCount == 0)
+                {
+                    logger.LogWarning("No changes were saved for application {ApplicationId} by user {UserId}", 
+                        request.Id, userId);
+                }
+                else
+                {
+                    logger.LogInformation("Successfully updated application {ApplicationName} for user {UserId} ({ChangeCount} changes)",
+                        LoggingHelper.Sanitize(request.Name), userId, changeCount);
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error saving application update for {ApplicationId} by user {UserId}", 
+                    request.Id, userId);
+                throw;
+            }
 
             return MapToResponse(application);
         }

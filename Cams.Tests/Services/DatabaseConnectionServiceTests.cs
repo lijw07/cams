@@ -13,6 +13,7 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
     private readonly DatabaseFixture _fixture;
     private readonly Mock<ILogger<DatabaseConnectionService>> _loggerMock;
     private readonly Mock<IApplicationService> _applicationServiceMock;
+    private readonly Mock<IConnectionTestService> _connectionTestServiceMock;
     private readonly IOptions<JwtSettings> _jwtSettings;
 
     public DatabaseConnectionServiceTests(DatabaseFixture fixture)
@@ -20,6 +21,7 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
         _fixture = fixture;
         _loggerMock = new Mock<ILogger<DatabaseConnectionService>>();
         _applicationServiceMock = new Mock<IApplicationService>();
+        _connectionTestServiceMock = new Mock<IConnectionTestService>();
         _jwtSettings = Options.Create(new JwtSettings
         {
             Secret = "super-secret-key-for-testing-purposes-only-12345"
@@ -68,7 +70,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act
         var result = await service.GetUserConnectionsAsync(userId, applicationId);
@@ -106,7 +109,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act
         var result = await service.GetConnectionByIdAsync(connection.Id, userId);
@@ -147,7 +151,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act
         var result = await service.CreateConnectionAsync(request, userId);
@@ -185,7 +190,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act & Assert
         await service.Invoking(s => s.CreateConnectionAsync(request, userId))
@@ -233,7 +239,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act
         var result = await service.UpdateConnectionAsync(request, userId);
@@ -263,7 +270,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act
         var result = await service.DeleteConnectionAsync(connection.Id, userId);
@@ -293,20 +301,33 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         var testRequest = new DatabaseConnectionTestRequest
         {
             ConnectionId = connection.Id
         };
 
+        var expectedResponse = new DatabaseConnectionTestResponse
+        {
+            IsSuccessful = true,
+            Message = "Connection successful",
+            ResponseTime = TimeSpan.FromMilliseconds(100),
+            TestedAt = DateTime.UtcNow
+        };
+
+        _connectionTestServiceMock
+            .Setup(x => x.TestConnectionWithDetailsAsync(It.IsAny<DatabaseConnectionTestRequest>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(expectedResponse);
+
         // Act
         var result = await service.TestConnectionAsync(testRequest, userId);
 
         // Assert
         result.Should().NotBeNull();
-        // Note: Actual connection test will fail in unit test environment
-        // In a real scenario, you'd mock the database connection
+        result.IsSuccessful.Should().BeTrue();
+        result.Message.Should().Be("Connection successful");
     }
 
     [Fact]
@@ -326,7 +347,8 @@ public class DatabaseConnectionServiceTests : IClassFixture<DatabaseFixture>
             _loggerMock.Object,
             _jwtSettings,
             _applicationServiceMock.Object,
-            context);
+            context,
+            _connectionTestServiceMock.Object);
 
         // Act
         var result = await service.ToggleConnectionStatusAsync(connection.Id, userId, false);

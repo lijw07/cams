@@ -14,7 +14,7 @@ import {
 
 import { Role } from '../../services/roleService';
 import Button from '../common/Button';
-import Pagination from '../common/Pagination';
+import PerformanceLogsPagination from '../logs/PerformanceLogsPagination';
 
 interface RoleTableProps {
   roles: Role[];
@@ -221,10 +221,10 @@ const RoleTable: React.FC<RoleTableProps> = ({
         </table>
       </div>
       
-      <Pagination
+      <PerformanceLogsPagination
         currentPage={pagination.currentPage}
         totalPages={pagination.totalPages}
-        totalItems={pagination.totalItems}
+        totalCount={pagination.totalItems}
         pageSize={pagination.perPage}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}

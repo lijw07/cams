@@ -33,11 +33,12 @@ builder.Services.Configure<Microsoft.AspNetCore.Mvc.ApiBehaviorOptions>(options 
 builder.Services.AddEndpointsApiExplorer();
 
 // Configure Entity Framework
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// Register DbContext factory (which also registers DbContext)
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 {
     var connectionString = GetConnectionString(builder.Configuration);
     options.UseNpgsql(connectionString);
-});
+}, ServiceLifetime.Scoped);
 
 // Configure Swagger with JWT support
 builder.Services.AddSwaggerGen(c =>
@@ -128,6 +129,7 @@ builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 
 // Register services
 builder.Services.AddScoped<IApplicationService, ApplicationService>();
+builder.Services.AddScoped<IConnectionStringBuilder, ConnectionStringBuilder>();
 builder.Services.AddScoped<IDatabaseConnectionService, DatabaseConnectionService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
@@ -135,6 +137,11 @@ builder.Services.AddScoped<ILoggingService, LoggingService>();
 builder.Services.AddScoped<IRoleService, RoleService>();
 builder.Services.AddScoped<IMigrationService, MigrationService>();
 builder.Services.AddScoped<IConnectionTestScheduleService, ConnectionTestScheduleService>();
+builder.Services.AddScoped<IConnectionTestService, ConnectionTestService>();
+builder.Services.AddScoped<IGitHubManagementService, GitHubManagementService>();
+
+// Register HttpClient factory for GitHub API
+builder.Services.AddHttpClient();
 
 // Register background services
 builder.Services.AddHostedService<ConnectionTestSchedulerService>();

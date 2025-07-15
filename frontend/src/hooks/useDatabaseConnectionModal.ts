@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 
 import { useNotifications } from '../contexts/NotificationContext';
 import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseConnection, DatabaseType } from '../types';
+import { getDatabaseTypeOptions, isApiType as checkIsApiType, isConnectionStringType as checkIsConnectionStringType } from '../utils/databaseUtils';
 
 interface UseDatabaseConnectionModalProps {
   isOpen: boolean;
@@ -41,7 +42,10 @@ export const useDatabaseConnectionModal = ({
       ApiBaseUrl: '',
       ApiKey: '',
       AdditionalSettings: '',
-      IsActive: true
+      IsActive: true,
+      GitHubToken: '',
+      GitHubOrganization: '',
+      GitHubRepository: ''
     }
   });
 
@@ -70,7 +74,10 @@ export const useDatabaseConnectionModal = ({
           ApiBaseUrl: connection.ApiBaseUrl || '',
           ApiKey: '',
           AdditionalSettings: connection.AdditionalSettings || '',
-          IsActive: connection.IsActive
+          IsActive: connection.IsActive,
+          GitHubToken: '',
+          GitHubOrganization: (connection as any).GitHubOrganization || '',
+          GitHubRepository: (connection as any).GitHubRepository || ''
         });
         setSelectedDbType(connection.Type);
       } else {
@@ -88,7 +95,10 @@ export const useDatabaseConnectionModal = ({
           ApiBaseUrl: '',
           ApiKey: '',
           AdditionalSettings: '',
-          IsActive: true
+          IsActive: true,
+          GitHubToken: '',
+          GitHubOrganization: '',
+          GitHubRepository: ''
         });
         setSelectedDbType(DatabaseType.SqlServer);
       }
@@ -173,27 +183,8 @@ export const useDatabaseConnectionModal = ({
     onClose();
   };
 
-  const getDatabaseTypeOptions = () => [
-    { value: DatabaseType.SqlServer, label: 'SQL Server' },
-    { value: DatabaseType.MySQL, label: 'MySQL' },
-    { value: DatabaseType.PostgreSQL, label: 'PostgreSQL' },
-    { value: DatabaseType.Oracle, label: 'Oracle' },
-    { value: DatabaseType.SQLite, label: 'SQLite' },
-    { value: DatabaseType.MongoDB, label: 'MongoDB' },
-    { value: DatabaseType.Redis, label: 'Redis' },
-    { value: DatabaseType.RestApi, label: 'REST API' },
-    { value: DatabaseType.GraphQL, label: 'GraphQL' },
-    { value: DatabaseType.WebSocket, label: 'WebSocket' },
-    { value: DatabaseType.Custom, label: 'Custom' }
-  ];
-
-  const isApiType = () => {
-    return [DatabaseType.RestApi, DatabaseType.GraphQL, DatabaseType.WebSocket].includes(selectedDbType);
-  };
-
-  const isConnectionStringType = () => {
-    return [DatabaseType.Custom].includes(selectedDbType);
-  };
+  const isApiType = () => checkIsApiType(selectedDbType);
+  const isConnectionStringType = () => checkIsConnectionStringType(selectedDbType);
 
   return {
     register,

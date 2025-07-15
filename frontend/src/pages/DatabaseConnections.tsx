@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 
-import { useNavigate } from 'react-router-dom';
-
 import { 
   Plus, 
   Search, 
-  Filter, 
-  RefreshCw, 
   Database, 
   CheckCircle, 
   XCircle, 
@@ -14,41 +10,57 @@ import {
   AlertTriangle,
   Edit,
   Trash2,
-  Play,
-  Pause,
-  Eye,
-  Activity
+  ToggleLeft,
+  ToggleRight,
+  Activity,
+  Server,
+  X
 } from 'lucide-react';
 
-import Button from '../components/common/Button';
-import LoadingSpinner from '../components/common/LoadingSpinner';
-import Pagination from '../components/common/Pagination';
+import PerformanceLogsPagination from '../components/logs/PerformanceLogsPagination';
+import DatabaseConnectionModal from '../components/modals/DatabaseConnectionModal';
 import { useNotifications } from '../contexts/NotificationContext';
 import { databaseConnectionService } from '../services/databaseConnectionService';
-import { DatabaseConnection, DatabaseType, ConnectionStatus } from '../types';
+import { applicationService } from '../services/applicationService';
+import { DatabaseConnection, DatabaseType, ConnectionStatus, DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, Application } from '../types';
 
-const DatabaseConnections: React.FC = () => {
-  const navigate = useNavigate();
+interface DatabaseConnectionsProps {
+  triggerCreateModal?: boolean;
+  onModalTriggered?: () => void;
+  onConnectionsLoaded?: (count: number) => void;
+}
+
+const DatabaseConnections: React.FC<DatabaseConnectionsProps> = ({ triggerCreateModal, onModalTriggered, onConnectionsLoaded }) => {
   const { addNotification } = useNotifications();
 
   // State
   const [connections, setConnections] = useState<DatabaseConnection[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState<DatabaseType | ''>('');
-  const [statusFilter, setStatusFilter] = useState<ConnectionStatus | ''>('');
-  const [selectedConnections, setSelectedConnections] = useState<string[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(9);
+  const [sortBy, setSortBy] = useState('Name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedConnection, setSelectedConnection] = useState<DatabaseConnection | null>(null);
+  const [selectedApplicationId, setSelectedApplicationId] = useState<string>('');
+  const [selectedApplicationName, setSelectedApplicationName] = useState<string>('');
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [applicationsLoading, setApplicationsLoading] = useState(true);
+  const [showApplicationSelect, setShowApplicationSelect] = useState(false);
 
   // Load connections
   const loadConnections = useCallback(async () => {
     try {
       setLoading(true);
       const data = await databaseConnectionService.getConnections();
-      setConnections(Array.isArray(data) ? data : []);
+      const connectionsList = Array.isArray(data) ? data : [];
+      setConnections(connectionsList);
+      
+      // Call the callback to update the count in the parent component
+      if (onConnectionsLoaded) {
+        onConnectionsLoaded(connectionsList.length);
+      }
     } catch (error) {
       console.error('Error loading connections:', error);
       addNotification({
@@ -60,58 +72,170 @@ const DatabaseConnections: React.FC = () => {
         suggestions: ['Refresh the page', 'Check your network connection', 'Contact support if the issue persists']
       });
       setConnections([]);
+      if (onConnectionsLoaded) {
+        onConnectionsLoaded(0);
+      }
     } finally {
       setLoading(false);
     }
-  }, [addNotification]);
+  }, [addNotification, onConnectionsLoaded]);
 
   useEffect(() => {
     loadConnections();
+    loadApplications();
   }, [loadConnections]);
 
-  // Filter connections based on search and filters
+  // Handle external trigger to open create modal
+  useEffect(() => {
+    if (triggerCreateModal) {
+      openCreateModal();
+      if (onModalTriggered) {
+        onModalTriggered();
+      }
+    }
+  }, [triggerCreateModal]);
+
+  // Load applications for the dropdown
+  const loadApplications = async () => {
+    try {
+      setApplicationsLoading(true);
+      const response = await applicationService.getApplications();
+      
+      // Handle different response types
+      if (Array.isArray(response)) {
+        setApplications(response);
+      } else if (response && typeof response === 'object' && 'message' in response) {
+        // Backend returned an error object
+        console.error('Backend returned error for applications:', response);
+        setApplications([]);
+        addNotification({
+          title: 'Authentication Required',
+          message: 'Please log in to access applications',
+          type: 'warning',
+          source: 'Database Connections',
+          details: 'Your session may have expired. Please log in again to access applications.',
+          suggestions: [
+            'Log in with your credentials',
+            'Refresh the page if you are already logged in',
+            'Check if your session has expired'
+          ]
+        });
+      } else {
+        console.warn('Applications response is not an array:', response);
+        setApplications([]);
+      }
+    } catch (error) {
+      console.error('Error loading applications:', error);
+      setApplications([]); // Ensure we always have an array
+      
+      // Check if it's an authentication error
+      if (error && typeof error === 'object' && 'response' in error) {
+        const response = (error as any).response;
+        if (response?.status === 401) {
+          addNotification({
+            title: 'Authentication Required',
+            message: 'Please log in to access applications',
+            type: 'warning',
+            source: 'Database Connections',
+            details: 'Your session has expired. Please log in again to access applications.',
+            suggestions: [
+              'Log in with your credentials',
+              'Refresh the page after logging in'
+            ]
+          });
+        } else {
+          addNotification({
+            title: 'Error Loading Applications',
+            message: 'Failed to load applications for connection creation',
+            type: 'error',
+            source: 'Database Connections',
+            details: 'Unable to retrieve applications. This may affect your ability to create new connections.',
+            suggestions: [
+              'Refresh the page to try again',
+              'Check your network connection',
+              'Contact support if the issue persists'
+            ]
+          });
+        }
+      } else {
+        addNotification({
+          title: 'Error Loading Applications',
+          message: 'Failed to load applications for connection creation',
+          type: 'error',
+          source: 'Database Connections',
+          details: 'Unable to retrieve applications. This may affect your ability to create new connections.',
+          suggestions: [
+            'Refresh the page to try again',
+            'Check your network connection',
+            'Contact support if the issue persists'
+          ]
+        });
+      }
+    } finally {
+      setApplicationsLoading(false);
+    }
+  };
+
+  // Filter and sort connections
   const filteredConnections = connections.filter(connection => {
     const matchesSearch = !searchTerm || 
       connection.Name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       connection.TypeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       connection.ApplicationName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesType = !typeFilter || connection.Type === typeFilter;
-    const matchesStatus = !statusFilter || connection.Status === statusFilter;
+    return matchesSearch;
+  });
+
+  // Sort connections
+  const sortedConnections = [...filteredConnections].sort((a, b) => {
+    let aValue: any = a[sortBy as keyof DatabaseConnection];
+    let bValue: any = b[sortBy as keyof DatabaseConnection];
     
-    return matchesSearch && matchesType && matchesStatus;
+    if (typeof aValue === 'string') {
+      aValue = aValue.toLowerCase();
+      bValue = bValue.toLowerCase();
+    }
+    
+    if (sortDirection === 'asc') {
+      return aValue > bValue ? 1 : -1;
+    } else {
+      return aValue < bValue ? 1 : -1;
+    }
   });
 
   // Pagination
-  const paginatedConnections = filteredConnections.slice(
+  const totalItems = sortedConnections.length;
+  const totalPages = Math.ceil(totalItems / pageSize);
+  const paginatedConnections = sortedConnections.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
 
   useEffect(() => {
-    const total = Math.ceil(filteredConnections.length / pageSize);
-    setTotalPages(total);
-    setTotalItems(filteredConnections.length);
-    if (currentPage > total && total > 0) {
+    if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
-  }, [filteredConnections.length, pageSize, currentPage]);
+  }, [currentPage, totalPages]);
 
-  // Handle selection
-  const handleSelectConnection = (id: string, checked: boolean) => {
-    if (checked) {
-      setSelectedConnections(prev => [...prev, id]);
-    } else {
-      setSelectedConnections(prev => prev.filter(cId => cId !== id));
-    }
+  // Handle search and sorting
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    setCurrentPage(1);
   };
 
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedConnections(paginatedConnections.map(c => c.Id));
+  const handleSort = (field: string) => {
+    if (sortBy === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
-      setSelectedConnections([]);
+      setSortBy(field);
+      setSortDirection('asc');
     }
+    setCurrentPage(1);
+  };
+
+  const handlePageSizeChange = (newPageSize: number) => {
+    setPageSize(newPageSize);
+    setCurrentPage(1);
   };
 
   // Test connection
@@ -187,88 +311,119 @@ const DatabaseConnections: React.FC = () => {
       await databaseConnectionService.deleteConnection(id);
       const connection = connections.find(c => c.Id === id);
       addNotification({
-        title: 'Connection Deleted',
-        message: `Successfully deleted connection "${connection?.Name || 'connection'}"`,
+        title: 'Success',
+        message: 'Connection deleted successfully',
         type: 'success',
-        source: 'Database Connections',
-        details: `Database connection "${connection?.Name || 'connection'}" has been permanently removed from the system.`
+        source: 'Database Connections'
       });
       await loadConnections();
     } catch (error) {
       addNotification({
-        title: 'Delete Failed',
+        title: 'Error',
         message: 'Failed to delete connection',
         type: 'error',
-        source: 'Database Connections',
-        details: 'Unable to delete the connection. It may be in use by applications or you may not have sufficient permissions.',
-        suggestions: [
-          'Check if the connection is being used by any applications',
-          'Verify you have permission to delete connections',
-          'Try again in a few moments'
-        ]
+        source: 'Database Connections'
       });
     }
   };
 
-  // Bulk operations
-  const handleBulkToggleStatus = async (isActive: boolean) => {
-    if (selectedConnections.length === 0) return;
-
-    try {
-      await databaseConnectionService.bulkToggleStatus(selectedConnections, isActive);
+  // Modal handlers
+  const openCreateModal = () => {
+    setSelectedConnection(null);
+    
+    // Check if applications are still loading
+    if (applicationsLoading) {
       addNotification({
-        title: 'Bulk Status Update',
-        message: `${selectedConnections.length} connections ${isActive ? 'activated' : 'deactivated'} successfully`,
-        type: 'success',
+        title: 'Loading Applications',
+        message: 'Please wait while applications are being loaded...',
+        type: 'info',
         source: 'Database Connections',
-        details: `${selectedConnections.length} database connections have been ${isActive ? 'activated and are now available for use' : 'deactivated and will no longer be used by applications'}.`
+        details: 'The system is retrieving available applications. Please try again in a moment.',
+        suggestions: ['Wait a moment and try again']
       });
-      setSelectedConnections([]);
-      await loadConnections();
-    } catch (error) {
+      return;
+    }
+    
+    if (applications.length === 0) {
       addNotification({
-        title: 'Bulk Update Failed',
-        message: 'Failed to update connection statuses',
-        type: 'error',
+        title: 'No Applications Available',
+        message: 'You need to create an application first before adding database connections',
+        type: 'info',
         source: 'Database Connections',
-        details: `Unable to update status for ${selectedConnections.length} connections. Some connections may not have been updated.`,
+        details: 'Database connections must be associated with an application. Please create an application first.',
         suggestions: [
-          'Verify you have permission to modify connections',
-          'Check if all selected connections still exist',
-          'Try updating connections individually'
+          'Go to the Applications tab and click "New Application"',
+          'Create at least one application to manage connections',
+          'Applications help organize your database connections'
         ]
       });
+      return;
+    }
+    setShowApplicationSelect(true);
+  };
+
+  const handleApplicationSelect = (applicationId: string) => {
+    const app = applications.find(a => a.Id === applicationId);
+    if (app) {
+      setSelectedApplicationId(app.Id);
+      setSelectedApplicationName(app.Name);
+      setShowApplicationSelect(false);
+      setIsModalOpen(true);
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (selectedConnections.length === 0) return;
-    if (!confirm(`Are you sure you want to delete ${selectedConnections.length} connections?`)) return;
+  const openEditModal = (connection: DatabaseConnection) => {
+    setSelectedConnection(connection);
+    setSelectedApplicationId(connection.ApplicationId || '');
+    setSelectedApplicationName(connection.ApplicationName || 'Unknown Application');
+    setIsModalOpen(true);
+  };
 
+  const handleCreateConnection = async (data: DatabaseConnectionRequest) => {
     try {
-      await databaseConnectionService.bulkDelete(selectedConnections);
-      addNotification({
-        title: 'Bulk Delete',
-        message: `${selectedConnections.length} connections deleted successfully`,
-        type: 'success',
-        source: 'Database Connections',
-        details: `${selectedConnections.length} database connections have been permanently removed from the system.`
+      await databaseConnectionService.createConnection(data);
+      addNotification({ 
+        title: 'Success', 
+        message: 'Connection created successfully', 
+        type: 'success', 
+        source: 'Database Connections' 
       });
-      setSelectedConnections([]);
       await loadConnections();
+      setIsModalOpen(false);
     } catch (error) {
-      addNotification({
-        title: 'Bulk Delete Failed',
-        message: 'Failed to delete connections',
-        type: 'error',
-        source: 'Database Connections',
-        details: `Unable to delete ${selectedConnections.length} connections. Some connections may still exist.`,
-        suggestions: [
-          'Check if connections are being used by applications',
-          'Verify you have permission to delete connections',
-          'Try deleting connections individually'
-        ]
+      console.error('Error creating connection:', error);
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to create connection', 
+        type: 'error', 
+        source: 'Database Connections' 
       });
+      throw error;
+    }
+  };
+
+  const handleUpdateConnection = async (data: DatabaseConnectionUpdateRequest) => {
+    if (!selectedConnection) return;
+    
+    try {
+      await databaseConnectionService.updateConnection(selectedConnection.Id, data);
+      addNotification({ 
+        title: 'Success', 
+        message: 'Connection updated successfully', 
+        type: 'success', 
+        source: 'Database Connections' 
+      });
+      await loadConnections();
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Error updating connection:', error);
+      addNotification({ 
+        title: 'Error', 
+        message: 'Failed to update connection', 
+        type: 'error', 
+        source: 'Database Connections' 
+      });
+      throw error;
     }
   };
 
@@ -286,293 +441,282 @@ const DatabaseConnections: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
+  // Get database type color
+  const getTypeColor = (type: DatabaseType): string => {
+    switch (type) {
+      case DatabaseType.SqlServer:
+        return 'bg-blue-100 text-blue-600';
+      case DatabaseType.MySQL:
+        return 'bg-orange-100 text-orange-600';
+      case DatabaseType.PostgreSQL:
+        return 'bg-indigo-100 text-indigo-600';
+      case DatabaseType.Oracle:
+        return 'bg-red-100 text-red-600';
+      case DatabaseType.SQLite:
+        return 'bg-green-100 text-green-600';
+      case DatabaseType.RestApi:
+        return 'bg-purple-100 text-purple-600';
+      default:
+        return 'bg-gray-100 text-gray-600';
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Database Connections</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            Manage database connections for your applications
-          </p>
-        </div>
-        <div className="flex space-x-3">
-          <Button
-            variant="secondary"
-            onClick={loadConnections}
-            disabled={loading}
-          >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button
-            onClick={() => navigate('/database-connections/create')}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add Connection
-          </Button>
-        </div>
-      </div>
-
-      {/* Filters */}
+      {/* Search and Controls */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Search
-            </label>
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <div className="flex-1 max-w-lg">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search connections..."
-                className="pl-10 w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                value={searchTerm}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
               />
             </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Database Type
-            </label>
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as DatabaseType | '')}
-              className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">All Types</option>
-              <option value={DatabaseType.SqlServer}>SQL Server</option>
-              <option value={DatabaseType.MySQL}>MySQL</option>
-              <option value={DatabaseType.PostgreSQL}>PostgreSQL</option>
-              <option value={DatabaseType.Oracle}>Oracle</option>
-              <option value={DatabaseType.SQLite}>SQLite</option>
-              <option value={DatabaseType.RestApi}>REST API</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Status
-            </label>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as ConnectionStatus | '')}
-              className="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-            >
-              <option value="">All Statuses</option>
-              <option value={ConnectionStatus.Connected}>Connected</option>
-              <option value={ConnectionStatus.Failed}>Failed</option>
-              <option value={ConnectionStatus.Untested}>Untested</option>
-            </select>
-          </div>
-
-          <div className="flex items-end">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setSearchTerm('');
-                setTypeFilter('');
-                setStatusFilter('');
-              }}
-            >
-              <Filter className="w-4 h-4 mr-2" />
-              Clear Filters
-            </Button>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-700 dark:text-gray-300">Sort by:</label>
+              <select
+                value={sortBy}
+                onChange={(e) => handleSort(e.target.value)}
+                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+              >
+                <option value="Name">Name</option>
+                <option value="TypeName">Type</option>
+                <option value="ApplicationName">Application</option>
+                <option value="LastTestedAt">Last Tested</option>
+              </select>
+              <button
+                onClick={() => setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')}
+                className="px-2 py-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                title={`Sort ${sortDirection === 'asc' ? 'descending' : 'ascending'}`}
+              >
+                {sortDirection === 'asc' ? '↑' : '↓'}
+              </button>
+            </div>
+            
           </div>
         </div>
       </div>
 
-      {/* Bulk Actions */}
-      {selectedConnections.length > 0 && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-blue-700 dark:text-blue-300">
-              {selectedConnections.length} connection(s) selected
-            </span>
-            <div className="flex space-x-2">
-              <Button size="sm" variant="secondary" onClick={() => handleBulkToggleStatus(true)}>
-                <Play className="w-4 h-4 mr-1" />
-                Activate
-              </Button>
-              <Button size="sm" variant="secondary" onClick={() => handleBulkToggleStatus(false)}>
-                <Pause className="w-4 h-4 mr-1" />
-                Deactivate
-              </Button>
-              <Button size="sm" variant="danger" onClick={handleBulkDelete}>
-                <Trash2 className="w-4 h-4 mr-1" />
-                Delete
-              </Button>
-            </div>
+
+      {loading ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 dark:text-gray-300">Loading connections...</p>
           </div>
         </div>
-      )}
-
-      {/* Connections Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <input
-                    type="checkbox"
-                    checked={paginatedConnections.length > 0 && selectedConnections.length === paginatedConnections.length}
-                    onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded border-gray-300 dark:border-gray-600"
-                  />
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Connection
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Type
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Application
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Last Tested
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-              {paginatedConnections.map((connection) => (
-                <tr key={connection.Id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                  <td className="px-6 py-4">
-                    <input
-                      type="checkbox"
-                      checked={selectedConnections.includes(connection.Id)}
-                      onChange={(e) => handleSelectConnection(connection.Id, e.target.checked)}
-                      className="rounded border-gray-300 dark:border-gray-600"
-                    />
-                  </td>
-                  <td className="px-6 py-4">
+      ) : filteredConnections.length === 0 ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div className="text-center py-12">
+            <Database className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              {searchTerm ? 'No matching connections' : 'No connections yet'}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
+              {searchTerm 
+                ? `No connections found for "${searchTerm}". Try adjusting your search.`
+                : 'Create your first database connection to get started.'
+              }
+            </p>
+            {!searchTerm && (
+              <button onClick={openCreateModal} className="btn btn-primary">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Connection
+              </button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {paginatedConnections.map((connection) => (
+              <div key={connection.Id} className="bg-white dark:bg-gray-800 rounded-lg shadow hover:shadow-lg transition-shadow cursor-pointer" onClick={() => openEditModal(connection)}>
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center">
-                      <Database className="w-5 h-5 text-gray-400 mr-3" />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {connection.Name}
-                        </div>
-                        {connection.Description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {connection.Description}
-                          </div>
-                        )}
+                      <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <Database className="w-5 h-5 text-primary-600" />
+                      </div>
+                      <div className="ml-3">
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{connection.Name}</h3>
+                        <p className="text-sm text-gray-500">{connection.ApplicationName || 'No Application'}</p>
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleStatus(connection.Id, !connection.IsActive);
+                      }}
+                      className="p-1 rounded-md hover:bg-gray-100"
+                      title={connection.IsActive ? 'Deactivate' : 'Activate'}
+                    >
+                      {connection.IsActive ? (
+                        <ToggleRight className="w-5 h-5 text-success-600" />
+                      ) : (
+                        <ToggleLeft className="w-5 h-5 text-gray-400" />
+                      )}
+                    </button>
+                  </div>
+
+                  {connection.Description && (
+                    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">{connection.Description}</p>
+                  )}
+
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className={`badge ${getTypeColor(connection.Type)}`}>
                       {connection.TypeName}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-900 dark:text-white">
-                    {connection.ApplicationName}
-                  </td>
-                  <td className="px-6 py-4">
                     <div className="flex items-center">
                       <StatusIcon status={connection.Status} />
-                      <span className="ml-2 text-sm text-gray-900 dark:text-white">
+                      <span className="ml-1 text-sm text-gray-600 dark:text-gray-400">
                         {connection.StatusName}
                       </span>
-                      {!connection.IsActive && (
-                        <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
-                          Inactive
-                        </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t pt-4">
+                    <div className="text-sm text-gray-500">
+                      {connection.LastTestedAt ? (
+                        <span>Tested: {new Date(connection.LastTestedAt).toLocaleDateString()}</span>
+                      ) : (
+                        <span>Never tested</span>
                       )}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-400">
-                    {connection.LastTestedAt ? new Date(connection.LastTestedAt).toLocaleString() : 'Never'}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex space-x-2">
                       <button
-                        onClick={() => navigate(`/database-connections/${connection.Id}`)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-200"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => navigate(`/database-connections/${connection.Id}/edit`)}
-                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-200"
-                        title="Edit"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleTestConnection(connection.Id)}
-                        className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTestConnection(connection.Id);
+                        }}
+                        className="p-1 rounded-md text-gray-400 hover:text-primary-600 hover:bg-primary-50"
                         title="Test Connection"
                       >
                         <Activity className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleToggleStatus(connection.Id, !connection.IsActive)}
-                        className={`${connection.IsActive ? 'text-yellow-600 hover:text-yellow-900 dark:text-yellow-400' : 'text-green-600 hover:text-green-900 dark:text-green-400'}`}
-                        title={connection.IsActive ? 'Deactivate' : 'Activate'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(connection);
+                        }}
+                        className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-gray-500 dark:hover:text-gray-300 dark:hover:bg-gray-700"
+                        title="Edit"
                       >
-                        {connection.IsActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDeleteConnection(connection.Id)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-200"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteConnection(connection.Id);
+                        }}
+                        className="p-1 rounded-md text-gray-400 hover:text-error-600 hover:bg-error-50"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredConnections.length === 0 && (
-          <div className="text-center py-12">
-            <Database className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">No connections found</h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {connections.length === 0 
-                ? "Get started by creating your first database connection."
-                : "Try adjusting your search criteria or filters."
-              }
-            </p>
-            {connections.length === 0 && (
-              <div className="mt-6">
-                <Button onClick={() => navigate('/database-connections/create')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Connection
-                </Button>
+                  </div>
+                </div>
               </div>
-            )}
+            ))}
           </div>
-        )}
-      </div>
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          onPageChange={setCurrentPage}
-          onPageSizeChange={setPageSize}
+          {/* Pagination */}
+          {totalItems > 0 && (
+            <PerformanceLogsPagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalCount={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[6, 9, 12, 24]}
+            />
+          )}
+        </>
+      )}
+
+      {/* Application Selection Dialog */}
+      {showApplicationSelect && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen p-4">
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={() => setShowApplicationSelect(false)}
+            />
+            <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Select Application
+                </h3>
+                <button
+                  onClick={() => setShowApplicationSelect(false)}
+                  className="p-1 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Choose an application to add a database connection to:
+              </p>
+              <div className="space-y-2 max-h-96 overflow-y-auto">
+                {Array.isArray(applications) && applications.length > 0 ? (
+                  applications.map((app) => (
+                    <button
+                      key={app.Id}
+                      onClick={() => handleApplicationSelect(app.Id)}
+                      className="w-full text-left p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className="font-medium text-gray-900 dark:text-white">{app.Name}</div>
+                      {app.Description && (
+                        <div className="text-sm text-gray-500 dark:text-gray-400 line-clamp-1">
+                          {app.Description}
+                        </div>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    {applicationsLoading ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-600 mr-2"></div>
+                        Loading applications...
+                      </div>
+                    ) : (
+                      <div>
+                        <p>No applications available</p>
+                        <p className="text-sm mt-1">Please create an application first</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal for Create/Edit */}
+      {isModalOpen && selectedApplicationId && (
+        <DatabaseConnectionModal
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false);
+            setSelectedApplicationId('');
+            setSelectedApplicationName('');
+          }}
+          onSubmit={selectedConnection ? handleUpdateConnection : handleCreateConnection}
+          applicationId={selectedApplicationId}
+          applicationName={selectedApplicationName}
+          connection={selectedConnection || undefined}
+          mode={selectedConnection ? 'edit' : 'create'}
         />
       )}
     </div>

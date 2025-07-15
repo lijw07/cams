@@ -51,6 +51,19 @@ namespace cams.Backend.Model
         public string? AdditionalSettings { get; set; }
 
         public bool IsActive { get; set; } = true;
+        
+        // GitHub-specific fields
+        [StringLength(255)]
+        public string? GitHubToken { get; set; }
+        
+        [StringLength(100)]
+        public string? GitHubOrganization { get; set; }
+        
+        [StringLength(100)]
+        public string? GitHubRepository { get; set; }
+        
+        [StringLength(255)]
+        public string? GitHubTokenHash { get; set; }  // For storing hashed GitHub token
 
         public DateTime CreatedAt { get; set; }
 

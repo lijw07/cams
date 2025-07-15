@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { UseFormRegister, Control, Controller, FieldErrors, UseFormWatch } from 'react-hook-form';
+import { UseFormRegister, Control, Controller, FieldErrors, UseFormWatch, UseFormGetFieldState } from 'react-hook-form';
 
 import { Database, Key } from 'lucide-react';
 
@@ -263,22 +263,6 @@ const DatabaseConnectionStep: React.FC<DatabaseConnectionStepProps> = ({
         </div>
       )}
 
-      {/* Test Result Display */}
-      {testResult && (
-        <div className={`p-4 rounded-md ${testResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-          <div className="flex items-center">
-            <div className={`flex-shrink-0 w-4 h-4 rounded-full ${testResult.success ? 'bg-green-400' : 'bg-red-400'}`} />
-            <div className="ml-3">
-              <p className={`text-sm font-medium ${testResult.success ? 'text-green-800' : 'text-red-800'}`}>
-                {testResult.success ? 'Connection Test Passed' : 'Connection Test Failed'}
-              </p>
-              <p className={`text-sm ${testResult.success ? 'text-green-700' : 'text-red-700'}`}>
-                {testResult.message}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

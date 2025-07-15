@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { useApplicationModal } from '../../hooks/useApplicationModal';
+import { useModalStack } from '../../hooks/useModalStack';
 import { ApplicationRequest } from '../../types';
 import { ApplicationConnections } from '../application/ApplicationConnections';
 import { ApplicationForm } from '../application/ApplicationForm';
@@ -23,6 +24,9 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
   application,
   mode = 'create'
 }) => {
+  // Register this modal with the modal stack
+  useModalStack(isOpen, onClose);
+
   const {
     register,
     handleSubmit,
@@ -37,7 +41,11 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
     toggleConnectionStatus,
     handleEditConnection,
     handleCloseConnectionModal,
-    handleConnectionSubmit
+    handleConnectionSubmit,
+    handleAssignConnection,
+    handleUnassignConnection,
+    loadConnections,
+    hasPendingChanges
   } = useApplicationModal({
     isOpen,
     application,
@@ -55,6 +63,14 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
       title={mode === 'create' ? 'Create New Application' : 'Edit Application'}
       size="xl"
     >
+      <div className="-m-6 -mt-4 p-6 pt-4">
+          {hasPendingChanges && mode === 'edit' && (
+            <div className="mb-4 p-3 bg-warning-50 border border-warning-200 rounded-lg">
+              <p className="text-sm text-warning-800">
+                <span className="font-medium">Unsaved changes:</span> New connections and assignment changes will be saved when you click "Save Changes"
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-6">
             <form onSubmit={handleSubmit(handleFormSubmit)}>
@@ -75,10 +91,8 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
               onEditConnection={handleEditConnection}
               onToggleStatus={toggleConnectionStatus}
               onDeleteConnection={handleDeleteConnection}
-              onConnectionAssigned={() => {
-                // Refresh connections after assignment
-                window.location.reload(); // Simple refresh for now
-              }}
+              onConnectionAssigned={handleAssignConnection}
+              onConnectionUnassigned={handleUnassignConnection}
             />
           </div>
 
@@ -93,6 +107,7 @@ const ApplicationModal: React.FC<ApplicationModalProps> = ({
               mode={editingConnection ? 'edit' : 'create'}
             />
           )}
+      </div>
     </Modal>
   );
 };

@@ -11,6 +11,8 @@ namespace Cams.Tests.Controllers;
 public class DatabaseConnectionControllerTests : ControllerTestBase
 {
     private readonly Mock<IDatabaseConnectionService> _connectionServiceMock;
+    private readonly Mock<IConnectionTestService> _connectionTestServiceMock;
+    private readonly Mock<IConnectionStringBuilder> _connectionStringBuilderMock;
     private readonly Mock<ILogger<DatabaseConnectionController>> _loggerMock;
     private readonly Mock<ILoggingService> _loggingServiceMock;
     private readonly DatabaseConnectionController _controller;
@@ -18,10 +20,14 @@ public class DatabaseConnectionControllerTests : ControllerTestBase
     public DatabaseConnectionControllerTests()
     {
         _connectionServiceMock = new Mock<IDatabaseConnectionService>();
+        _connectionTestServiceMock = new Mock<IConnectionTestService>();
+        _connectionStringBuilderMock = new Mock<IConnectionStringBuilder>();
         _loggerMock = new Mock<ILogger<DatabaseConnectionController>>();
         _loggingServiceMock = new Mock<ILoggingService>();
         _controller = new DatabaseConnectionController(
             _connectionServiceMock.Object,
+            _connectionTestServiceMock.Object,
+            _connectionStringBuilderMock.Object,
             _loggerMock.Object,
             _loggingServiceMock.Object);
     }
@@ -618,12 +624,26 @@ public class DatabaseConnectionControllerTests : ControllerTestBase
             Password = "testpass"
         };
 
+        var expectedConnectionString = "Server=localhost,1433;Database=TestDB;User Id=testuser;Password=testpass";
+        
+        _connectionStringBuilderMock
+            .Setup(x => x.GetConnectionString(null, It.IsAny<DatabaseConnectionRequest>()))
+            .Returns(expectedConnectionString);
+
         // Act
         var result = _controller.BuildConnectionString(request);
 
         // Assert
         var okResult = result.Should().BeOfType<OkObjectResult>().Subject;
         okResult.Value.Should().NotBeNull();
+        
+        // The controller returns an anonymous object with { connectionString = "..." }
+        // We need to use reflection to access the property since it's anonymous
+        var valueType = okResult.Value.GetType();
+        var connectionStringProperty = valueType.GetProperty("connectionString");
+        connectionStringProperty.Should().NotBeNull();
+        var actualConnectionString = connectionStringProperty!.GetValue(okResult.Value) as string;
+        actualConnectionString.Should().Be(expectedConnectionString);
     }
 
     [Fact]
@@ -666,7 +686,7 @@ public class DatabaseConnectionControllerTests : ControllerTestBase
             }
         };
 
-        _connectionServiceMock
+        _connectionTestServiceMock
             .Setup(x => x.ValidateConnectionString(request.ConnectionString, request.DatabaseType))
             .Returns(validationResponse);
 
@@ -683,7 +703,7 @@ public class DatabaseConnectionControllerTests : ControllerTestBase
         returnedValidation.ParsedComponents.Database.Should().Be("TestDB");
         returnedValidation.ParsedComponents.UseIntegratedSecurity.Should().BeTrue();
 
-        _connectionServiceMock.Verify(x => x.ValidateConnectionString(request.ConnectionString, request.DatabaseType), Times.Once);
+        _connectionTestServiceMock.Verify(x => x.ValidateConnectionString(request.ConnectionString, request.DatabaseType), Times.Once);
     }
 
     [Fact]

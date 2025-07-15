@@ -2,19 +2,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug, ExternalLink } from 'lucide-react';
+import { externalConnectionService } from '../services/externalConnectionService';
 
-import Pagination from '../components/common/Pagination';
+import PerformanceLogsPagination from '../components/logs/PerformanceLogsPagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
 import { useNotifications } from '../contexts/NotificationContext';
 import { applicationService } from '../services/applicationService';
+import { databaseConnectionService } from '../services/databaseConnectionService';
 import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
 
 // Import components for database connections
 import DatabaseConnections from './DatabaseConnections';
+import ExternalConnections from './ExternalConnections';
 
-type TabType = 'applications' | 'connections';
+type TabType = 'applications' | 'connections' | 'external';
 
 const Applications: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('applications');
@@ -23,12 +26,15 @@ const Applications: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWithConnectionModalOpen, setIsWithConnectionModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [connectionsCount, setConnectionsCount] = useState<number>(0);
+  const [externalConnectionsCount, setExternalConnectionsCount] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
   const [sortBy, setSortBy] = useState('Name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const { addNotification } = useNotifications();
+  const [triggerConnectionModal, setTriggerConnectionModal] = useState(false);
 
   const fetchApplications = useCallback(async () => {
     try {
@@ -51,11 +57,38 @@ const Applications: React.FC = () => {
     }
   }, [currentPage, pageSize, searchTerm, sortBy, sortDirection, addNotification]);
 
+  // Load connections count on mount
+  const loadConnectionsCount = useCallback(async () => {
+    try {
+      // Load database connections count
+      const connections = await databaseConnectionService.getConnections();
+      setConnectionsCount(Array.isArray(connections) ? connections.length : 0);
+      
+      // Load external connections count (separate entity)
+      try {
+        const externalConnections = await externalConnectionService.getConnections();
+        setExternalConnectionsCount(Array.isArray(externalConnections) ? externalConnections.length : 0);
+      } catch (extError) {
+        console.error('Error loading external connections count:', extError);
+        setExternalConnectionsCount(0);
+      }
+    } catch (error) {
+      console.error('Error loading connections count:', error);
+      setConnectionsCount(0);
+      setExternalConnectionsCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'applications') {
       fetchApplications();
     }
   }, [fetchApplications, activeTab]);
+
+  // Load connections count on mount
+  useEffect(() => {
+    loadConnectionsCount();
+  }, [loadConnectionsCount]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -130,11 +163,29 @@ const Applications: React.FC = () => {
   const handleCreateApplicationWithConnection = async (data: ApplicationWithConnectionRequest) => {
     try {
       const response = await applicationService.createApplicationWithConnection(data);
-      addNotification({ title: 'Success', message: 'Application and connection created successfully', type: 'success', source: 'Applications' });
+      
+      // Single consolidated notification based on the outcome
       if (response.ConnectionTestResult) {
-        addNotification({ title: 'Success', message: 'Database connection test passed', type: 'success', source: 'Applications' });
+        addNotification({ 
+          title: 'Success', 
+          message: 'Application and connection created successfully. Database connection test passed.', 
+          type: 'success', 
+          source: 'Applications' 
+        });
       } else if (response.ConnectionTestMessage) {
-        addNotification({ title: 'Error', message: `Connection test failed: ${response.ConnectionTestMessage}`, type: 'error', source: 'Applications' });
+        addNotification({ 
+          title: 'Partial Success', 
+          message: `Application and connection created, but connection test failed: ${response.ConnectionTestMessage}`, 
+          type: 'warning', 
+          source: 'Applications' 
+        });
+      } else {
+        addNotification({ 
+          title: 'Success', 
+          message: 'Application and connection created successfully', 
+          type: 'success', 
+          source: 'Applications' 
+        });
       }
       fetchApplications();
     } catch (error: any) {
@@ -169,6 +220,10 @@ const Applications: React.FC = () => {
       }
       throw error;
     }
+  };
+
+  const openCreateConnectionModal = () => {
+    setTriggerConnectionModal(true);
   };
 
   const openEditModal = async (application: Application) => {
@@ -215,7 +270,13 @@ const Applications: React.FC = () => {
       id: 'connections' as TabType,
       name: 'Database Connections',
       icon: Plug,
-      count: null
+      count: connectionsCount
+    },
+    {
+      id: 'external' as TabType,
+      name: 'External Connections',
+      icon: ExternalLink,
+      count: externalConnectionsCount
     }
   ];
 
@@ -262,19 +323,6 @@ const Applications: React.FC = () => {
                     </button>
                   </div>
                   
-                  <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-700 dark:text-gray-300">Show:</label>
-                    <select
-                      value={pageSize}
-                      onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
-                    >
-                      <option value={6}>6 per page</option>
-                      <option value={9}>9 per page</option>
-                      <option value={12}>12 per page</option>
-                      <option value={24}>24 per page</option>
-                    </select>
-                  </div>
                 </div>
               </div>
             </div>
@@ -343,8 +391,7 @@ const Applications: React.FC = () => {
                         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-2">{app.Description}</p>
                       )}
 
-                      <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                        <span>Version: {app.Version || 'N/A'}</span>
+                      <div className="flex items-center justify-end text-sm text-gray-500 mb-4">
                         <span className={`badge ${app.IsActive ? 'badge-success' : 'badge-secondary'}`}>
                           {app.IsActive ? 'Active' : 'Inactive'}
                         </span>
@@ -388,13 +435,15 @@ const Applications: React.FC = () => {
                 </div>
 
                 {/* Pagination */}
-                {pagedData && pagedData.TotalPages > 1 && (
-                  <Pagination
+                {totalCount > 0 && (
+                  <PerformanceLogsPagination
                     currentPage={currentPage}
-                    totalPages={pagedData.TotalPages}
-                    totalItems={totalCount}
+                    totalPages={pagedData?.TotalPages || 1}
+                    totalCount={totalCount}
                     pageSize={pageSize}
                     onPageChange={handlePageChange}
+                    onPageSizeChange={handlePageSizeChange}
+                    pageSizeOptions={[6, 9, 12, 24]}
                   />
                 )}
               </>
@@ -402,7 +451,13 @@ const Applications: React.FC = () => {
           </>
         );
       case 'connections':
-        return <DatabaseConnections />;
+        return <DatabaseConnections 
+          triggerCreateModal={triggerConnectionModal}
+          onModalTriggered={() => setTriggerConnectionModal(false)}
+          onConnectionsLoaded={(count) => setConnectionsCount(count)}
+        />;
+      case 'external':
+        return <ExternalConnections />;
       default:
         return null;
     }
@@ -469,7 +524,6 @@ const Applications: React.FC = () => {
               ...selectedApplication,
               Name: selectedApplication.Name,
               Description: selectedApplication.Description,
-              Version: selectedApplication.Version,
               Environment: selectedApplication.Environment,
               Tags: selectedApplication.Tags,
               IsActive: selectedApplication.IsActive,

@@ -81,6 +81,11 @@ export interface ApplicationWithConnectionRequest {
   Schema?: string;
   WorkspaceUrl?: string;
   ClusterId?: string;
+  
+  // GitHub-specific fields
+  GitHubToken?: string;
+  GitHubOrganization?: string;
+  GitHubRepository?: string;
 }
 
 export interface ApplicationWithConnectionResponse {

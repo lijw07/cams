@@ -14,6 +14,8 @@ namespace cams.Backend.Controller
     [Authorize]
     public class DatabaseConnectionController(
         IDatabaseConnectionService connectionService,
+        IConnectionTestService connectionTestService,
+        IConnectionStringBuilder connectionStringBuilder,
         ILogger<DatabaseConnectionController> logger,
         ILoggingService loggingService)
         : ControllerBase
@@ -471,7 +473,7 @@ namespace cams.Backend.Controller
                             ));
                 }
 
-                var connectionString = connectionService.BuildConnectionString(request);
+                var connectionString = connectionStringBuilder.GetConnectionString(null, request);
                 return Ok(new { connectionString });
             }
             catch (ArgumentException ex)
@@ -500,7 +502,7 @@ namespace cams.Backend.Controller
                             ));
                 }
 
-                var validation = connectionService.ValidateConnectionString(request.ConnectionString, request.DatabaseType);
+                var validation = connectionTestService.ValidateConnectionString(request.ConnectionString, request.DatabaseType);
                 return Ok(validation);
             }
             catch (ArgumentException ex)

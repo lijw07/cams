@@ -2,9 +2,10 @@ import React from 'react';
 
 import { UseFormRegister, FieldErrors, Control, Controller } from 'react-hook-form';
 
-import { Key, Settings } from 'lucide-react';
+import { Key, Settings, Github } from 'lucide-react';
 
 import { DatabaseConnectionRequest, DatabaseConnectionUpdateRequest, DatabaseType } from '../../types';
+import { DatabaseTypeOption } from '../../utils/databaseUtils';
 
 interface DatabaseConnectionFieldsProps {
   register: UseFormRegister<DatabaseConnectionRequest | DatabaseConnectionUpdateRequest>;
@@ -12,10 +13,14 @@ interface DatabaseConnectionFieldsProps {
   control: Control<DatabaseConnectionRequest | DatabaseConnectionUpdateRequest>;
   selectedDbType: DatabaseType;
   setSelectedDbType: (type: DatabaseType) => void;
-  getDatabaseTypeOptions: () => { value: DatabaseType; label: string }[];
+  getDatabaseTypeOptions: () => DatabaseTypeOption[];
   isApiType: () => boolean;
   isConnectionStringType: () => boolean;
 }
+
+const isGitHubType = (selectedDbType: DatabaseType): boolean => {
+  return selectedDbType === DatabaseType.GitHub_API;
+};
 
 export const DatabaseConnectionFields: React.FC<DatabaseConnectionFieldsProps> = ({
   register,
@@ -79,12 +84,19 @@ export const DatabaseConnectionFields: React.FC<DatabaseConnectionFieldsProps> =
               className="input"
               onChange={(e) => {
                 const value = parseInt(e.target.value) as DatabaseType;
-                field.onChange(value);
-                setSelectedDbType(value);
+                if (!isNaN(value)) {
+                  field.onChange(value);
+                  setSelectedDbType(value);
+                }
               }}
             >
               {getDatabaseTypeOptions().map((option) => (
-                <option key={option.value} value={option.value}>
+                <option 
+                  key={option.value} 
+                  value={option.value}
+                  disabled={option.isGroup}
+                  className={option.isGroup ? 'font-semibold text-gray-500 bg-gray-100 dark:bg-gray-700' : ''}
+                >
                   {option.label}
                 </option>
               ))}
@@ -98,6 +110,8 @@ export const DatabaseConnectionFields: React.FC<DatabaseConnectionFieldsProps> =
 
       {isConnectionStringType() ? (
         <ConnectionStringFields register={register} errors={errors} selectedDbType={selectedDbType} />
+      ) : isGitHubType(selectedDbType) ? (
+        <GitHubConnectionFields register={register} errors={errors} />
       ) : isApiType() ? (
         <ApiConnectionFields register={register} errors={errors} isApiType={isApiType} />
       ) : (
@@ -118,16 +132,28 @@ export const DatabaseConnectionFields: React.FC<DatabaseConnectionFieldsProps> =
         />
       </div>
 
-      <div className="flex items-center">
-        <input
-          {...register('IsActive')}
-          type="checkbox"
-          id="isActive"
-          className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
-        />
-        <label htmlFor="isActive" className="ml-2 block text-sm text-gray-900">
-          Active
-        </label>
+      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <input
+              {...register('IsActive')}
+              type="checkbox"
+              id="isActive"
+              className="h-5 w-5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+            />
+            <label htmlFor="isActive" className="ml-3 block text-sm font-medium text-gray-900 dark:text-gray-100">
+              Active Connection
+            </label>
+          </div>
+          <div className="text-right">
+            <div className="text-xs text-gray-500 dark:text-gray-400">
+              Enable this connection for use
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
+          When enabled, this connection will be available for applications to use. When disabled, it will be ignored during connection attempts.
+        </div>
       </div>
     </>
   );
@@ -193,6 +219,86 @@ const ApiConnectionFields: React.FC<{
         className="input"
         placeholder="Enter API key if required"
       />
+    </div>
+  </div>
+);
+
+const GitHubConnectionFields: React.FC<{
+  register: UseFormRegister<DatabaseConnectionRequest | DatabaseConnectionUpdateRequest>;
+  errors: FieldErrors<DatabaseConnectionRequest | DatabaseConnectionUpdateRequest>;
+}> = ({ register, errors }) => (
+  <div className="space-y-4">
+    <div>
+      <label htmlFor="gitHubToken" className="label flex items-center">
+        <Github className="w-4 h-4 mr-1" />
+        GitHub Personal Access Token *
+      </label>
+      <input
+        {...register('GitHubToken', {
+          required: 'GitHub token is required'
+        })}
+        type="password"
+        id="gitHubToken"
+        className="input"
+        placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+      />
+      {errors.GitHubToken && (
+        <p className="mt-1 text-sm text-error-600">{errors.GitHubToken.message}</p>
+      )}
+      <p className="mt-1 text-sm text-gray-500">
+        Generate a Personal Access Token from GitHub Settings → Developer settings → Personal access tokens
+      </p>
+    </div>
+
+    <div>
+      <label htmlFor="gitHubOrganization" className="label">
+        Organization (optional)
+      </label>
+      <input
+        {...register('GitHubOrganization')}
+        type="text"
+        id="gitHubOrganization"
+        className="input"
+        placeholder="your-organization"
+      />
+      <p className="mt-1 text-sm text-gray-500">
+        Leave empty to access personal repositories
+      </p>
+    </div>
+
+    <div>
+      <label htmlFor="gitHubRepository" className="label">
+        Repository Access
+      </label>
+      <textarea
+        {...register('GitHubRepository')}
+        id="gitHubRepository"
+        rows={3}
+        className="input"
+        placeholder="repository-name&#10;another-repo&#10;org/specific-repo"
+      />
+      <p className="mt-1 text-sm text-gray-500">
+        Enter one repository per line. Leave empty for all repositories accessible by the token.
+        Format: <code>repo-name</code> or <code>org/repo-name</code>
+      </p>
+    </div>
+
+    <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+      <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+        GitHub API Connection Info
+      </h4>
+      <p className="text-sm text-blue-700 dark:text-blue-300 mb-2">
+        This connection will use the GitHub REST API v3 to access repository data, issues, pull requests, and other GitHub resources.
+      </p>
+      <div className="text-xs text-blue-600 dark:text-blue-400 space-y-1">
+        <p><strong>Access Control:</strong></p>
+        <ul className="list-disc list-inside ml-2 space-y-1">
+          <li>Token permissions determine what resources can be accessed</li>
+          <li>Organization field limits access to repos within that org</li>
+          <li>Repository field further limits to specific repos only</li>
+          <li>Leave fields empty for maximum access allowed by token</li>
+        </ul>
+      </div>
     </div>
   </div>
 );

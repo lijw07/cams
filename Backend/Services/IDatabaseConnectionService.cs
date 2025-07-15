@@ -1,5 +1,6 @@
 using cams.Backend.View;
 using cams.Backend.Enums;
+using cams.Backend.Model;
 
 namespace cams.Backend.Services
 {
@@ -7,17 +8,16 @@ namespace cams.Backend.Services
     {
         Task<IEnumerable<DatabaseConnectionResponse>> GetUserConnectionsAsync(Guid userId, Guid? applicationId = null);
         Task<DatabaseConnectionResponse?> GetConnectionByIdAsync(Guid id, Guid userId);
+        Task<DatabaseConnection?> GetConnectionAsync(Guid id, Guid userId);
         Task<DatabaseConnectionResponse> CreateConnectionAsync(DatabaseConnectionRequest request, Guid userId);
         Task<DatabaseConnectionResponse?> UpdateConnectionAsync(DatabaseConnectionUpdateRequest request, Guid userId);
         Task<bool> DeleteConnectionAsync(Guid id, Guid userId);
         Task<DatabaseConnectionTestResponse> TestConnectionAsync(DatabaseConnectionTestRequest request, Guid userId);
         Task<bool> ToggleConnectionStatusAsync(Guid id, Guid userId, bool isActive);
-        string BuildConnectionString(DatabaseConnectionRequest request);
         string EncryptSensitiveData(string data);
         string DecryptSensitiveData(string encryptedData);
 
         // Additional methods for new endpoints
-        ConnectionStringValidationResponse ValidateConnectionString(string connectionString, DatabaseType databaseType);
         Task<DatabaseConnectionSummary?> GetConnectionSummaryAsync(Guid id, Guid userId);
         Task<IEnumerable<DatabaseConnectionSummary>> GetConnectionsSummaryAsync(Guid userId, Guid? applicationId = null);
         Task<ConnectionHealthResponse?> GetConnectionHealthAsync(Guid id, Guid userId);

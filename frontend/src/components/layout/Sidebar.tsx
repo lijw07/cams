@@ -167,33 +167,24 @@ const Sidebar: React.FC<SidebarProps> = ({ open, setOpen }) => {
                 Management
               </h3>
               <div className="mt-2 space-y-1">
-                {managementItems
-                  .filter(item => {
-                    // Only show User Management and Role Management to admins
-                    if (item.name === 'User Management' || item.name === 'Role Management') {
-                      return isAdmin;
-                    }
-                    return true;
-                  })
-                  .map((item) => (
-                    <NavLink
-                      key={item.name}
-                      to={item.href}
-                      className={({ isActive }) => `
-                        group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
-                        ${isActive 
-                          ? 'bg-primary-600 text-white' 
-                          : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }
-                      `}
-                      aria-current={item.current ? 'page' : undefined}
-                      onClick={() => setOpen(false)}
-                    >
-                      <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
-                      {item.name}
-                    </NavLink>
-                  ))
-                }
+                {managementItems.map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    className={({ isActive }) => `
+                      group flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
+                      ${isActive 
+                        ? 'bg-primary-600 text-white' 
+                        : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }
+                    `}
+                    aria-current={item.current ? 'page' : undefined}
+                    onClick={() => setOpen(false)}
+                  >
+                    <item.icon className="flex-shrink-0 w-5 h-5 mr-3" aria-hidden="true" />
+                    {item.name}
+                  </NavLink>
+                ))}
               </div>
             </div>
           )}

@@ -2,6 +2,7 @@ import React from 'react';
 
 import { AlertCircle, CheckCircle, Info, AlertTriangle, Clock, Settings } from 'lucide-react';
 
+import { useModalStack } from '../../hooks/useModalStack';
 import { Notification } from '../../types';
 import Button from '../common/Button';
 import Modal from '../common/Modal';
@@ -17,6 +18,9 @@ const NotificationDetailsModal: React.FC<NotificationDetailsModalProps> = ({
   onClose,
   notification
 }) => {
+  // Register this modal with the modal stack
+  useModalStack(isOpen, onClose);
+
   if (!notification) return null;
 
   const getIcon = () => {

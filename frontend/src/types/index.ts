@@ -7,3 +7,5 @@ export * from './api';
 export * from './management';
 export * from './migration';
 export * from './ui';
+export * from './github';
+export * from './externalConnection';

@@ -90,5 +90,15 @@ namespace cams.Backend.View
         public string? Audience { get; set; }
         public string? GrantType { get; set; }
         public string? TokenEndpoint { get; set; }
+        
+        // GitHub-specific fields
+        [StringLength(255, ErrorMessage = "GitHub token cannot exceed 255 characters")]
+        public string? GitHubToken { get; set; }
+        
+        [StringLength(100, ErrorMessage = "GitHub organization cannot exceed 100 characters")]
+        public string? GitHubOrganization { get; set; }
+        
+        [StringLength(100, ErrorMessage = "GitHub repository cannot exceed 100 characters")]
+        public string? GitHubRepository { get; set; }
     }
 }

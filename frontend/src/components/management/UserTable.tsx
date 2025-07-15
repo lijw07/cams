@@ -12,7 +12,7 @@ import {
 
 import { UserManagement } from '../../services/usersService';
 import Button from '../common/Button';
-import Pagination from '../common/Pagination';
+import PerformanceLogsPagination from '../logs/PerformanceLogsPagination';
 
 interface UserTableProps {
   users: UserManagement[];
@@ -226,10 +226,10 @@ const UserTable: React.FC<UserTableProps> = memo(({
         </table>
       </div>
       
-      <Pagination
+      <PerformanceLogsPagination
         currentPage={pagination.currentPage}
         totalPages={pagination.totalPages}
-        totalItems={pagination.totalItems}
+        totalCount={pagination.totalItems}
         pageSize={pagination.perPage}
         onPageChange={onPageChange}
         onPageSizeChange={onPageSizeChange}
