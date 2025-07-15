@@ -27,9 +27,10 @@ import { DatabaseConnection, DatabaseType, ConnectionStatus, DatabaseConnectionR
 interface DatabaseConnectionsProps {
   triggerCreateModal?: boolean;
   onModalTriggered?: () => void;
+  onConnectionsLoaded?: (count: number) => void;
 }
 
-const DatabaseConnections: React.FC<DatabaseConnectionsProps> = ({ triggerCreateModal, onModalTriggered }) => {
+const DatabaseConnections: React.FC<DatabaseConnectionsProps> = ({ triggerCreateModal, onModalTriggered, onConnectionsLoaded }) => {
   const { addNotification } = useNotifications();
 
   // State
@@ -53,7 +54,13 @@ const DatabaseConnections: React.FC<DatabaseConnectionsProps> = ({ triggerCreate
     try {
       setLoading(true);
       const data = await databaseConnectionService.getConnections();
-      setConnections(Array.isArray(data) ? data : []);
+      const connectionsList = Array.isArray(data) ? data : [];
+      setConnections(connectionsList);
+      
+      // Call the callback to update the count in the parent component
+      if (onConnectionsLoaded) {
+        onConnectionsLoaded(connectionsList.length);
+      }
     } catch (error) {
       console.error('Error loading connections:', error);
       addNotification({
@@ -65,10 +72,13 @@ const DatabaseConnections: React.FC<DatabaseConnectionsProps> = ({ triggerCreate
         suggestions: ['Refresh the page', 'Check your network connection', 'Contact support if the issue persists']
       });
       setConnections([]);
+      if (onConnectionsLoaded) {
+        onConnectionsLoaded(0);
+      }
     } finally {
       setLoading(false);
     }
-  }, [addNotification]);
+  }, [addNotification, onConnectionsLoaded]);
 
   useEffect(() => {
     loadConnections();

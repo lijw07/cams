@@ -2,19 +2,22 @@ import React, { useState, useEffect, useCallback } from 'react';
 
 import { Link } from 'react-router-dom';
 
-import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, ToggleLeft, ToggleRight, Database, Search, Plug, ExternalLink } from 'lucide-react';
+import { externalConnectionService } from '../services/externalConnectionService';
 
 import PerformanceLogsPagination from '../components/logs/PerformanceLogsPagination';
 import ApplicationModal from '../components/modals/ApplicationModal';
 import ApplicationWithConnectionModal from '../components/modals/ApplicationWithConnectionModal';
 import { useNotifications } from '../contexts/NotificationContext';
 import { applicationService } from '../services/applicationService';
+import { databaseConnectionService } from '../services/databaseConnectionService';
 import { Application, ApplicationRequest, ApplicationWithConnectionRequest, PaginationRequest, PagedResult } from '../types';
 
 // Import components for database connections
 import DatabaseConnections from './DatabaseConnections';
+import ExternalConnections from './ExternalConnections';
 
-type TabType = 'applications' | 'connections';
+type TabType = 'applications' | 'connections' | 'external';
 
 const Applications: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('applications');
@@ -23,6 +26,8 @@ const Applications: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isWithConnectionModalOpen, setIsWithConnectionModalOpen] = useState(false);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
+  const [connectionsCount, setConnectionsCount] = useState<number>(0);
+  const [externalConnectionsCount, setExternalConnectionsCount] = useState<number>(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(9);
@@ -52,11 +57,38 @@ const Applications: React.FC = () => {
     }
   }, [currentPage, pageSize, searchTerm, sortBy, sortDirection, addNotification]);
 
+  // Load connections count on mount
+  const loadConnectionsCount = useCallback(async () => {
+    try {
+      // Load database connections count
+      const connections = await databaseConnectionService.getConnections();
+      setConnectionsCount(Array.isArray(connections) ? connections.length : 0);
+      
+      // Load external connections count (separate entity)
+      try {
+        const externalConnections = await externalConnectionService.getConnections();
+        setExternalConnectionsCount(Array.isArray(externalConnections) ? externalConnections.length : 0);
+      } catch (extError) {
+        console.error('Error loading external connections count:', extError);
+        setExternalConnectionsCount(0);
+      }
+    } catch (error) {
+      console.error('Error loading connections count:', error);
+      setConnectionsCount(0);
+      setExternalConnectionsCount(0);
+    }
+  }, []);
+
   useEffect(() => {
     if (activeTab === 'applications') {
       fetchApplications();
     }
   }, [fetchApplications, activeTab]);
+
+  // Load connections count on mount
+  useEffect(() => {
+    loadConnectionsCount();
+  }, [loadConnectionsCount]);
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
@@ -238,7 +270,13 @@ const Applications: React.FC = () => {
       id: 'connections' as TabType,
       name: 'Database Connections',
       icon: Plug,
-      count: null
+      count: connectionsCount
+    },
+    {
+      id: 'external' as TabType,
+      name: 'External Connections',
+      icon: ExternalLink,
+      count: externalConnectionsCount
     }
   ];
 
@@ -416,7 +454,10 @@ const Applications: React.FC = () => {
         return <DatabaseConnections 
           triggerCreateModal={triggerConnectionModal}
           onModalTriggered={() => setTriggerConnectionModal(false)}
+          onConnectionsLoaded={(count) => setConnectionsCount(count)}
         />;
+      case 'external':
+        return <ExternalConnections />;
       default:
         return null;
     }

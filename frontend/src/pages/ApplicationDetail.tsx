@@ -240,19 +240,11 @@ const ApplicationDetail: React.FC = () => {
 
             <div className="bg-white shadow rounded-lg p-6">
               <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Stats</h2>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-4 rounded">
-                  <dt className="text-sm font-medium text-gray-500">Database Connections</dt>
-                  <dd className="mt-1 text-2xl font-semibold text-gray-900">
-                    {application.DatabaseConnectionCount}
-                  </dd>
-                </div>
-                <div className="bg-gray-50 p-4 rounded">
-                  <dt className="text-sm font-medium text-gray-500">External Connections</dt>
-                  <dd className="mt-1 text-2xl font-semibold text-gray-900">
-                    0
-                  </dd>
-                </div>
+              <div className="bg-gray-50 p-4 rounded">
+                <dt className="text-sm font-medium text-gray-500">Database Connections</dt>
+                <dd className="mt-1 text-2xl font-semibold text-gray-900">
+                  {application.DatabaseConnectionCount}
+                </dd>
               </div>
             </div>
           </div>
